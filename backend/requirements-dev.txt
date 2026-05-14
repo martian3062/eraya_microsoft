@@ -1,0 +1,38 @@
+# Minimal set for local dev — REST API + WebSocket + agent framework
+# Heavy ML (torch, stable-baselines3, chromadb) and infra (celery, nats, OPA) are optional.
+
+# ─── Core Django ──────────────────────────────────────────────────────────────
+Django>=5.2,<6
+djangorestframework>=3.15
+django-cors-headers>=4.4
+django-environ>=0.11
+daphne>=4.1
+channels>=4.1
+
+# ─── Agent schemas ────────────────────────────────────────────────────────────
+pydantic>=2.7
+
+# ─── ML Tier 2 (always available) ────────────────────────────────────────────
+xgboost>=2.1
+scikit-learn>=1.5
+scipy>=1.13
+numpy>=1.26
+
+# ─── Optimization Tier 3 ─────────────────────────────────────────────────────
+cvxpy>=1.5
+
+# ─── Graph / Memory ───────────────────────────────────────────────────────────
+networkx>=3.3
+
+# ─── LLM ─────────────────────────────────────────────────────────────────────
+groq>=0.10
+httpx>=0.27
+
+# ─── Utilities ────────────────────────────────────────────────────────────────
+python-dotenv>=1.0
+structlog>=24.0
+websockets>=12.0
+
+# ─── Redis (optional — channels falls back to in-memory without it) ──────────
+redis>=5.0
+channels-redis>=4.2

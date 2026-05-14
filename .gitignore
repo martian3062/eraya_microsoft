@@ -1,0 +1,58 @@
+# ─── Secrets (never commit) ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+backend/mlruns/
+
+# ─── Node ─────────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# ─── ML artifacts ─────────────────────────────────────────────────────────────
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.onnx
+mlruns/
+mlartifacts/
+
+# ─── Data ─────────────────────────────────────────────────────────────────────
+*.csv
+*.parquet
+chroma_data/
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Docker volumes ───────────────────────────────────────────────────────────
+redis_data/
+nats_data/

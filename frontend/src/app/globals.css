@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --color-eraya-bg: #0a0f1e;
+  --color-eraya-surface: #111827;
+  --color-eraya-border: #1f2937;
+  --color-eraya-accent: #6366f1;
+  --color-eraya-green: #10b981;
+  --color-eraya-yellow: #f59e0b;
+  --color-eraya-red: #ef4444;
+  --color-eraya-blue: #3b82f6;
+
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-eraya-bg);
+  color: #f1f5f9;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* Agent status pulse animations */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+.status-active { animation: pulse-green 2s infinite; }
+.status-critical { animation: pulse-red 1s infinite; }
+
+/* react-flow dark theme override */
+.react-flow__background { background: var(--color-eraya-bg) !important; }
+.react-flow__edge-path { stroke: #4b5563 !important; }
