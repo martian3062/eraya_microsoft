@@ -29,7 +29,9 @@
       "PowerShell(& \"e:\\\\microsoft_eraya\\\\backend\\\\.venv\\\\Scripts\\\\python.exe\" -c \"import sys; print\\('Venv Python:', sys.executable\\); print\\('Prefix:', sys.prefix\\)\")",
       "PowerShell(python -c \"import stable_baselines3\" 2>&1)",
       "PowerShell(python -c \"import torch\" 2>&1)",
-      "PowerShell($fe = try { $r = Invoke-WebRequest \"http://localhost:3001\" -TimeoutSec 8 -UseBasicParsing; $r.StatusCode } catch { [int]$_.Exception.Response.StatusCode }; \"Frontend: $fe\")"
+      "PowerShell($fe = try { $r = Invoke-WebRequest \"http://localhost:3001\" -TimeoutSec 8 -UseBasicParsing; $r.StatusCode } catch { [int]$_.Exception.Response.StatusCode }; \"Frontend: $fe\")",
+      "Bash(Get-ChildItem -Path \"e:\\\\microsoft_eraya\\\\frontend\\\\src\\\\app\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)"
     ]
   }
 }
