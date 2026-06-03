@@ -28,6 +28,11 @@ const NAV = [
   { label: "Context Graph", href: "/context-graph", icon: GitBranch },
   { label: "Incidents", href: "/incidents", icon: AlertTriangle },
   { label: "Audit Log", href: "/audit-log", icon: FileText },
+  {
+    label: "Security", icon: Shield, children: [
+      { label: "Attack Console", href: "/security/attack-console" },
+    ],
+  },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 

@@ -55,6 +55,35 @@ class ErayaConsumer(AsyncWebsocketConsumer):
                 await self.channel_layer.group_add(extra_channel, self.channel_name)
                 await self.send(json.dumps({"type": "subscribed", "channel": extra_channel}))
 
+            elif event_type == "action.request":
+                # Additive: verify HMAC signature on inbound A2A delegation messages.
+                # Uses verify_a2a_message() — same function the security demo uses,
+                # so the test proves the real path, not a copy.
+                from core.a2a.verification import verify_a2a_message
+                presented_sig = data.get("signature", "")
+                # Strip the envelope "type" key before verifying the message body
+                message_body = {k: v for k, v in data.items() if k not in ("type", "signature")}
+                if not presented_sig or not verify_a2a_message(message_body, presented_sig):
+                    logger.warning(
+                        "WS A2A delegation from '%s' rejected: hmac_mismatch",
+                        data.get("from_agent", "unknown"),
+                    )
+                    await self.send(json.dumps({
+                        "type": "error",
+                        "code": "hmac_mismatch",
+                        "detail": "invalid or missing A2A signature",
+                    }))
+                    return
+                # Valid — route to the A2A bus
+                from core.a2a.bus import get_bus
+                from core.a2a.schemas import A2AMessage
+                try:
+                    msg = A2AMessage(**{k: v for k, v in data.items() if k != "type"})
+                    get_bus().publish(msg)
+                    await self.send(json.dumps({"type": "ack", "message_id": msg.message_id}))
+                except Exception as exc:
+                    logger.warning("A2A routing error: %s", exc)
+
         except json.JSONDecodeError:
             pass
 

@@ -8,4 +8,6 @@ urlpatterns = [
     path('api/incidents/', include('apps.incidents.urls')),
     path('api/audit/', include('apps.audit.urls')),
     path('api/domains/', include('apps.domains.urls')),
+    # KAVACHA security simulation endpoints (additive)
+    path('api/v1/security/', include('apps.security.urls')),
 ]

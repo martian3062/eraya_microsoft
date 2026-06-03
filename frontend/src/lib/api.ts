@@ -34,6 +34,18 @@ export const api = {
 
   // Audit
   auditLog: () => apiFetch<PagedResponse<AuditEntry>>("/api/audit/"),
+
+  // KAVACHA security simulation (Feature A + B)
+  attackSim: (domain: string, payload?: string) =>
+    apiFetch<AttackSimResult>("/api/v1/security/attack-sim/", {
+      method: "POST",
+      body: JSON.stringify({ domain, payload }),
+    }),
+  spoofSim: (valid?: boolean, claimed_agent_id?: string, target_agent_id?: string) =>
+    apiFetch<SpoofSimResult>("/api/v1/security/spoof-sim/", {
+      method: "POST",
+      body: JSON.stringify({ valid, claimed_agent_id, target_agent_id }),
+    }),
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -109,3 +121,26 @@ export interface DomainInfo { name: string; status: string }
 export interface DomainHealth { domain: string; status: string; [key: string]: unknown }
 export interface Signal { timestamp: number; source: string; features: Record<string, number> }
 export interface PagedResponse<T> { count: number; results: T[] }
+
+// KAVACHA security types
+export interface TimelineStep {
+  step: string;
+  ok: boolean;
+  detail: string;
+  score?: number;
+}
+export interface AttackSimResult {
+  verdict: "BLOCKED";
+  injection_score: number;
+  rule_fired: string;
+  audit_id: string;
+  timeline: TimelineStep[];
+}
+export interface SpoofSimResult {
+  accepted: boolean;
+  reason: string;
+  claimed_agent_id: string;
+  expected_signature: string;
+  presented_signature: string;
+  audit_id: string;
+}
