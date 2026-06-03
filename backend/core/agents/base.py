@@ -13,6 +13,8 @@ import time
 import uuid
 import logging
 
+from core.telemetry import agent_span
+
 
 class AgentTier(Enum):
     HEAVY = 1   # GPU + full ML stack, >100ms latency budget
@@ -160,12 +162,19 @@ class ErayaAgent(ABC):
         start = time.monotonic()
 
         for tier in tier_order:
-            fn_name = f"_{method}_{tier.name.lower()}"
+            fn_name = f"_{method}_tier{tier.value}"   # → _plan_tier1 / tier2 / tier3
             fn = getattr(self, fn_name, None)
             if fn is None:
                 continue
             try:
-                result = fn(input_data)
+                span_attrs = {
+                    "agent.id": self.agent_id,
+                    "agent.domain": self.domain,
+                    "tier": tier.name,
+                    "fallback": str(tier != preferred),
+                }
+                with agent_span(f"eraya.{self.role.value}.{method}.{tier.name.lower()}", span_attrs):
+                    result = fn(input_data)
                 self._record_call(start, tier)
                 if tier != preferred:
                     self._logger.warning(
