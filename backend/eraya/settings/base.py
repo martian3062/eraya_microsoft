@@ -31,6 +31,7 @@ LOCAL_APPS = [
     'apps.decisions',
     'apps.incidents',
     'apps.audit',
+    'apps.eraya_auth',
     'apps.frontend',
 ]
 
