@@ -1,42 +1,182 @@
 @import "tailwindcss";
+/* Leaflet map styles */
+@import "leaflet/dist/leaflet.css";
 
 @theme {
-  --color-eraya-bg: #0a0f1e;
-  --color-eraya-surface: #111827;
-  --color-eraya-border: #1f2937;
-  --color-eraya-accent: #6366f1;
+  --color-eraya-bg: #fdf9f5;
+  --color-eraya-surface: #ffffff;
+  --color-eraya-border: #ede4d8;
+  --color-eraya-accent: #f97316;
   --color-eraya-green: #10b981;
   --color-eraya-yellow: #f59e0b;
   --color-eraya-red: #ef4444;
-  --color-eraya-blue: #3b82f6;
-
+  --color-eraya-blue: #60a5fa;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 }
 
+/* Override dark variant to use .dark class instead of prefers-color-scheme */
+@variant dark (&:is(.dark *));
+
 :root {
+  color-scheme: light;
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(20, 184, 166, 0.15);
+  --glass-shadow: rgba(20, 184, 166, 0.06);
+  --card-bg: rgba(255, 255, 255, 0.70);
+  --card-border: rgba(20, 184, 166, 0.12);
+}
+
+html.dark {
   color-scheme: dark;
+  --glass: rgba(8, 16, 30, 0.85);
+  --glass-border: rgba(20, 184, 166, 0.13);
+  --glass-shadow: rgba(20, 184, 166, 0.10);
+  --card-bg: rgba(10, 22, 42, 0.80);
+  --card-border: rgba(20, 184, 166, 0.10);
 }
 
 body {
-  background-color: var(--color-eraya-bg);
-  color: #f1f5f9;
+  /* Pure light — warm ivory center, soft orange top-left, pale sky bottom-right */
+  background:
+    radial-gradient(ellipse 70% 60% at 0% 0%,   #fff0d9 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, #ddf1ff 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%,  #fff9f2 0%, transparent 80%),
+    #fdfcf8;
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: #1e293b;
   font-family: var(--font-sans, system-ui, sans-serif);
+  transition: background 0.4s ease, color 0.25s ease;
 }
 
-/* Agent status pulse animations */
+html.dark body {
+  /* Deep dark — violet upper-left, indigo-navy center, teal-forest lower-right */
+  background:
+    radial-gradient(ellipse 65% 55% at 0% 0%,    #1a0535 0%, transparent 60%),
+    radial-gradient(ellipse 55% 50% at 100% 30%,  #051528 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 40% 100%,  #041210 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 100% 100%, #0a1a10 0%, transparent 50%),
+    #08040f;
+  background-attachment: fixed;
+  color: #e2e8f0;
+}
+
+/* ── Agent status pulses ───────────────────────────────────────── */
 @keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
 }
-
 @keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+.status-active   { animation: pulse-green 2s infinite; }
+.status-critical { animation: pulse-red   1s infinite; }
+
+/* ── Fluid blob drift ──────────────────────────────────────────── */
+@keyframes blob-a {
+  0%,100% { transform: translate(0,0) scale(1); }
+  25%     { transform: translate(6%,-9%) scale(1.08); }
+  50%     { transform: translate(-5%,6%) scale(0.94); }
+  75%     { transform: translate(4%,8%) scale(1.04); }
+}
+@keyframes blob-b {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(-7%,5%) scale(1.1); }
+  66%     { transform: translate(6%,-6%) scale(0.92); }
+}
+@keyframes blob-c {
+  0%,100% { transform: translate(0,0) scale(1); }
+  20%     { transform: translate(4%,7%) scale(1.06); }
+  60%     { transform: translate(-6%,-4%) scale(0.96); }
+  80%     { transform: translate(5%,-8%) scale(1.08); }
 }
 
-.status-active { animation: pulse-green 2s infinite; }
-.status-critical { animation: pulse-red 1s infinite; }
+/* ── I-motion: node idle oscillation ──────────────────────────── */
+@keyframes im-a {
+  0%,100% { transform: translate(0,0); }
+  25%     { transform: translate(8px,-12px); }
+  50%     { transform: translate(-6px,8px); }
+  75%     { transform: translate(10px,4px); }
+}
+@keyframes im-b {
+  0%,100% { transform: translate(0,0); }
+  33%     { transform: translate(-10px,7px); }
+  66%     { transform: translate(8px,-10px); }
+}
+@keyframes im-c {
+  0%,100% { transform: translate(0,0); }
+  25%     { transform: translate(6px,11px); }
+  50%     { transform: translate(-9px,-5px); }
+  75%     { transform: translate(7px,-9px); }
+}
+@keyframes im-d {
+  0%,100% { transform: translate(0,0); }
+  40%     { transform: translate(-8px,12px); }
+  70%     { transform: translate(10px,-5px); }
+}
 
-/* react-flow dark theme override */
-.react-flow__background { background: var(--color-eraya-bg) !important; }
-.react-flow__edge-path { stroke: #4b5563 !important; }
+/* ── G-step: edge data-flow ────────────────────────────────────── */
+@keyframes g-step {
+  0%   { stroke-dashoffset: 300; opacity: 0; }
+  8%   { opacity: 0.55; }
+  85%  { opacity: 0.45; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* ── Peacock wavy gradient ─────────────────────────────────────── */
+@keyframes peacock-wave {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.peacock-card {
+  background: linear-gradient(135deg, #f0fdfa, #e0f2fe, #ecfdf5, #cffafe, #f0fdfa);
+  background-size: 400% 400%;
+  animation: peacock-wave 8s ease infinite;
+}
+.peacock-card-fast {
+  background: linear-gradient(120deg, #f0fdfa, #cffafe, #ecfdf5, #e0f2fe, #f0fdfa);
+  background-size: 400% 400%;
+  animation: peacock-wave 5s ease infinite;
+}
+
+html.dark .peacock-card {
+  background: linear-gradient(135deg, #0a2a28, #0c2233, #0a2620, #092030, #0a2a28);
+  background-size: 400% 400%;
+  animation: peacock-wave 8s ease infinite;
+}
+html.dark .peacock-card-fast {
+  background: linear-gradient(120deg, #0a2a28, #08201a, #092030, #0d2440, #0a2a28);
+  background-size: 400% 400%;
+  animation: peacock-wave 5s ease infinite;
+}
+
+/* ── Login page veil — seamless, no hard edge ──────────────────── */
+/* Light mode: cream haze grows on the right                       */
+.login-veil {
+  background: linear-gradient(
+    105deg,
+    transparent            0%,
+    transparent            26%,
+    rgba(253,250,242,0.18) 42%,
+    rgba(253,250,242,0.52) 58%,
+    rgba(253,250,242,0.76) 100%
+  );
+}
+/* Dark mode: navy haze grows on the right                         */
+html.dark .login-veil {
+  background: linear-gradient(
+    105deg,
+    transparent          0%,
+    transparent          26%,
+    rgba(6,10,22,0.18)   42%,
+    rgba(6,10,22,0.52)   58%,
+    rgba(6,10,22,0.74)   100%
+  );
+}
+
+/* react-flow overrides */
+.react-flow__background { background: transparent !important; }
+.react-flow__edge-path  { stroke: #5eead4 !important; }

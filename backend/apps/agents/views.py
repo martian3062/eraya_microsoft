@@ -2,11 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 from django.utils import timezone
 
 from .models import AgentInstance, AgentDecision, A2AMessageLog
 from .serializers import AgentInstanceSerializer, AgentDecisionSerializer, A2AMessageLogSerializer
 from core.a2a.bus import get_bus
+from core.agents.local_models import registry_info
 
 
 class AgentInstanceViewSet(viewsets.ModelViewSet):
@@ -59,3 +61,11 @@ class A2AMessageLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = A2AMessageLogSerializer
     permission_classes = [AllowAny]
     filterset_fields = ["from_agent", "to_agent", "message_type", "domain"]
+
+
+class ModelRegistryView(APIView):
+    """Return metadata for all registered LLM models (local + Groq)."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"models": registry_info()})

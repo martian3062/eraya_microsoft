@@ -16,23 +16,23 @@ export function formatTimestamp(ts: number | string): string {
 }
 
 export function tierColor(tier: string): string {
-  return { HEAVY: "text-purple-400", MEDIUM: "text-blue-400", LIGHT: "text-slate-400" }[tier] ?? "text-slate-400";
+  return { HEAVY: "text-purple-600", MEDIUM: "text-blue-500", LIGHT: "text-slate-500" }[tier] ?? "text-slate-500";
 }
 
 export function statusColor(status: string): string {
   return {
-    idle: "text-slate-400",
-    active: "text-emerald-400",
-    degraded: "text-yellow-400",
-    quarantined: "text-red-400",
-  }[status] ?? "text-slate-400";
+    idle:        "text-slate-500",
+    active:      "text-emerald-500",
+    degraded:    "text-amber-500",
+    quarantined: "text-red-500",
+  }[status] ?? "text-slate-500";
 }
 
 export function severityColor(severity: string): string {
   return {
-    low: "text-slate-400",
-    medium: "text-yellow-400",
-    high: "text-orange-400",
-    critical: "text-red-400",
-  }[severity] ?? "text-slate-400";
+    low:      "text-slate-500",
+    medium:   "text-amber-500",
+    high:     "text-orange-500",
+    critical: "text-red-500",
+  }[severity] ?? "text-slate-500";
 }
