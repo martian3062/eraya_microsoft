@@ -1,0 +1,115 @@
+{% extends "frontend/base.html" %}
+{% block title %}A2A Chat{% endblock %}
+{% block page_title %}A2A Chat Listener{% endblock %}
+{% block content %}
+<div class="flex gap-4 h-[calc(100vh-120px)]">
+  <!-- Filters -->
+  <div class="w-48 flex-shrink-0 card flex flex-col gap-3">
+    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Domain Filter</div>
+    <div id="domain-filters" class="space-y-1.5"></div>
+    <div class="border-t border-teal-100/40 dark:border-white/[.05] pt-3">
+      <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Message Type</div>
+      <div id="type-filters" class="space-y-1.5"></div>
+    </div>
+    <button id="pause-btn" onclick="togglePause()"
+      class="mt-auto w-full py-2 rounded-xl text-xs font-medium transition-all bg-teal-500/10 text-teal-600 dark:text-teal-400 hover:bg-teal-500/20">
+      ⏸ Pause
+    </button>
+  </div>
+
+  <!-- Chat area -->
+  <div class="flex-1 card flex flex-col overflow-hidden p-0">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-teal-100/40 dark:border-white/[.05] flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
+        <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Live · Agent-to-Agent</span>
+      </div>
+      <span id="live-badge" class="badge" style="background:rgba(45,212,191,.1);color:#2dd4bf">● LIVE</span>
+    </div>
+    <div id="chat-feed" class="flex-1 overflow-y-auto scroll-hide p-4 space-y-3"></div>
+  </div>
+</div>
+
+<style>
+.filter-pill{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;}
+.filter-pill.on{border-color:currentColor;}
+.bubble{border-radius:14px;padding:12px 14px;max-width:100%;}
+.bubble-inner{font-size:11px;line-height:1.5;}
+.mono-footer{font-family:monospace;font-size:9px;opacity:.35;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+</style>
+
+<script>
+const DOMAIN_COL={telecom:'#2dd4bf',cloud:'#60a5fa',icu:'#f472b6',edge:'#fb923c'};
+const TYPE_COL={'anomaly.detected':'#fbbf24','action.plan':'#2dd4bf','threat.blocked':'#f87171','heal.complete':'#34d399','heartbeat':'#a78bfa','latency.spike':'#fb923c','capability.query':'#60a5fa','status.update':'#94a3b8'};
+const DOMAINS=['telecom','cloud','icu','edge'];
+const TYPES=Object.keys(TYPE_COL);
+
+const MESSAGES=[
+  {from:'Perceiver-1',to:'Planner-1',domain:'telecom',type:'anomaly.detected',payload:{rsrp:-94,tower:'NYC-7',action:'escalate'}},
+  {from:'Planner-1',to:'Recoverer-1',domain:'telecom',type:'action.plan',payload:{strategy:'failover',target:'NYC-9',eta_ms:340}},
+  {from:'Guardian-2',to:'all',domain:'cloud',type:'threat.blocked',payload:{threat:'sql_injection',source:'10.0.1.44',blocked:true}},
+  {from:'Recoverer-3',to:'Planner-3',domain:'icu',type:'heal.complete',payload:{pod:'monitor-3a',restart_count:1,slo:99.2}},
+  {from:'Perceiver-4',to:'Planner-4',domain:'edge',type:'latency.spike',payload:{latency_ms:340,threshold:100,node:'edge-sg-3'}},
+  {from:'Perceiver-1',to:'Guardian-1',domain:'telecom',type:'status.update',payload:{hrv:87,rsrq:-9.2,status:'nominal'}},
+  {from:'Planner-2',to:'Recoverer-2',domain:'cloud',type:'action.plan',payload:{action:'scale_out',replicas:3,reason:'cpu_burst'}},
+  {from:'Guardian-1',to:'Perceiver-1',domain:'telecom',type:'heartbeat',payload:{latency_ms:87,round_trip:true}},
+  {from:'Recoverer-1',to:'all',domain:'telecom',type:'heal.complete',payload:{tower:'NYC-7',method:'beam_steer',slo:99.1}},
+  {from:'Perceiver-3',to:'Planner-3',domain:'icu',type:'anomaly.detected',payload:{patient:'ward-4B',metric:'hrv',value:142}},
+  {from:'Guardian-3',to:'all',domain:'icu',type:'threat.blocked',payload:{threat:'device_spoof',device:'monitor-3a',blocked:true}},
+  {from:'Planner-4',to:'Recoverer-4',domain:'edge',type:'action.plan',payload:{action:'reroute',via:'edge-tok-2',latency_ms:95}},
+];
+const MSGS_TEXT={
+  'anomaly.detected':'Anomaly detected — escalating to Planner for action plan',
+  'action.plan':'Action plan generated — initiating recovery sequence',
+  'threat.blocked':'Threat intercepted and blocked — system secure',
+  'heal.complete':'Self-healing complete — SLO restored within budget',
+  'heartbeat':'Heartbeat acknowledged — all subsystems nominal',
+  'latency.spike':'Latency spike detected — rerouting traffic',
+  'capability.query':'Querying peer capabilities for coordination',
+  'status.update':'Status update dispatched to monitoring agent',
+};
+
+let activeDomains=new Set(DOMAINS);
+let activeTypes=new Set(TYPES);
+let paused=false;
+let msgIdx=0;
+
+// Render filters
+document.getElementById('domain-filters').innerHTML=DOMAINS.map(d=>`
+  <button class="filter-pill on" style="color:${DOMAIN_COL[d]};background:${DOMAIN_COL[d]}18" onclick="toggleDomain('${d}',this)">${d}</button>`).join('');
+document.getElementById('type-filters').innerHTML=TYPES.slice(0,5).map(t=>`
+  <button class="filter-pill on" style="color:${TYPE_COL[t]};background:${TYPE_COL[t]}18;font-size:9px" onclick="toggleType('${t}',this)">${t}</button>`).join('');
+
+function toggleDomain(d,el){activeDomains.has(d)?activeDomains.delete(d):activeDomains.add(d);el.classList.toggle('on',activeDomains.has(d));}
+function toggleType(t,el){activeTypes.has(t)?activeTypes.delete(t):activeTypes.add(t);el.classList.toggle('on',activeTypes.has(t));}
+function togglePause(){paused=!paused;document.getElementById('pause-btn').textContent=paused?'▶ Resume':'⏸ Pause';document.getElementById('live-badge').textContent=paused?'⏸ PAUSED':'● LIVE';document.getElementById('live-badge').style.color=paused?'#fbbf24':'#2dd4bf';}
+
+function pushMsg(){
+  if(paused)return;
+  const m=MESSAGES[msgIdx%MESSAGES.length];msgIdx++;
+  if(!activeDomains.has(m.domain)||!activeTypes.has(m.type))return;
+  const dc=DOMAIN_COL[m.domain]||'#2dd4bf';
+  const tc=TYPE_COL[m.type]||'#94a3b8';
+  const now=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const feed=document.getElementById('chat-feed');
+  const el=document.createElement('div');
+  el.style.cssText=`animation:fadeIn .3s ease`;
+  el.innerHTML=`<div class="bubble" style="background:${dc}0d;border:1px solid ${dc}22">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:10px;font-weight:600;color:${dc}">${m.from} <span style="color:rgba(255,255,255,.25)">→</span> ${m.to}</div>
+      <span style="font-size:9px;color:rgba(255,255,255,.2)">${now}</span>
+    </div>
+    <span style="display:inline-block;margin-bottom:6px;padding:1px 8px;border-radius:999px;font-size:9px;background:${tc}1a;color:${tc}">${m.type}</span>
+    <div class="bubble-inner" style="color:rgba(255,255,255,.7)">${MSGS_TEXT[m.type]||m.type}</div>
+    <div class="mono-footer">${JSON.stringify(m.payload)}</div>
+  </div>`;
+  feed.prepend(el);
+  if(feed.children.length>40)feed.lastChild.remove();
+}
+const style=document.createElement('style');
+style.textContent='@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}';
+document.head.appendChild(style);
+for(let i=0;i<8;i++)pushMsg();
+setInterval(pushMsg,4000);
+</script>
+{% endblock %}

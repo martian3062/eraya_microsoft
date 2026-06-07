@@ -1,0 +1,159 @@
+{% extends "frontend/base.html" %}
+{% block title %}Self-Healing{% endblock %}
+{% block page_title %}Self-Healing Monitor{% endblock %}
+{% block content %}
+
+<!-- Countdown rings -->
+<div class="flex gap-4 mb-6">
+  <div class="card flex items-center gap-5 flex-1">
+    <svg width="64" height="64" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(45,212,191,.1)" stroke-width="5"/>
+      <circle id="ring-30" cx="32" cy="32" r="28" fill="none" stroke="#2dd4bf" stroke-width="5"
+              stroke-dasharray="176" stroke-dashoffset="0" stroke-linecap="round"
+              style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .9s linear"/>
+      <text x="32" y="37" text-anchor="middle" font-size="14" font-weight="700" fill="#2dd4bf" id="txt-30">30</text>
+    </svg>
+    <div>
+      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">30s Heartbeat</div>
+      <div class="text-xs text-slate-400 mt-0.5">Ping / pong between agent peers</div>
+      <div class="text-[10px] text-teal-500 dark:text-teal-400 mt-1.5" id="status-30">Waiting…</div>
+    </div>
+  </div>
+  <div class="card flex items-center gap-5 flex-1">
+    <svg width="64" height="64" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(167,139,250,.1)" stroke-width="5"/>
+      <circle id="ring-60" cx="32" cy="32" r="28" fill="none" stroke="#a78bfa" stroke-width="5"
+              stroke-dasharray="176" stroke-dashoffset="0" stroke-linecap="round"
+              style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .9s linear"/>
+      <text x="32" y="37" text-anchor="middle" font-size="14" font-weight="700" fill="#a78bfa" id="txt-60">60</text>
+    </svg>
+    <div>
+      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">60s Deep Check</div>
+      <div class="text-xs text-slate-400 mt-0.5">Capability query + heal sequence</div>
+      <div class="text-[10px] text-violet-500 dark:text-violet-400 mt-1.5" id="status-60">Waiting…</div>
+    </div>
+  </div>
+  <!-- KPI mini -->
+  <div class="card text-center" style="min-width:120px">
+    <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Checks Run</div>
+    <div class="text-2xl font-bold text-teal-400" id="kpi-checks">0</div>
+  </div>
+  <div class="card text-center" style="min-width:120px">
+    <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Healed</div>
+    <div class="text-2xl font-bold text-emerald-400" id="kpi-healed">0</div>
+  </div>
+</div>
+
+<!-- Domain cards + check log -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <div class="lg:col-span-1 grid grid-cols-2 gap-3 content-start">
+    {% for d in domains_list %}
+    <div class="kpi" id="domain-{{d.id}}">
+      <div class="text-[10px] font-semibold mb-1" style="color:{{d.color}}">{{d.label}}</div>
+      <div class="flex gap-3 text-[10px]">
+        <span class="text-emerald-400" id="d-ok-{{d.id}}">0 ok</span>
+        <span class="text-amber-400" id="d-warn-{{d.id}}">0 warn</span>
+        <span class="text-teal-400" id="d-heal-{{d.id}}">0 heal</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="lg:col-span-2 card flex flex-col" style="max-height:480px">
+    <div class="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-3 flex-shrink-0">Check Log</div>
+    <div id="check-log" class="flex-1 overflow-y-auto scroll-hide space-y-2"></div>
+  </div>
+</div>
+
+<style>
+.check-row{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;font-size:11px;}
+</style>
+
+<script>
+const DOMAINS_DATA={
+  telecom:{color:'#2dd4bf',ok:0,warn:0,heal:0},
+  cloud:{color:'#60a5fa',ok:0,warn:0,heal:0},
+  icu:{color:'#f472b6',ok:0,warn:0,heal:0},
+  edge:{color:'#fb923c',ok:0,warn:0,heal:0},
+};
+const DOMAIN_KEYS=Object.keys(DOMAINS_DATA);
+const AGENTS=['Perceiver','Planner','Recoverer','Guardian'];
+let totalChecks=0,totalHealed=0;
+let t30=30,t60=60;
+const CIRC=176;
+
+function updateRing(id,val,max){
+  const r=document.getElementById('ring-'+id);
+  const t=document.getElementById('txt-'+id);
+  if(!r||!t)return;
+  r.style.strokeDashoffset=CIRC*(1-val/max);
+  t.textContent=val;
+}
+
+function randDomain(){return DOMAIN_KEYS[Math.floor(Math.random()*DOMAIN_KEYS.length)];}
+function randAgent(){return AGENTS[Math.floor(Math.random()*AGENTS.length)];}
+function pushLog(sev,checker,target,detail,domain){
+  const col={ok:'#34d399',warning:'#fbbf24',healed:'#2dd4bf'}[sev]||'#94a3b8';
+  const bg={ok:'rgba(52,211,153,.07)',warning:'rgba(251,191,36,.07)',healed:'rgba(45,212,191,.07)'}[sev]||'transparent';
+  const now=new Date().toLocaleTimeString('en',{hour12:false});
+  const log=document.getElementById('check-log');
+  const row=document.createElement('div');
+  row.className='check-row';
+  row.style.cssText=`background:${bg};border-left:2px solid ${col}`;
+  row.innerHTML=`<span style="color:${col};font-size:10px;padding:1px 6px;border-radius:999px;background:${col}18;flex-shrink:0">${sev}</span>
+    <div style="flex:1"><span style="color:${DOMAINS_DATA[domain]?.color||'#2dd4bf'};font-weight:600">${checker} → ${target}</span>
+    <span style="color:rgba(255,255,255,.5);margin-left:6px">${detail}</span></div>
+    <span style="font-size:9px;color:rgba(255,255,255,.2);flex-shrink:0">${now}</span>`;
+  log.prepend(row);
+  if(log.children.length>60)log.lastChild.remove();
+  totalChecks++;
+  if(sev==='healed')totalHealed++;
+  document.getElementById('kpi-checks').textContent=totalChecks;
+  document.getElementById('kpi-healed').textContent=totalHealed;
+  if(DOMAINS_DATA[domain]){
+    DOMAINS_DATA[domain][sev==='healed'?'heal':sev==='warning'?'warn':'ok']++;
+    const d=DOMAINS_DATA[domain];
+    document.getElementById('d-ok-'+domain).textContent=d.ok+' ok';
+    document.getElementById('d-warn-'+domain).textContent=d.warn+' warn';
+    document.getElementById('d-heal-'+domain).textContent=d.heal+' heal';
+  }
+}
+
+function run30s(){
+  const domain=randDomain();const agent=randAgent();const peer=randAgent();
+  const warn=Math.random()<.25;
+  pushLog('ok',agent+'-ping',peer+'-pong',`Latency ${Math.floor(Math.random()*120)+40}ms — nominal`,domain);
+  document.getElementById('status-30').textContent='✓ Heartbeat '+new Date().toLocaleTimeString();
+  if(warn){
+    setTimeout(()=>{
+      pushLog('warning',agent,peer,'Response delayed — threshold exceeded',domain);
+      setTimeout(()=>pushLog('healed',peer,agent,'Re-established after retry',domain),1800);
+    },600);
+  }
+}
+function run60s(){
+  const domain=randDomain();const agent=randAgent();
+  DOMAIN_KEYS.forEach(d=>{
+    setTimeout(()=>pushLog('ok',agent,'all','Capability query acknowledged — 4 peers online',d),Math.random()*2000);
+  });
+  if(Math.random()<.4){
+    setTimeout(()=>{
+      pushLog('warning',agent,'Recoverer','Anomaly detected — initiating heal sequence',domain);
+      setTimeout(()=>pushLog('healed','Recoverer',agent,'Heal complete — SLO restored',domain),2500);
+    },3000);
+  }
+  document.getElementById('status-60').textContent='✓ Deep check '+new Date().toLocaleTimeString();
+}
+
+// Boot
+setTimeout(()=>{run30s();run60s();},2000);
+
+// Countdown timers
+setInterval(()=>{
+  t30--;if(t30<=0){run30s();t30=30;}
+  updateRing(30,t30,30);
+  t60--;if(t60<=0){run60s();t60=60;}
+  updateRing(60,t60,60);
+},1000);
+</script>
+{% endblock %}

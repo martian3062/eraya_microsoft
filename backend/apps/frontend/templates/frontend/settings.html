@@ -1,0 +1,64 @@
+{% extends "frontend/base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div class="max-w-2xl space-y-5">
+  <!-- Model selector -->
+  <div class="card">
+    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">LLM Model</h3>
+    <div id="model-list" class="space-y-2"></div>
+  </div>
+  <!-- Theme -->
+  <div class="card">
+    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Appearance</h3>
+    <div class="flex gap-3">
+      <button onclick="setTheme('dark')" id="btn-dark" class="flex-1 py-3 rounded-xl text-xs font-medium border transition-all">🌙 Dark</button>
+      <button onclick="setTheme('light')" id="btn-light" class="flex-1 py-3 rounded-xl text-xs font-medium border transition-all">☀️ Light</button>
+    </div>
+  </div>
+  <!-- Account -->
+  <div class="card">
+    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Account</h3>
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-xs font-medium text-slate-700 dark:text-slate-200">{{ user_name }}</div>
+        <div class="text-[10px] text-slate-400">{{ user_role }}</div>
+      </div>
+      <a href="/auth/logout/" class="px-4 py-2 rounded-xl text-xs font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all">Sign out</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const MODELS=[
+  {key:'groq-llama-3.3-70b',label:'Llama 3.3 70B',provider:'Groq',speed:'Fast',desc:'Default planner model'},
+  {key:'groq-mixtral-8x7b',label:'Mixtral 8×7B',provider:'Groq',speed:'Fast',desc:'Efficient MoE model'},
+  {key:'groq-llama-3.1-8b',label:'Llama 3.1 8B',provider:'Groq',speed:'Ultra-fast',desc:'Lightweight inference'},
+  {key:'openai-gpt-4o',label:'GPT-4o',provider:'OpenAI',speed:'Medium',desc:'High capability'},
+];
+let activeModel=localStorage.getItem('eraya-model')||'groq-llama-3.3-70b';
+function renderModels(){
+  document.getElementById('model-list').innerHTML=MODELS.map(m=>`
+    <div onclick="selectModel('${m.key}')" class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${m.key===activeModel?'border-teal-400/60 bg-teal-50/50 dark:bg-teal-900/20':'border-teal-100/40 dark:border-white/[.06] hover:bg-teal-50/30 dark:hover:bg-teal-900/10'}">
+      <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${m.key===activeModel?'border-teal-400':'border-slate-300 dark:border-slate-600'}">
+        ${m.key===activeModel?'<div style="width:8px;height:8px;border-radius:50%;background:#2dd4bf"></div>':''}
+      </div>
+      <div class="flex-1">
+        <div class="text-xs font-medium text-slate-700 dark:text-slate-200">${m.label}</div>
+        <div class="text-[10px] text-slate-400">${m.provider} · ${m.speed} · ${m.desc}</div>
+      </div>
+    </div>`).join('');
+}
+function selectModel(key){activeModel=key;localStorage.setItem('eraya-model',key);renderModels();}
+renderModels();
+
+function setTheme(t){
+  document.documentElement.classList.toggle('dark',t==='dark');
+  localStorage.setItem('eraya-theme',t);
+  document.getElementById('btn-dark').style.cssText=t==='dark'?'background:rgba(45,212,191,.1);color:#2dd4bf;border-color:rgba(45,212,191,.4)':'';
+  document.getElementById('btn-light').style.cssText=t==='light'?'background:rgba(251,191,36,.1);color:#f59e0b;border-color:rgba(251,191,36,.4)':'';
+}
+const ct=localStorage.getItem('eraya-theme')||'dark';
+setTheme(ct);
+</script>
+{% endblock %}

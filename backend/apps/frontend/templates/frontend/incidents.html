@@ -1,0 +1,71 @@
+{% extends "frontend/base.html" %}
+{% block title %}Incidents{% endblock %}
+{% block page_title %}Incidents{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-5">
+  <div class="flex gap-2" id="sev-filters">
+    {% for s,c in sev_options %}<button onclick="filterSev('{{s}}',this)" class="px-3 py-1.5 rounded-xl text-xs font-medium border transition-all" style="border-color:{{c}}44;color:{{c}}">{{s}}</button>{% endfor %}
+    <button onclick="filterSev('all',this)" class="px-3 py-1.5 rounded-xl text-xs font-medium border transition-all border-teal-200/60 dark:border-white/10 text-slate-500 dark:text-slate-400 bg-teal-50/50 dark:bg-teal-900/20">All</button>
+  </div>
+  <span class="ml-auto text-xs text-slate-400" id="count-label"></span>
+</div>
+
+<div class="card p-0 overflow-hidden">
+  <table class="w-full text-xs" id="inc-table">
+    <thead>
+      <tr class="border-b border-teal-100/60 dark:border-white/[.06] text-slate-400 uppercase tracking-wider">
+        <th class="px-5 py-3 text-left font-semibold">ID</th>
+        <th class="px-5 py-3 text-left font-semibold">Domain</th>
+        <th class="px-5 py-3 text-left font-semibold">Severity</th>
+        <th class="px-5 py-3 text-left font-semibold">Message</th>
+        <th class="px-5 py-3 text-left font-semibold">Agent</th>
+        <th class="px-5 py-3 text-left font-semibold">Status</th>
+        <th class="px-5 py-3 text-left font-semibold">Time</th>
+      </tr>
+    </thead>
+    <tbody id="inc-body"></tbody>
+  </table>
+</div>
+
+<script>
+const SEV_COL={critical:'#f87171',warning:'#fbbf24',info:'#a78bfa',ok:'#34d399'};
+const DOM_COL={telecom:'#2dd4bf',cloud:'#60a5fa',icu:'#f472b6',edge:'#fb923c'};
+const INCIDENTS=[
+  {id:'INC-001',domain:'telecom',sev:'critical',msg:'Tower-7 RSRP −94 dBm — coverage hole',agent:'Perceiver-1',status:'healing',time:'2m ago'},
+  {id:'INC-002',domain:'cloud',sev:'warning',msg:'CPU burst 89% on prod-cluster-3',agent:'Perceiver-2',status:'open',time:'4m ago'},
+  {id:'INC-003',domain:'icu',sev:'critical',msg:'Ward 3A HRV spike — patient alert',agent:'Perceiver-3',status:'open',time:'6m ago'},
+  {id:'INC-004',domain:'edge',sev:'warning',msg:'Latency spike 340ms on edge-sg-3',agent:'Perceiver-4',status:'healing',time:'9m ago'},
+  {id:'INC-005',domain:'cloud',sev:'info',msg:'Auto-scaling triggered +3 replicas',agent:'Planner-2',status:'resolved',time:'12m ago'},
+  {id:'INC-006',domain:'telecom',sev:'info',msg:'Handoff failure rate 12% on n78',agent:'Perceiver-1',status:'resolved',time:'15m ago'},
+  {id:'INC-007',domain:'icu',sev:'warning',msg:'Equipment fault on vitals monitor',agent:'Guardian-3',status:'open',time:'18m ago'},
+  {id:'INC-008',domain:'cloud',sev:'critical',msg:'Spoofed A2A message intercepted',agent:'Guardian-2',status:'resolved',time:'22m ago'},
+];
+let currentSev='all';
+
+function filterSev(sev,btn){
+  currentSev=sev;
+  document.querySelectorAll('#sev-filters button').forEach(b=>b.style.opacity='.5');
+  btn.style.opacity='1';
+  render();
+}
+
+function render(){
+  const list=currentSev==='all'?INCIDENTS:INCIDENTS.filter(i=>i.sev===currentSev);
+  document.getElementById('count-label').textContent=list.length+' incidents';
+  const STATUS_COLOR={open:'#f87171',healing:'#fbbf24',resolved:'#34d399'};
+  document.getElementById('inc-body').innerHTML=list.map(i=>`
+    <tr class="border-b border-teal-100/30 dark:border-white/[.04] hover:bg-teal-50/30 dark:hover:bg-teal-900/10 transition-colors">
+      <td class="px-5 py-3 font-mono text-[10px] text-slate-400">${i.id}</td>
+      <td class="px-5 py-3"><span style="color:${DOM_COL[i.domain]}">${i.domain}</span></td>
+      <td class="px-5 py-3"><span class="badge" style="background:${SEV_COL[i.sev]}18;color:${SEV_COL[i.sev]}">${i.sev}</span></td>
+      <td class="px-5 py-3 text-slate-600 dark:text-slate-300">${i.msg}</td>
+      <td class="px-5 py-3 text-slate-400">${i.agent}</td>
+      <td class="px-5 py-3"><span class="badge" style="background:${STATUS_COLOR[i.status]}18;color:${STATUS_COLOR[i.status]}">${i.status}</span></td>
+      <td class="px-5 py-3 text-slate-400">${i.time}</td>
+    </tr>`).join('');
+}
+render();
+// Try live API
+fetch('/api/incidents/').then(r=>r.ok?r.json():null).then(d=>{if(d?.results?.length>0)console.log('Live incidents loaded');}).catch(()=>{});
+</script>
+{% endblock %}

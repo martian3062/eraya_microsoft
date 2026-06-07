@@ -1,0 +1,132 @@
+{% extends "frontend/base.html" %}
+{% block title %}Global Map{% endblock %}
+{% block page_title %}Global Operations Map{% endblock %}
+{% block main_class %}{# no padding — map fills edge to edge #}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+#map-container{display:flex;height:100%;width:100%;background:#060d1a;}
+#map{flex:1;}
+#feed-panel{width:272px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(6,13,26,.9);border-left:1px solid rgba(255,255,255,.07);backdrop-filter:blur(16px);}
+#kpi-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:8px;pointer-events:none;}
+.kpi-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:500;background:rgba(12,22,40,.85);backdrop-filter:blur(8px);}
+.a2a-bubble{border-radius:10px;padding:10px 12px;border-left:2px solid;margin-bottom:6px;cursor:pointer;transition:filter .15s;}
+.a2a-bubble:hover{filter:brightness(1.15);}
+@keyframes ping2{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(2.5);opacity:0}}
+.ping-ring{animation:ping2 1.8s ease-out infinite;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="position:relative;height:100%;width:100%">
+  <div id="map-container">
+    <div id="map"></div>
+    <div id="feed-panel">
+      <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#2dd4bf;display:inline-block;animation:pulse 2s infinite"></span>
+          <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.08em;text-transform:uppercase">Live Feed</span>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,.25)">Global agent events</div>
+      </div>
+      <div style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0">
+        {% for d,c in domain_colors %}<span style="font-size:10px;color:{{c}};display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:{{c}};display:inline-block"></span>{{d}}</span>{% endfor %}
+      </div>
+      <div id="news-feed" style="flex:1;overflow-y:auto;padding:10px 12px" class="scroll-hide"></div>
+    </div>
+  </div>
+  <div id="kpi-bar">
+    <div class="kpi-pill" style="border:1px solid rgba(248,113,113,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#f87171;display:inline-block"></span><span style="color:#f87171">3</span><span style="color:rgba(255,255,255,.3)">Critical</span></div>
+    <div class="kpi-pill" style="border:1px solid rgba(251,191,36,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;display:inline-block"></span><span style="color:#fbbf24">7</span><span style="color:rgba(255,255,255,.3)">Warning</span></div>
+    <div class="kpi-pill" style="border:1px solid rgba(52,211,153,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#34d399;display:inline-block"></span><span style="color:#34d399">6</span><span style="color:rgba(255,255,255,.3)">Healthy</span></div>
+    <div class="kpi-pill" style="border:1px solid rgba(45,212,191,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#2dd4bf;display:inline-block"></span><span style="color:#2dd4bf">16</span><span style="color:rgba(255,255,255,.3)">Agents</span></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const INCIDENTS=[
+  {id:1,lat:40.71,lng:-74.01,city:'New York',country:'US',domain:'telecom',sev:'warning',agent:'Perceiver',msg:'Tower-7 signal drop — RSRP −94 dBm'},
+  {id:2,lat:51.51,lng:-0.13,city:'London',country:'GB',domain:'cloud',sev:'ok',agent:'Recoverer',msg:'Pod restart completed — latency restored'},
+  {id:3,lat:35.68,lng:139.69,city:'Tokyo',country:'JP',domain:'edge',sev:'critical',agent:'Guardian',msg:'Injection attempt blocked at edge node'},
+  {id:4,lat:19.08,lng:72.88,city:'Mumbai',country:'IN',domain:'telecom',sev:'warning',agent:'Perceiver',msg:'5G handoff failure rate 12%'},
+  {id:5,lat:25.20,lng:55.27,city:'Dubai',country:'AE',domain:'cloud',sev:'info',agent:'Planner',msg:'Auto-scaling triggered — +3 replicas'},
+  {id:6,lat:37.77,lng:-122.42,city:'San Francisco',country:'US',domain:'icu',sev:'critical',agent:'Perceiver',msg:'Ward 3A HRV spike detected'},
+  {id:7,lat:52.52,lng:13.41,city:'Berlin',country:'DE',domain:'cloud',sev:'ok',agent:'Recoverer',msg:'Memory leak patched — heap stable'},
+  {id:8,lat:1.35,lng:103.82,city:'Singapore',country:'SG',domain:'telecom',sev:'ok',agent:'Planner',msg:'Network mesh optimised — 14 nodes'},
+  {id:9,lat:48.86,lng:2.35,city:'Paris',country:'FR',domain:'icu',sev:'warning',agent:'Guardian',msg:'Equipment fault detected — isolating'},
+  {id:10,lat:-33.87,lng:151.21,city:'Sydney',country:'AU',domain:'edge',sev:'warning',agent:'Perceiver',msg:'Latency spike 340ms — rerouting'},
+  {id:11,lat:55.75,lng:37.62,city:'Moscow',country:'RU',domain:'cloud',sev:'critical',agent:'Guardian',msg:'Spoofed A2A message intercepted'},
+  {id:12,lat:43.65,lng:-79.38,city:'Toronto',country:'CA',domain:'telecom',sev:'ok',agent:'Recoverer',msg:'Failover completed — SLO 99.3%'},
+  {id:13,lat:28.61,lng:77.21,city:'Delhi',country:'IN',domain:'edge',sev:'info',agent:'Planner',msg:'Traffic rebalanced across 6 edge nodes'},
+  {id:14,lat:31.23,lng:121.47,city:'Shanghai',country:'CN',domain:'cloud',sev:'warning',agent:'Perceiver',msg:'CPU burst 89% — scaling in progress'},
+  {id:15,lat:-23.55,lng:-46.63,city:'São Paulo',country:'BR',domain:'telecom',sev:'info',agent:'Planner',msg:'Carrier aggregation optimised'},
+  {id:16,lat:6.52,lng:3.38,city:'Lagos',country:'NG',domain:'icu',sev:'warning',agent:'Perceiver',msg:'Vitals monitor offline — failsafe active'},
+];
+const DOMAIN_COL={telecom:'#2dd4bf',cloud:'#60a5fa',icu:'#f472b6',edge:'#fb923c'};
+const SEV_COL={critical:'#f87171',warning:'#fbbf24',ok:'#34d399',info:'#a78bfa'};
+
+const map=L.map('map',{zoomControl:false,center:[20,10],zoom:2});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© OSM © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+let selected=null;
+INCIDENTS.forEach(inc=>{
+  const col=DOMAIN_COL[inc.domain]||'#2dd4bf';
+  const ring=SEV_COL[inc.sev]||'#2dd4bf';
+  const pulse=inc.sev==='critical'||inc.sev==='warning';
+  const emoji={telecom:'📡',cloud:'☁️',icu:'🏥',edge:'⚡'}[inc.domain]||'●';
+  const html=`<div style="position:relative;width:28px;height:28px">
+    ${pulse?`<div class="ping-ring" style="position:absolute;inset:-4px;border-radius:50%;border:2px solid ${ring};opacity:.6"></div>`:''}
+    <div style="width:28px;height:28px;border-radius:50%;background:${col}22;border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:12px">${emoji}</div>
+  </div>`;
+  const icon=L.divIcon({html,className:'',iconSize:[28,28],iconAnchor:[14,14]});
+  L.marker([inc.lat,inc.lng],{icon}).addTo(map).on('click',()=>showDetail(inc));
+});
+
+function showDetail(inc){
+  selected=inc;
+  const old=document.getElementById('detail-card');if(old)old.remove();
+  const col=DOMAIN_COL[inc.domain]||'#2dd4bf';
+  const ring=SEV_COL[inc.sev]||'#2dd4bf';
+  const el=document.createElement('div');
+  el.id='detail-card';
+  el.style.cssText=`position:absolute;bottom:32px;left:16px;z-index:500;width:240px;border-radius:14px;padding:16px;font-size:12px;background:rgba(12,22,40,.92);border:1px solid ${col}44;backdrop-filter:blur(12px)`;
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:8px">
+    <span style="font-weight:600;color:rgba(255,255,255,.9)">${inc.city}, ${inc.country}</span>
+    <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:16px;line-height:1">×</button>
+  </div>
+  <div style="color:${col};font-size:10px;margin-bottom:6px">${inc.domain.toUpperCase()} · ${inc.agent}</div>
+  <div style="color:rgba(255,255,255,.65);line-height:1.5">${inc.msg}</div>
+  <span style="display:inline-block;margin-top:8px;padding:2px 8px;border-radius:999px;font-size:10px;background:${ring}22;color:${ring}">${inc.sev}</span>`;
+  document.querySelector('#map-container').style.position='relative';
+  document.getElementById('map').parentElement.appendChild(el);
+}
+
+// Live feed
+const feed=document.getElementById('news-feed');
+let fi=0;
+function pushFeed(){
+  const inc=INCIDENTS[fi%INCIDENTS.length];fi++;
+  const col=DOMAIN_COL[inc.domain]||'#2dd4bf';
+  const ring=SEV_COL[inc.sev]||'#2dd4bf';
+  const div=document.createElement('div');
+  div.className='a2a-bubble';
+  div.style.cssText=`border-left-color:${ring};background:${col}10`;
+  div.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="font-size:10px;font-weight:600;color:${col}">${inc.agent} · ${inc.city}</span>
+    <span style="font-size:9px;color:rgba(255,255,255,.2)">now</span>
+  </div>
+  <div style="font-size:10px;color:rgba(255,255,255,.6);line-height:1.4">${inc.msg}</div>
+  <span style="display:inline-block;margin-top:4px;font-size:9px;padding:1px 6px;border-radius:999px;background:${ring}1a;color:${ring}">${inc.sev}</span>`;
+  div.onclick=()=>showDetail(inc);
+  feed.prepend(div);
+  if(feed.children.length>30)feed.lastChild.remove();
+}
+for(let i=0;i<8;i++)pushFeed();
+setInterval(pushFeed,6000);
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "frontend/base.html" %}
+{% block title %}Agents{% endblock %}
+{% block page_title %}{{ agent_type|title }} Agent{% endblock %}
+{% block content %}
+
+<!-- Agent type tabs -->
+<div class="flex gap-2 mb-6">
+  {% for t in agent_types %}
+  <a href="/agents/{{ t.id }}/"
+     class="px-4 py-2 rounded-xl text-xs font-medium transition-all border
+            {% if agent_type == t.id %}text-white border-transparent{% else %}border-teal-200/60 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-teal-50 dark:hover:bg-teal-900/20{% endif %}"
+     style="{% if agent_type == t.id %}background:linear-gradient(to right,{{ t.color }}cc,{{ t.color2 }}cc){% endif %}">
+    {{ t.label }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <!-- Agent detail -->
+  <div class="lg:col-span-2 card">
+    <div class="flex items-center gap-4 mb-5">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+           style="background:{{ agent_info.color }}18;border:2px solid {{ agent_info.color }}44">{{ agent_info.emoji }}</div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ agent_info.name }}</h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ agent_info.description }}</p>
+      </div>
+      <span class="ml-auto badge" style="background:rgba(52,211,153,.1);color:#34d399">● Active</span>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 mb-5">
+      {% for stat in agent_info.stats %}
+      <div class="kpi text-center">
+        <div class="text-[10px] text-slate-400 mb-1">{{ stat.label }}</div>
+        <div class="text-xl font-bold" style="color:{{ agent_info.color }}">{{ stat.value }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div>
+      <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-3">Capabilities</div>
+      <div class="flex flex-wrap gap-2">
+        {% for cap in agent_info.capabilities %}
+        <span class="px-3 py-1.5 rounded-lg text-[10px] font-medium" style="background:{{ agent_info.color }}12;color:{{ agent_info.color }};border:1px solid {{ agent_info.color }}25">{{ cap }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Live messages -->
+  <div class="card flex flex-col" style="max-height:460px">
+    <div class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-3 flex-shrink-0">Recent Messages</div>
+    <div id="agent-feed" class="flex-1 overflow-y-auto scroll-hide space-y-2"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const COLOR='{{ agent_info.color }}';
+const MSGS_RAW={{ agent_messages|safe }};
+let idx=0;
+function pushMsg(){
+  const m=MSGS_RAW[idx%MSGS_RAW.length];idx++;
+  const el=document.createElement('div');
+  el.style.cssText=`padding:10px 12px;border-radius:10px;border-left:2px solid ${COLOR};background:${COLOR}0d;font-size:11px`;
+  el.innerHTML=`<div style="font-weight:600;color:${COLOR};margin-bottom:3px">${m.type}</div>
+    <div style="color:rgba(100,116,139,1);line-height:1.4">${m.msg}</div>
+    <div style="font-size:9px;color:rgba(100,116,139,.6);margin-top:4px">${new Date().toLocaleTimeString()}</div>`;
+  const feed=document.getElementById('agent-feed');
+  feed.prepend(el);
+  if(feed.children.length>20)feed.lastChild.remove();
+}
+for(let i=0;i<6;i++)pushMsg();
+setInterval(pushMsg,5000);
+</script>
+{% endblock %}

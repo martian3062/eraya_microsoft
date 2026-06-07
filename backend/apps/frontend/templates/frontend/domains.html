@@ -1,0 +1,54 @@
+{% extends "frontend/base.html" %}
+{% block title %}{{ domain_info.label }}{% endblock %}
+{% block page_title %}{{ domain_info.label }}{% endblock %}
+{% block content %}
+<div class="flex gap-2 mb-6">
+  {% for d in domain_tabs %}<a href="/domains/{{ d.id }}/" class="px-4 py-2 rounded-xl text-xs font-medium border transition-all {% if domain == d.id %}text-white border-transparent{% else %}border-teal-200/60 dark:border-white/10 text-slate-500 dark:text-slate-400{% endif %}" style="{% if domain == d.id %}background:linear-gradient(to right,{{ d.color }}cc,{{ d.color2 }}cc){% endif %}">{{ d.label }}</a>{% endfor %}
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <div class="lg:col-span-2 card">
+    <div class="flex items-center gap-4 mb-5">
+      <div class="text-4xl">{{ domain_info.emoji }}</div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ domain_info.label }}</h2>
+        <p class="text-xs text-slate-400">{{ domain_info.description }}</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mb-5">
+      {% for stat in domain_info.stats %}
+      <div class="kpi text-center">
+        <div class="text-[10px] text-slate-400 mb-1">{{ stat.label }}</div>
+        <div class="text-xl font-bold" style="color:{{ domain_info.color }}">{{ stat.value }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="h-2 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
+      <div class="h-full rounded-full transition-all" style="width:{{ domain_info.health }}%;background:linear-gradient(to right,{{ domain_info.color }},{{ domain_info.color2 }})"></div>
+    </div>
+    <div class="flex justify-between text-[10px] text-slate-400 mt-1.5"><span>Health</span><span>{{ domain_info.health }}%</span></div>
+  </div>
+
+  <div class="card flex flex-col" style="max-height:340px">
+    <div class="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-3 flex-shrink-0">Live Events</div>
+    <div id="domain-feed" class="flex-1 overflow-y-auto scroll-hide space-y-2"></div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const COLOR='{{ domain_info.color }}';
+const EVENTS={{ domain_events|safe }};
+let ei=0;
+function push(){
+  const e=EVENTS[ei%EVENTS.length];ei++;
+  const el=document.createElement('div');
+  el.style.cssText=`padding:8px 12px;border-radius:10px;border-left:2px solid ${COLOR};background:${COLOR}0d;font-size:11px`;
+  el.innerHTML=`<div style="font-weight:600;color:${COLOR};margin-bottom:2px">${e.type}</div><div style="color:#94a3b8">${e.msg}</div>`;
+  const f=document.getElementById('domain-feed');f.prepend(el);
+  if(f.children.length>15)f.lastChild.remove();
+}
+for(let i=0;i<5;i++)push();
+setInterval(push,6000);
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "frontend/base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block content %}
+<div class="card p-0 overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-teal-100/60 dark:border-white/[.06]">
+    <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">System Audit Trail</span>
+    <span class="badge" style="background:rgba(45,212,191,.1);color:#2dd4bf" id="audit-count">0 entries</span>
+  </div>
+  <div id="audit-body" class="divide-y divide-teal-100/30 dark:divide-white/[.04]"></div>
+</div>
+<script>
+const ENTRIES=[
+  {actor:'Guardian-2',action:'BLOCK',resource:'cloud/edge-gateway',detail:'SQL injection attempt — source 10.0.1.44',level:'security'},
+  {actor:'Perceiver-1',action:'DETECT',resource:'telecom/tower-7',detail:'RSRP anomaly detected — −94 dBm',level:'info'},
+  {actor:'Planner-1',action:'PLAN',resource:'telecom/tower-9',detail:'Failover plan generated and dispatched',level:'info'},
+  {actor:'Recoverer-1',action:'HEAL',resource:'telecom/tower-7',detail:'Beam steering applied — SLO restored 99.1%',level:'success'},
+  {actor:'Guardian-3',action:'ISOLATE',resource:'icu/monitor-3a',detail:'Device spoofing detected — unit quarantined',level:'security'},
+  {actor:'Perceiver-3',action:'DETECT',resource:'icu/ward-3a',detail:'HRV spike — value 142 bpm',level:'warning'},
+  {actor:'Planner-2',action:'SCALE',resource:'cloud/prod-cluster',detail:'Auto-scale triggered +3 replicas — CPU 89%',level:'info'},
+  {actor:'Recoverer-3',action:'RESTART',resource:'icu/monitor-pod',detail:'Pod restarted — restart_count=1',level:'success'},
+  {actor:'Guardian-1',action:'AUTH',resource:'system/a2a-bus',detail:'User sandhupardeep300@gmail.com authenticated',level:'info'},
+  {actor:'Planner-4',action:'REROUTE',resource:'edge/sg-3',detail:'Traffic rerouted via edge-tok-2 — latency 95ms',level:'info'},
+];
+const LEVEL_COL={security:'#f87171',warning:'#fbbf24',success:'#34d399',info:'#60a5fa'};
+function render(list){
+  document.getElementById('audit-count').textContent=list.length+' entries';
+  const now=Date.now();
+  document.getElementById('audit-body').innerHTML=list.map((e,i)=>{
+    const col=LEVEL_COL[e.level]||'#94a3b8';
+    const t=new Date(now-i*4*60000).toLocaleTimeString('en',{hour12:false});
+    return`<div class="flex items-start gap-3 px-5 py-3 hover:bg-teal-50/20 dark:hover:bg-teal-900/10 transition-colors">
+      <span class="badge flex-shrink-0 mt-0.5" style="background:${col}18;color:${col}">${e.action}</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-medium text-slate-700 dark:text-slate-200">${e.actor} <span class="text-slate-400 font-normal">on</span> ${e.resource}</div>
+        <div class="text-[10px] text-slate-400 mt-0.5 truncate">${e.detail}</div>
+      </div>
+      <span class="text-[9px] text-slate-400 flex-shrink-0">${t}</span>
+    </div>`;}).join('');
+}
+render(ENTRIES);
+fetch('/api/audit/').then(r=>r.ok?r.json():null).then(d=>{if(d?.results?.length>0)render(d.results);}).catch(()=>{});
+</script>
+{% endblock %}

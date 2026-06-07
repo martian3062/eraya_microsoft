@@ -1,0 +1,80 @@
+{% extends "frontend/base.html" %}
+{% block title %}Security{% endblock %}
+{% block page_title %}Attack Console · KAVACHA{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <!-- Control panel -->
+  <div class="card">
+    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Attack Simulation</h3>
+    <div class="space-y-3">
+      {% for atk in attacks %}
+      <button onclick="launchAttack('{{atk.id}}')"
+        class="w-full text-left p-3 rounded-xl border transition-all hover:scale-[1.01] text-xs"
+        style="border-color:{{atk.color}}33;background:{{atk.color}}08">
+        <div style="color:{{atk.color}};font-weight:600;margin-bottom:2px">{{atk.label}}</div>
+        <div class="text-slate-400">{{atk.desc}}</div>
+      </button>
+      {% endfor %}
+    </div>
+    <div class="mt-4 pt-4 border-t border-teal-100/40 dark:border-white/[.05]">
+      <div class="text-[10px] text-slate-400 mb-2">Guardian Status</div>
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+        <span class="text-xs text-emerald-400 font-medium">Active · Monitoring</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Console output -->
+  <div class="lg:col-span-2 card flex flex-col" style="max-height:520px">
+    <div class="flex items-center justify-between mb-3 flex-shrink-0">
+      <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider">Console Output</span>
+      <button onclick="document.getElementById('console').innerHTML=''" class="text-[10px] text-slate-400 hover:text-red-400 transition-colors">Clear</button>
+    </div>
+    <div id="console" class="flex-1 overflow-y-auto scroll-hide font-mono text-[11px] space-y-1 bg-black/20 dark:bg-black/40 rounded-xl p-4"></div>
+  </div>
+</div>
+
+<script>
+const con=document.getElementById('console');
+function log(msg,color='#94a3b8'){
+  const t=new Date().toLocaleTimeString('en',{hour12:false});
+  const el=document.createElement('div');
+  el.innerHTML=`<span style="color:#475569">${t}</span> <span style="color:${color}">${msg}</span>`;
+  con.appendChild(el);con.scrollTop=con.scrollHeight;
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function launchAttack(id){
+  const attacks={
+    injection:async()=>{
+      log('▶ Launching SQL injection attack on cloud endpoint…','#f87171');
+      await sleep(600);log("  POST /api/agents/?q=1'OR'1'='1 HTTP/1.1",'#fb923c');
+      await sleep(800);log('  Guardian-2: anomaly pattern detected — injection signature','#fbbf24');
+      await sleep(600);log('  Guardian-2: BLOCKED — request terminated','#f87171');
+      await sleep(400);log('  Guardian-2: IP quarantined · audit log written','#34d399');
+      await sleep(200);log('✓ Attack blocked successfully by KAVACHA guardian','#34d399');
+    },
+    spoof:async()=>{
+      log('▶ Sending spoofed A2A message as Perceiver-1…','#f87171');
+      await sleep(500);log('  MSG {from:"Perceiver-1",type:"action.plan",payload:{cmd:"shutdown"}}'  ,'#fb923c');
+      await sleep(700);log('  Guardian-1: signature mismatch on A2A message','#fbbf24');
+      await sleep(500);log('  Guardian-1: REJECTED — unknown sender signature','#f87171');
+      await sleep(400);log('  Guardian-1: alert raised · Recoverer notified','#34d399');
+      await sleep(200);log('✓ A2A spoof blocked — mesh integrity maintained','#34d399');
+    },
+    ddos:async()=>{
+      log('▶ Simulating DDoS flood on /api/agents/ (500 rps)…','#f87171');
+      await sleep(400);log('  Incoming: 127 req/s … 248 req/s … 495 req/s','#fb923c');
+      await sleep(800);log('  Guardian-2: rate limit triggered — threshold 100 rps','#fbbf24');
+      await sleep(600);log('  Guardian-2: traffic shaping applied — excess dropped','#f87171');
+      await sleep(400);log('  Planner-2: scale-out triggered — +2 replicas','#a78bfa');
+      await sleep(400);log('✓ DDoS mitigated — SLO maintained above 99%','#34d399');
+    },
+  };
+  if(attacks[id])attacks[id]();
+}
+log('KAVACHA Security Console ready — select an attack to simulate','#2dd4bf');
+log('Guardian agents active across all 4 domains','#a78bfa');
+</script>
+{% endblock %}
