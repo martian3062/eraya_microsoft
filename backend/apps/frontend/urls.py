@@ -25,4 +25,7 @@ urlpatterns = [
     path("context-graph/",          views.context_graph,       name="context_graph"),
     path("security/",               views.security,            name="security"),
     path("settings/",               views.settings_view,       name="settings"),
+    # API
+    path("api/fire-drill/",         views.fire_drill,          name="fire_drill"),
+    path("api/simulations/",        views.simulation_history,  name="simulation_history"),
 ]

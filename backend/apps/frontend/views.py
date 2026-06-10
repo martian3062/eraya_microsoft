@@ -1,7 +1,11 @@
 import json
 import os
+import random
 import secrets
+import time
 import urllib.parse
+
+from django.conf import settings
 
 import httpx
 from django.contrib.auth import authenticate, login, logout
@@ -347,3 +351,179 @@ def map_view(request):
         request, "map",
         domain_colors=[("telecom", "#2dd4bf"), ("cloud", "#60a5fa"), ("icu", "#f472b6"), ("edge", "#fb923c")],
     ))
+
+
+# ── Fire Drill ────────────────────────────────────────────────────────────────
+
+INCIDENT_TEMPLATES = {
+    'tower_outage': 'RSRP signal on Tower-7 dropped to −94 dBm (threshold: −80 dBm). Coverage hole forming in sector 3.',
+    'cpu_spike':    'CPU utilization on prod-cluster-3 reached 94% for 5+ minutes. 3 replica pods approaching OOM limit.',
+    'icu_alert':    'Patient in Ward-3A HRV spike: 142 bpm (threshold: 110 bpm). Vitals monitor showing arrhythmia signature.',
+    'edge_latency': 'Edge node edge-sg-3 latency spiked to 380ms (SLA: 100ms). 12% packet loss. 4 downstream services degraded.',
+    'ddos':         'Incoming traffic flood: 503 req/s on /api/agents/ (threshold: 100 req/s). DDoS pattern detected. Source: 10.44.0.0/16.',
+    'injection':    "SQL injection attempt: POST /api/agents/?q=1' OR '1'='1. Source IP: 10.0.1.44. Payload matches SQLi signature.",
+}
+
+DOMAIN_LABELS = {
+    '5g': '5G Telecom', 'cloud': 'Cloud Infrastructure',
+    'icu': 'ICU Healthcare', 'edge': 'Edge/IoT Network',
+}
+
+
+def _call_groq(prompt):
+    api_key = os.environ.get('GROQ_API_KEY') or settings.ERAYA.get('GROQ_API_KEY', '')
+    if not api_key:
+        return None
+    try:
+        with httpx.Client(timeout=25) as client:
+            resp = client.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+                json={
+                    'model': 'llama-3.3-70b-versatile',
+                    'messages': [{'role': 'user', 'content': prompt}],
+                    'response_format': {'type': 'json_object'},
+                    'temperature': 0.7,
+                    'max_tokens': 900,
+                },
+            )
+            return json.loads(resp.json()['choices'][0]['message']['content'])
+    except Exception:
+        return None
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def fire_drill(request):
+    from .models import SimulationLog
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = {}
+
+    domain       = data.get('domain', '5g')
+    incident_key = data.get('incident_type', 'tower_outage')
+    incident_desc = INCIDENT_TEMPLATES.get(incident_key, INCIDENT_TEMPLATES['tower_outage'])
+    domain_label  = DOMAIN_LABELS.get(domain, '5G Telecom')
+    inc_id        = f"INC-{random.randint(100, 999)}"
+
+    prompt = f"""You are Eraya, a multi-agent self-healing AI swarm coordinator.
+
+DOMAIN: {domain_label}
+INCIDENT: {incident_desc}
+
+Respond as 4 specialized AI agents. Return strict JSON only:
+{{
+  "perceiver": {{
+    "alert": "one-sentence anomaly detection with specific metric values",
+    "confidence": 0.94,
+    "a2a_dispatch": "exact message sent to Planner via A2A bus"
+  }},
+  "planner": {{
+    "root_cause": "identified root cause (1 sentence)",
+    "plan": "1. First remediation step\\n2. Second remediation step\\n3. Third remediation step",
+    "priority": "HIGH"
+  }},
+  "recoverer": {{
+    "action_taken": "specific action executed",
+    "result": "measurable outcome with metric",
+    "slo_restored": true
+  }},
+  "guardian": {{
+    "security_check": "security assessment during incident (1 sentence)",
+    "audit_entry": "{inc_id}: one-line formal audit log entry"
+  }},
+  "summary": {{
+    "incident_id": "{inc_id}",
+    "heal_time_ms": 1240,
+    "resolved": true
+  }}
+}}"""
+
+    result = _call_groq(prompt)
+    groq_powered = result is not None
+
+    if not groq_powered:
+        result = {
+            'perceiver': {
+                'alert': f'Anomaly confirmed in {domain_label}: {incident_desc[:90]}',
+                'confidence': 0.94,
+                'a2a_dispatch': f'ALERT → Planner-1: Critical anomaly detected in {domain_label}. Immediate action required.',
+            },
+            'planner': {
+                'root_cause': 'Hardware fault with cascading failure pattern identified.',
+                'plan': '1. Isolate affected component\n2. Activate redundant backup system\n3. Verify SLO restoration and file incident report',
+                'priority': 'HIGH',
+            },
+            'recoverer': {
+                'action_taken': 'Backup system activated, traffic rerouted to redundant path',
+                'result': 'System restored to nominal operation. SLO back above 99.1%.',
+                'slo_restored': True,
+            },
+            'guardian': {
+                'security_check': 'No unauthorized access or anomalous agent behavior detected during recovery.',
+                'audit_entry': f'{inc_id}: Auto-healed in {domain_label} — no security events.',
+            },
+            'summary': {
+                'incident_id': inc_id,
+                'heal_time_ms': random.randint(900, 1800),
+                'resolved': True,
+            },
+        }
+
+    severity = 'critical' if incident_key in ('tower_outage', 'icu_alert', 'ddos', 'injection') else 'warning'
+
+    log = SimulationLog.objects.create(
+        domain=domain,
+        incident=incident_desc[:300],
+        severity=severity,
+        perceiver_msg=result['perceiver']['alert'],
+        perceiver_conf=result['perceiver'].get('confidence', 0.94),
+        planner_cause=result['planner']['root_cause'],
+        planner_plan=result['planner']['plan'],
+        recoverer_action=result['recoverer']['action_taken'],
+        recoverer_result=result['recoverer']['result'],
+        guardian_sec=result['guardian']['security_check'],
+        guardian_audit=result['guardian']['audit_entry'],
+        incident_id=inc_id,
+        groq_model='llama-3.3-70b-versatile',
+        groq_powered=groq_powered,
+        heal_time_ms=result['summary'].get('heal_time_ms', 1240),
+    )
+
+    return JsonResponse({
+        'ok': True,
+        'id': log.id,
+        'domain': domain,
+        'domain_label': domain_label,
+        'incident': incident_desc,
+        'groq_powered': groq_powered,
+        'model': 'llama-3.3-70b-versatile' if groq_powered else 'demo-fallback',
+        **result,
+    })
+
+
+def simulation_history(request):
+    from .models import SimulationLog
+    logs = SimulationLog.objects.all()[:20]
+    return JsonResponse({'results': [
+        {
+            'id': l.id,
+            'domain': l.domain,
+            'incident': l.incident,
+            'severity': l.severity,
+            'incident_id': l.incident_id,
+            'perceiver_msg': l.perceiver_msg,
+            'perceiver_conf': l.perceiver_conf,
+            'planner_plan': l.planner_plan,
+            'planner_cause': l.planner_cause,
+            'recoverer_action': l.recoverer_action,
+            'recoverer_result': l.recoverer_result,
+            'guardian_sec': l.guardian_sec,
+            'guardian_audit': l.guardian_audit,
+            'groq_powered': l.groq_powered,
+            'groq_model': l.groq_model,
+            'heal_time_ms': l.heal_time_ms,
+            'created_at': l.created_at.isoformat(),
+        } for l in logs
+    ]})

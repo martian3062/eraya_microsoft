@@ -28,7 +28,7 @@
 </div>
 
 <!-- Agents + A2A feed -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
   <div class="lg:col-span-2">
     <div class="card">
       <div class="flex items-center justify-between mb-4">
@@ -38,7 +38,6 @@
       <div id="agent-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
     </div>
   </div>
-
   <div>
     <div class="card h-full flex flex-col" style="max-height:460px">
       <div class="flex items-center gap-2 mb-3 flex-shrink-0">
@@ -50,78 +49,173 @@
   </div>
 </div>
 
+<!-- ─── FIRE DRILL ──────────────────────────────────────────────────── -->
+<div class="card">
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+      <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Fire Drill — Live Swarm Simulation</h2>
+    </div>
+    <span id="groq-badge" class="text-[9px] px-2 py-1 rounded-lg font-mono" style="background:rgba(167,139,250,.1);color:#a78bfa">Groq llama-3.3-70b</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="flex flex-wrap gap-4 mb-4">
+    <div>
+      <div class="text-[10px] text-slate-400 mb-1.5 uppercase tracking-wider">Domain</div>
+      <div class="flex gap-1.5" id="domain-btns">
+        <button class="drill-dom px-3 py-1 rounded-lg text-[11px] font-medium border transition-all" data-d="5g"    data-c="#2dd4bf" style="border-color:#2dd4bf44;color:#2dd4bf;background:#2dd4bf0f">5G</button>
+        <button class="drill-dom px-3 py-1 rounded-lg text-[11px] font-medium border transition-all border-white/10 text-slate-400" data-d="cloud" data-c="#60a5fa">Cloud</button>
+        <button class="drill-dom px-3 py-1 rounded-lg text-[11px] font-medium border transition-all border-white/10 text-slate-400" data-d="icu"   data-c="#f472b6">ICU</button>
+        <button class="drill-dom px-3 py-1 rounded-lg text-[11px] font-medium border transition-all border-white/10 text-slate-400" data-d="edge"  data-c="#fb923c">Edge</button>
+      </div>
+    </div>
+    <div>
+      <div class="text-[10px] text-slate-400 mb-1.5 uppercase tracking-wider">Incident Type</div>
+      <select id="drill-inc" class="text-[11px] rounded-lg px-3 py-1.5 border bg-transparent text-slate-600 dark:text-slate-300 outline-none" style="border-color:rgba(255,255,255,.12)">
+        <option value="tower_outage">📡 Tower Outage</option>
+        <option value="cpu_spike">💻 CPU Spike</option>
+        <option value="icu_alert">🏥 ICU Patient Alert</option>
+        <option value="edge_latency">⚡ Edge Latency</option>
+        <option value="ddos">🌊 DDoS Flood</option>
+        <option value="injection">💉 SQL Injection</option>
+      </select>
+    </div>
+    <div class="flex items-end">
+      <button id="drill-btn" onclick="runDrill()"
+        class="px-5 py-2 rounded-xl text-[11px] font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+        style="background:linear-gradient(135deg,#ef4444,#f87171)">
+        ⚡ Fire Drill
+      </button>
+    </div>
+  </div>
+
+  <!-- Incident bar -->
+  <div id="drill-incident-box" class="hidden mb-3 px-3 py-2 rounded-xl text-[11px]" style="background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);color:#f87171">
+    <span id="drill-incident-text"></span>
+  </div>
+
+  <!-- 4-step agent chain -->
+  <div id="drill-chain" class="hidden">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+
+      <div id="ds-perceiver" class="drill-step rounded-xl p-3 border opacity-30 transition-all duration-500" style="border-color:#2dd4bf1a">
+        <div class="flex items-center gap-2 mb-2">
+          <span>👁</span>
+          <span class="text-[11px] font-bold" style="color:#2dd4bf">Perceiver · Detection</span>
+          <span id="ds-perceiver-conf" class="ml-auto text-[9px] font-mono text-slate-400"></span>
+        </div>
+        <div id="ds-perceiver-msg" class="text-[10px] text-slate-400 leading-relaxed"></div>
+        <div id="ds-perceiver-a2a" class="mt-1.5 text-[9px] font-mono hidden" style="color:#2dd4bf88"></div>
+      </div>
+
+      <div id="ds-planner" class="drill-step rounded-xl p-3 border opacity-30 transition-all duration-500" style="border-color:#a78bfa1a">
+        <div class="flex items-center gap-2 mb-2">
+          <span>🧠</span>
+          <span class="text-[11px] font-bold" style="color:#a78bfa">Planner · Groq LLM</span>
+          <span id="ds-planner-model" class="ml-auto text-[9px] font-mono text-slate-400"></span>
+        </div>
+        <div id="ds-planner-cause" class="text-[10px] italic text-slate-500 mb-1"></div>
+        <div id="ds-planner-plan" class="text-[10px] text-slate-300 leading-relaxed whitespace-pre-line"></div>
+      </div>
+
+      <div id="ds-recoverer" class="drill-step rounded-xl p-3 border opacity-30 transition-all duration-500" style="border-color:#34d3991a">
+        <div class="flex items-center gap-2 mb-2">
+          <span>🔧</span>
+          <span class="text-[11px] font-bold" style="color:#34d399">Recoverer · Execution</span>
+          <span id="ds-recoverer-slo" class="ml-auto text-[9px]"></span>
+        </div>
+        <div id="ds-recoverer-action" class="text-[10px] text-slate-400 leading-relaxed"></div>
+        <div id="ds-recoverer-result" class="mt-1 text-[10px] font-semibold text-emerald-400"></div>
+      </div>
+
+      <div id="ds-guardian" class="drill-step rounded-xl p-3 border opacity-30 transition-all duration-500" style="border-color:#f871711a">
+        <div class="flex items-center gap-2 mb-2">
+          <span>🛡</span>
+          <span class="text-[11px] font-bold" style="color:#f87171">Guardian · Audit</span>
+          <span id="ds-guardian-id" class="ml-auto text-[9px] font-mono text-slate-400"></span>
+        </div>
+        <div id="ds-guardian-sec" class="text-[10px] text-slate-400 leading-relaxed"></div>
+        <div id="ds-guardian-audit" class="mt-1 text-[9px] font-mono text-slate-500"></div>
+      </div>
+    </div>
+
+    <!-- Resolution banner -->
+    <div id="drill-heal" class="hidden rounded-xl p-3 text-center" style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.25)">
+      <div id="drill-heal-title" class="text-sm font-bold text-emerald-400"></div>
+      <div id="drill-heal-sub" class="text-[10px] text-slate-400 mt-1"></div>
+    </div>
+  </div>
+</div>
+
 <style>
-.agent-card{border-radius:14px;padding:14px 12px;text-align:center;border:1px solid;transition:all .2s;cursor:pointer;position:relative;overflow:hidden;}
+.agent-card{border-radius:14px;padding:14px 12px;text-align:center;border:1px solid;transition:all .2s;cursor:pointer;position:relative;}
 .agent-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.18);}
-.agent-card .tier-badge{position:absolute;top:6px;right:6px;font-size:8px;padding:1px 5px;border-radius:4px;font-weight:600;opacity:.75;}
+.agent-card .tier{position:absolute;top:6px;right:6px;font-size:8px;padding:1px 5px;border-radius:4px;font-weight:600;}
 .a2a-item{border-radius:10px;padding:10px 12px;border-left:2px solid;animation:fadeIn .3s ease;}
+.drill-step{transition:opacity .4s,background .4s,border-color .4s;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 </style>
 
 <script>
+// ── Agent grid ──────────────────────────────────────────────────────────────
 const DEMO_AGENTS=[
-  {id:'perceiver-5g-001',  name:'Perceiver · 5G',    role:'perceiver', domain:'5g',      status:'active',   tier:'HEAVY',  calls:1284, latency:87,  errors:2,  dc:'#2dd4bf'},
-  {id:'planner-5g-001',    name:'Planner · 5G',      role:'planner',   domain:'5g',      status:'active',   tier:'HEAVY',  calls:947,  latency:313, errors:1,  dc:'#2dd4bf'},
-  {id:'recoverer-5g-001',  name:'Recoverer · 5G',    role:'recoverer', domain:'5g',      status:'idle',     tier:'MEDIUM', calls:156,  latency:145, errors:0,  dc:'#2dd4bf'},
-  {id:'guardian-5g-001',   name:'Guardian · 5G',     role:'guardian',  domain:'5g',      status:'active',   tier:'LIGHT',  calls:2103, latency:22,  errors:0,  dc:'#2dd4bf'},
-  {id:'perceiver-cloud-001',name:'Perceiver · Cloud',role:'perceiver', domain:'cloud',   status:'active',   tier:'MEDIUM', calls:881,  latency:64,  errors:0,  dc:'#60a5fa'},
-  {id:'planner-cloud-001', name:'Planner · Cloud',   role:'planner',   domain:'cloud',   status:'active',   tier:'HEAVY',  calls:732,  latency:290, errors:3,  dc:'#60a5fa'},
-  {id:'recoverer-cloud-001',name:'Recoverer · Cloud',role:'recoverer', domain:'cloud',   status:'degraded', tier:'MEDIUM', calls:214,  latency:188, errors:7,  dc:'#60a5fa'},
-  {id:'guardian-cloud-001',name:'Guardian · Cloud',  role:'guardian',  domain:'cloud',   status:'active',   tier:'LIGHT',  calls:1629, latency:19,  errors:0,  dc:'#60a5fa'},
-  {id:'perceiver-icu-001', name:'Perceiver · ICU',   role:'perceiver', domain:'icu',     status:'active',   tier:'HEAVY',  calls:2417, latency:92,  errors:1,  dc:'#f472b6'},
-  {id:'planner-icu-001',   name:'Planner · ICU',     role:'planner',   domain:'icu',     status:'active',   tier:'HEAVY',  calls:1853, latency:401, errors:0,  dc:'#f472b6'},
-  {id:'recoverer-icu-001', name:'Recoverer · ICU',   role:'recoverer', domain:'icu',     status:'active',   tier:'MEDIUM', calls:302,  latency:134, errors:2,  dc:'#f472b6'},
-  {id:'guardian-icu-001',  name:'Guardian · ICU',    role:'guardian',  domain:'icu',     status:'active',   tier:'LIGHT',  calls:3104, latency:15,  errors:0,  dc:'#f472b6'},
-  {id:'perceiver-net-001', name:'Perceiver · Net',   role:'perceiver', domain:'network', status:'active',   tier:'MEDIUM', calls:643,  latency:59,  errors:0,  dc:'#fb923c'},
-  {id:'planner-net-001',   name:'Planner · Net',     role:'planner',   domain:'network', status:'idle',     tier:'MEDIUM', calls:418,  latency:246, errors:0,  dc:'#fb923c'},
-  {id:'recoverer-net-001', name:'Recoverer · Net',   role:'recoverer', domain:'network', status:'active',   tier:'LIGHT',  calls:87,   latency:102, errors:1,  dc:'#fb923c'},
-  {id:'guardian-net-001',  name:'Guardian · Net',    role:'guardian',  domain:'network', status:'active',   tier:'LIGHT',  calls:971,  latency:19,  errors:0,  dc:'#fb923c'},
+  {name:'Perceiver · 5G',    role:'perceiver',domain:'5g',     status:'active',  tier:'HEAVY', calls:1284,latency:87, errors:2, dc:'#2dd4bf'},
+  {name:'Planner · 5G',      role:'planner',  domain:'5g',     status:'active',  tier:'HEAVY', calls:947, latency:313,errors:1, dc:'#2dd4bf'},
+  {name:'Recoverer · 5G',    role:'recoverer',domain:'5g',     status:'idle',    tier:'MEDIUM',calls:156, latency:145,errors:0, dc:'#2dd4bf'},
+  {name:'Guardian · 5G',     role:'guardian', domain:'5g',     status:'active',  tier:'LIGHT', calls:2103,latency:22, errors:0, dc:'#2dd4bf'},
+  {name:'Perceiver · Cloud', role:'perceiver',domain:'cloud',  status:'active',  tier:'MEDIUM',calls:881, latency:64, errors:0, dc:'#60a5fa'},
+  {name:'Planner · Cloud',   role:'planner',  domain:'cloud',  status:'active',  tier:'HEAVY', calls:732, latency:290,errors:3, dc:'#60a5fa'},
+  {name:'Recoverer · Cloud', role:'recoverer',domain:'cloud',  status:'degraded',tier:'MEDIUM',calls:214, latency:188,errors:7, dc:'#60a5fa'},
+  {name:'Guardian · Cloud',  role:'guardian', domain:'cloud',  status:'active',  tier:'LIGHT', calls:1629,latency:19, errors:0, dc:'#60a5fa'},
+  {name:'Perceiver · ICU',   role:'perceiver',domain:'icu',    status:'active',  tier:'HEAVY', calls:2417,latency:92, errors:1, dc:'#f472b6'},
+  {name:'Planner · ICU',     role:'planner',  domain:'icu',    status:'active',  tier:'HEAVY', calls:1853,latency:401,errors:0, dc:'#f472b6'},
+  {name:'Recoverer · ICU',   role:'recoverer',domain:'icu',    status:'active',  tier:'MEDIUM',calls:302, latency:134,errors:2, dc:'#f472b6'},
+  {name:'Guardian · ICU',    role:'guardian', domain:'icu',    status:'active',  tier:'LIGHT', calls:3104,latency:15, errors:0, dc:'#f472b6'},
+  {name:'Perceiver · Net',   role:'perceiver',domain:'network',status:'active',  tier:'MEDIUM',calls:643, latency:59, errors:0, dc:'#fb923c'},
+  {name:'Planner · Net',     role:'planner',  domain:'network',status:'idle',    tier:'MEDIUM',calls:418, latency:246,errors:0, dc:'#fb923c'},
+  {name:'Recoverer · Net',   role:'recoverer',domain:'network',status:'active',  tier:'LIGHT', calls:87,  latency:102,errors:1, dc:'#fb923c'},
+  {name:'Guardian · Net',    role:'guardian', domain:'network',status:'active',  tier:'LIGHT', calls:971, latency:19, errors:0, dc:'#fb923c'},
 ];
-
-const STATUS_DOT={active:'#34d399',idle:'#94a3b8',degraded:'#f87171',healing:'#fbbf24'};
-const ROLE_COLOR={perceiver:'#2dd4bf',planner:'#a78bfa',recoverer:'#34d399',guardian:'#f87171'};
-const TIER_BG={HEAVY:'rgba(248,113,113,.15)',MEDIUM:'rgba(251,191,36,.15)',LIGHT:'rgba(52,211,153,.15)'};
-const TIER_COL={HEAVY:'#f87171',MEDIUM:'#fbbf24',LIGHT:'#34d399'};
+const SDOT={active:'#34d399',idle:'#94a3b8',degraded:'#f87171',healing:'#fbbf24'};
+const RCOL={perceiver:'#2dd4bf',planner:'#a78bfa',recoverer:'#34d399',guardian:'#f87171'};
+const TBG={HEAVY:'rgba(248,113,113,.15)',MEDIUM:'rgba(251,191,36,.15)',LIGHT:'rgba(52,211,153,.15)'};
+const TCOL={HEAVY:'#f87171',MEDIUM:'#fbbf24',LIGHT:'#34d399'};
 
 function renderAgents(list){
   document.getElementById('agent-grid').innerHTML=list.map(a=>`
-    <div class="agent-card" style="border-color:${a.dc}22;background:${a.dc}08">
-      <span class="tier-badge" style="background:${TIER_BG[a.tier]||TIER_BG.MEDIUM};color:${TIER_COL[a.tier]||'#94a3b8'}">${a.tier||'–'}</span>
-      <div style="width:8px;height:8px;border-radius:50%;background:${STATUS_DOT[a.status]||'#94a3b8'};margin:0 auto 8px"></div>
+    <div class="agent-card" style="border-color:${a.dc}22;background:${a.dc}08" title="${a.role} agent">
+      <span class="tier" style="background:${TBG[a.tier]||TBG.MEDIUM};color:${TCOL[a.tier]||'#94a3b8'}">${a.tier}</span>
+      <div style="width:8px;height:8px;border-radius:50%;background:${SDOT[a.status]||'#94a3b8'};margin:0 auto 8px"></div>
       <div style="font-size:11px;font-weight:600;color:#e2e8f0;margin-bottom:2px;line-height:1.3">${a.name}</div>
-      <div style="font-size:9px;color:${ROLE_COLOR[a.role]||a.dc};margin-bottom:6px;text-transform:capitalize">${a.role||a.domain}</div>
-      <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#64748b">
-        <span title="Total calls">${(a.calls||a.total_calls||0).toLocaleString()}</span>
-        <span style="color:${(a.latency||a.avg_latency_ms||0)>300?'#f87171':'#94a3b8'}">${a.latency||a.avg_latency_ms||0}ms</span>
+      <div style="font-size:9px;color:${RCOL[a.role]||a.dc};margin-bottom:6px;text-transform:capitalize">${a.role}</div>
+      <div style="display:flex;justify-content:center;gap:8px;font-size:9px;color:#64748b">
+        <span title="calls">${(a.calls||a.total_calls||0).toLocaleString()}</span>
+        <span style="color:${(a.latency||a.avg_latency_ms||0)>300?'#f87171':'#94a3b8'}" title="latency">${a.latency||a.avg_latency_ms||0}ms</span>
         ${(a.errors||a.error_count||0)>0?`<span style="color:#f87171">${a.errors||a.error_count}err</span>`:''}
       </div>
     </div>`).join('');
-  // compute KPIs
-  const total=list.reduce((s,a)=>s+(a.calls||a.total_calls||0),0);
-  const avgLat=list.length?Math.round(list.reduce((s,a)=>s+(a.latency||a.avg_latency_ms||0),0)/list.length):0;
+  const tot=list.reduce((s,a)=>s+(a.calls||a.total_calls||0),0);
+  const lat=list.length?Math.round(list.reduce((s,a)=>s+(a.latency||a.avg_latency_ms||0),0)/list.length):0;
   document.getElementById('kpi-agents').textContent=list.length;
-  document.getElementById('kpi-decisions').textContent=total.toLocaleString();
-  document.getElementById('kpi-latency').textContent=avgLat+'ms';
+  document.getElementById('kpi-decisions').textContent=tot.toLocaleString();
+  document.getElementById('kpi-latency').textContent=lat+'ms';
 }
-
 fetch('/api/agents/').then(r=>r.ok?r.json():null).then(d=>{
-  const list=(d?.results||d)||[];
-  renderAgents(list.length>0?list:DEMO_AGENTS);
+  const l=(d?.results||d)||[];
+  renderAgents(l.length>0?l:DEMO_AGENTS);
 }).catch(()=>renderAgents(DEMO_AGENTS));
 
 fetch('/api/incidents/').then(r=>r.ok?r.json():null).then(d=>{
-  const list=(d?.results||d)||[];
-  if(list.length>0){
-    const crit=list.filter(i=>i.severity==='critical').length;
-    document.getElementById('kpi-incidents').textContent=list.length;
+  const l=(d?.results||d)||[];
+  if(l.length>0){
+    const crit=l.filter(i=>i.severity==='critical').length;
+    document.getElementById('kpi-incidents').textContent=l.length;
     document.getElementById('kpi-inc-sub').textContent=crit>0?`${crit} critical`:'all stable';
   }
-}).catch(()=>{
-  document.getElementById('kpi-incidents').textContent='7';
-  document.getElementById('kpi-inc-sub').textContent='3 auto-healed';
-});
+}).catch(()=>{document.getElementById('kpi-incidents').textContent='7';document.getElementById('kpi-inc-sub').textContent='3 auto-healed';});
 
-// A2A feed
+// ── A2A feed ────────────────────────────────────────────────────────────────
 const A2A_MSGS=[
   {from:'Perceiver-1',to:'Planner-1',type:'anomaly.detected',msg:'RSRP dropped to −94 dBm on Tower-7',color:'#fbbf24'},
   {from:'Planner-1',to:'Recoverer-1',type:'action.plan',msg:'Initiating failover to Tower-9',color:'#2dd4bf'},
@@ -133,8 +227,8 @@ const A2A_MSGS=[
   {from:'Perceiver-3',to:'Planner-3',type:'vitals.alert',msg:'HRV spike detected — Ward 3A patient',color:'#f472b6'},
 ];
 let feedIdx=0;
-function pushFeedItem(){
-  const item=A2A_MSGS[feedIdx%A2A_MSGS.length];feedIdx++;
+function pushFeedItem(item){
+  item=item||A2A_MSGS[feedIdx%A2A_MSGS.length]; feedIdx++;
   const feed=document.getElementById('a2a-feed');
   const el=document.createElement('div');
   el.className='a2a-item';
@@ -145,7 +239,119 @@ function pushFeedItem(){
   feed.prepend(el);
   if(feed.children.length>12)feed.lastChild.remove();
 }
-for(let i=0;i<6;i++)pushFeedItem();
-setInterval(pushFeedItem,5000);
+for(let i=0;i<5;i++)pushFeedItem();
+setInterval(()=>pushFeedItem(),5000);
+
+// ── Fire Drill ──────────────────────────────────────────────────────────────
+let selectedDomain='5g';
+document.querySelectorAll('.drill-dom').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.drill-dom').forEach(x=>{
+      x.style.background=''; x.style.borderColor='rgba(255,255,255,.1)'; x.style.color='#94a3b8';
+    });
+    const c=this.dataset.c;
+    this.style.background=c+'12'; this.style.borderColor=c+'44'; this.style.color=c;
+    selectedDomain=this.dataset.d;
+  });
+});
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function getCsrf(){const c=document.cookie.split(';').find(x=>x.trim().startsWith('csrftoken='));return c?c.split('=')[1]:'';}
+
+function activateStep(name,color,fields){
+  const el=document.getElementById('ds-'+name);
+  el.style.opacity='1';
+  el.style.background=color+'0a';
+  el.style.borderColor=color+'33';
+  Object.entries(fields).forEach(([k,v])=>{
+    const t=document.getElementById('ds-'+name+'-'+k);
+    if(t){t.textContent=v; if(k==='a2a')t.classList.remove('hidden');}
+  });
+}
+
+async function runDrill(){
+  const btn=document.getElementById('drill-btn');
+  const chain=document.getElementById('drill-chain');
+  const incBox=document.getElementById('drill-incident-box');
+  const heal=document.getElementById('drill-heal');
+
+  btn.disabled=true; btn.textContent='⏳ Contacting Groq…';
+  chain.classList.remove('hidden');
+  heal.classList.add('hidden');
+  incBox.classList.add('hidden');
+
+  ['perceiver','planner','recoverer','guardian'].forEach(s=>{
+    const el=document.getElementById('ds-'+s);
+    el.style.opacity='0.3'; el.style.background=''; el.style.borderColor=el.style.borderColor.replace(/[^#\w]/g,'')+'1a';
+    ['msg','a2a','model','conf','cause','plan','action','result','slo','sec','audit','id'].forEach(k=>{
+      const t=document.getElementById('ds-'+s+'-'+k);
+      if(t){t.textContent=''; if(k==='a2a')t.classList.add('hidden');}
+    });
+  });
+
+  try {
+    const res=await fetch('/api/fire-drill/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+      body:JSON.stringify({domain:selectedDomain, incident_type:document.getElementById('drill-inc').value})
+    });
+    const d=await res.json();
+    if(!d.ok) throw new Error('fail');
+
+    document.getElementById('drill-incident-text').textContent=d.incident;
+    incBox.classList.remove('hidden');
+
+    document.getElementById('groq-badge').textContent=d.groq_powered?`🤖 Groq ${d.model}`:'demo fallback';
+
+    await sleep(400);
+    activateStep('perceiver','#2dd4bf',{
+      msg: d.perceiver?.alert||'',
+      conf: `confidence: ${((d.perceiver?.confidence||0.94)*100).toFixed(0)}%`,
+      a2a: `→ A2A: ${d.perceiver?.a2a_dispatch||''}`,
+    });
+    pushFeedItem({from:'Perceiver-1',to:'Planner-1',type:'anomaly.detected',msg:d.perceiver?.alert||'',color:'#fbbf24'});
+
+    await sleep(800);
+    activateStep('planner','#a78bfa',{
+      cause: `Root cause: ${d.planner?.root_cause||''}`,
+      plan:  d.planner?.plan||'',
+      model: d.groq_powered?`✓ ${d.model}`:'demo',
+    });
+    pushFeedItem({from:'Planner-1',to:'Recoverer-1',type:'action.plan',msg:d.planner?.root_cause||'',color:'#a78bfa'});
+
+    await sleep(900);
+    activateStep('recoverer','#34d399',{
+      action: d.recoverer?.action_taken||'',
+      result: d.recoverer?.result||'',
+      slo:    d.recoverer?.slo_restored?'✓ SLO restored':'⚠ SLO at risk',
+    });
+    pushFeedItem({from:'Recoverer-1',to:'Planner-1',type:'heal.complete',msg:d.recoverer?.result||'',color:'#34d399'});
+
+    await sleep(600);
+    activateStep('guardian','#f87171',{
+      sec:   d.guardian?.security_check||'',
+      audit: d.guardian?.audit_entry||'',
+      id:    d.summary?.incident_id||'',
+    });
+    pushFeedItem({from:'Guardian-1',to:'all',type:'audit.log',msg:d.guardian?.audit_entry||'',color:'#f87171'});
+
+    await sleep(400);
+    const ms=d.summary?.heal_time_ms||1240;
+    document.getElementById('drill-heal-title').textContent=`✅ ${d.summary?.incident_id||'INC-XXX'} — Auto-healed in ${ms}ms`;
+    document.getElementById('drill-heal-sub').textContent=
+      `${d.groq_powered?'🤖 Groq LLM powered':'Demo mode'} · Domain: ${d.domain_label} · All agents nominal`;
+    heal.classList.remove('hidden');
+
+    // Store for context graph animation
+    localStorage.setItem('eraya_last_drill',JSON.stringify({domain:selectedDomain,ts:Date.now()}));
+
+  } catch(e){
+    document.getElementById('drill-heal-title').textContent='⚠ Drill failed — check server logs';
+    document.getElementById('drill-heal-sub').textContent='';
+    heal.classList.remove('hidden');
+  }
+
+  btn.disabled=false; btn.textContent='⚡ Fire Drill';
+}
 </script>
 {% endblock %}

@@ -111,5 +111,53 @@ style.textContent='@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}t
 document.head.appendChild(style);
 for(let i=0;i<8;i++)pushMsg();
 setInterval(pushMsg,4000);
+
+// Inject messages from the latest fire drill
+function injectDrillMessages(s){
+  const steps=[
+    {from:'Perceiver-1',to:'Planner-1',domain:s.domain,type:'anomaly.detected',payload:{incident:s.incident,confidence:s.perceiver_conf},text:s.perceiver_msg},
+    {from:'Planner-1',to:'Recoverer-1',domain:s.domain,type:'action.plan',payload:{model:s.groq_model,powered:s.groq_powered},text:s.planner_plan.split('\n')[0]},
+    {from:'Recoverer-1',to:'Planner-1',domain:s.domain,type:'heal.complete',payload:{heal_ms:s.heal_time_ms},text:s.recoverer_result},
+    {from:'Guardian-1',to:'all',domain:s.domain,type:'threat.blocked',payload:{incident_id:s.incident_id},text:s.guardian_audit},
+  ];
+  steps.forEach((m,i)=>{
+    setTimeout(()=>{
+      if(paused)return;
+      const dc=DOMAIN_COL[m.domain]||'#a78bfa';
+      const tc=TYPE_COL[m.type]||'#a78bfa';
+      const now=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const feed=document.getElementById('chat-feed');
+      const el=document.createElement('div');
+      el.style.cssText='animation:fadeIn .3s ease';
+      el.innerHTML=`<div class="bubble" style="background:${dc}14;border:2px solid ${dc}33">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:10px;font-weight:600;color:${dc}">${m.from} <span style="color:rgba(255,255,255,.25)">→</span> ${m.to}
+            <span style="margin-left:6px;font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(167,139,250,.15);color:#a78bfa">🔴 DRILL</span>
+          </div>
+          <span style="font-size:9px;color:rgba(255,255,255,.2)">${now}</span>
+        </div>
+        <span style="display:inline-block;margin-bottom:6px;padding:1px 8px;border-radius:999px;font-size:9px;background:${tc}1a;color:${tc}">${m.type}</span>
+        <div class="bubble-inner" style="color:rgba(255,255,255,.8)">${m.text||MSGS_TEXT[m.type]||''}</div>
+        <div class="mono-footer">${JSON.stringify(m.payload)}</div>
+      </div>`;
+      feed.prepend(el);
+      if(feed.children.length>40)feed.lastChild.remove();
+    }, i*700);
+  });
+}
+
+let lastDrillId=null;
+function pollDrills(){
+  fetch('/api/simulations/').then(r=>r.ok?r.json():null).then(data=>{
+    if(!data||!data.results||!data.results.length)return;
+    const latest=data.results[0];
+    if(latest.id!==lastDrillId){
+      lastDrillId=latest.id;
+      injectDrillMessages(latest);
+    }
+  }).catch(()=>{});
+}
+pollDrills();
+setInterval(pollDrills,15000);
 </script>
 {% endblock %}

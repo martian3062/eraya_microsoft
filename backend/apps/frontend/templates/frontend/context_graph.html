@@ -79,5 +79,47 @@ sim.on('tick',()=>{
   link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
   node.attr('transform',d=>`translate(${d.x},${d.y})`);
 });
+
+// ── Drill animation ─────────────────────────────────────────────────────────
+const DOMAIN_MAP={telecom:'telecom','5g':'telecom',cloud:'cloud',icu:'icu',edge:'network',network:'network'};
+
+function pulseNodes(domain,steps){
+  // steps: array of role strings in order
+  const roleOrder={'perceiver':0,'planner':1,'recoverer':2,'guardian':3,'bus':2};
+  steps.forEach((role,i)=>{
+    setTimeout(()=>{
+      node.filter(d=>d.domain===domain&&d.role===role)
+        .select('circle')
+        .transition().duration(200).attr('r',20).attr('fill',d=>d.color+'66')
+        .transition().duration(400).attr('r',11).attr('fill',d=>d.color+'22');
+      link.filter(d=>d.source.domain===domain||d.target.domain===domain)
+        .transition().duration(300)
+        .attr('stroke-opacity',.9).attr('stroke-width',4)
+        .transition().duration(600)
+        .attr('stroke-opacity',.4).attr('stroke-width',1.5);
+    }, i*700);
+  });
+}
+
+function checkDrillStorage(){
+  try{
+    const raw=localStorage.getItem('eraya_last_drill');
+    if(!raw)return;
+    const parsed=JSON.parse(raw);
+    const age=Date.now()-parsed.ts;
+    if(age<30000){
+      const dom=DOMAIN_MAP[parsed.domain]||parsed.domain;
+      pulseNodes(dom,['perceiver','planner','recoverer','guardian']);
+      // also pulse the BUS node
+      setTimeout(()=>{
+        node.filter(d=>d.role==='bus').select('circle')
+          .transition().duration(300).attr('r',18).attr('fill','rgba(167,139,250,.4)')
+          .transition().duration(500).attr('r',11).attr('fill','rgba(167,139,250,.15)');
+      },500);
+    }
+  }catch(e){}
+}
+setInterval(checkDrillStorage,2000);
+checkDrillStorage();
 </script>
 {% endblock %}
