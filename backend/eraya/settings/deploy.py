@@ -1,6 +1,10 @@
 from .base import *
+import os
 
-# Only the apps needed for the vanilla HTML frontend
+DEBUG = False
+SECRET_KEY = os.environ.get('SECRET_KEY', 'eraya-render-secret-change-me-please-32x')
+ALLOWED_HOSTS = ['*']
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -17,14 +21,17 @@ INSTALLED_APPS = [
 
 ROOT_URLCONF = 'eraya.urls_deploy'
 
-# No Redis needed — use dummy channel layer
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
 
-ALLOWED_HOSTS = ['*']
-
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+]

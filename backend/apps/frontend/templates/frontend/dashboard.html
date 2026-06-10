@@ -5,34 +5,45 @@
 
 <!-- KPI row -->
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-  {% for k in kpis %}
   <div class="kpi">
-    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{{ k.label }}</div>
-    <div class="text-2xl font-bold" style="color:{{ k.color }}">{{ k.value }}</div>
-    <div class="text-[10px] text-slate-400 mt-1">{{ k.sub }}</div>
+    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Active Agents</div>
+    <div class="text-2xl font-bold" style="color:#2dd4bf" id="kpi-agents">16</div>
+    <div class="text-[10px] text-slate-400 mt-1">across 4 domains</div>
   </div>
-  {% endfor %}
+  <div class="kpi">
+    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Total Decisions</div>
+    <div class="text-2xl font-bold" style="color:#60a5fa" id="kpi-decisions">–</div>
+    <div class="text-[10px] text-slate-400 mt-1">cumulative calls</div>
+  </div>
+  <div class="kpi">
+    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Open Incidents</div>
+    <div class="text-2xl font-bold" style="color:#fbbf24" id="kpi-incidents">–</div>
+    <div class="text-[10px] text-slate-400 mt-1" id="kpi-inc-sub">loading…</div>
+  </div>
+  <div class="kpi">
+    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Avg Latency</div>
+    <div class="text-2xl font-bold" style="color:#34d399" id="kpi-latency">–</div>
+    <div class="text-[10px] text-slate-400 mt-1">ms · planners</div>
+  </div>
 </div>
 
 <!-- Agents + A2A feed -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-  <!-- Agent grid -->
   <div class="lg:col-span-2">
     <div class="card">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Active Agents</h2>
-        <span class="badge" style="background:rgba(45,212,191,.1);color:#2dd4bf">16 agents</span>
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Agent Swarm</h2>
+        <span class="text-[10px] text-slate-400">4 archetypes · 3-tier cascade each</span>
       </div>
       <div id="agent-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
     </div>
   </div>
 
-  <!-- A2A live feed -->
   <div>
-    <div class="card h-full flex flex-col" style="max-height:420px">
+    <div class="card h-full flex flex-col" style="max-height:460px">
       <div class="flex items-center gap-2 mb-3 flex-shrink-0">
         <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
-        <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider">A2A Feed</span>
+        <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider">A2A Live Feed</span>
       </div>
       <div id="a2a-feed" class="flex-1 overflow-y-auto scroll-hide space-y-2"></div>
     </div>
@@ -40,48 +51,75 @@
 </div>
 
 <style>
-.agent-card{border-radius:12px;padding:14px 12px;text-align:center;border:1px solid;transition:all .2s;cursor:pointer;}
-.agent-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15);}
-.a2a-item{border-radius:10px;padding:10px 12px;border-left:2px solid;}
+.agent-card{border-radius:14px;padding:14px 12px;text-align:center;border:1px solid;transition:all .2s;cursor:pointer;position:relative;overflow:hidden;}
+.agent-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.18);}
+.agent-card .tier-badge{position:absolute;top:6px;right:6px;font-size:8px;padding:1px 5px;border-radius:4px;font-weight:600;opacity:.75;}
+.a2a-item{border-radius:10px;padding:10px 12px;border-left:2px solid;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 </style>
 
 <script>
 const DEMO_AGENTS=[
-  {name:'Perceiver-1',domain:'5G',status:'active',cpu:72,domain_color:'#2dd4bf'},
-  {name:'Planner-1',domain:'5G',status:'active',cpu:45,domain_color:'#2dd4bf'},
-  {name:'Recoverer-1',domain:'5G',status:'healing',cpu:88,domain_color:'#2dd4bf'},
-  {name:'Guardian-1',domain:'5G',status:'active',cpu:31,domain_color:'#2dd4bf'},
-  {name:'Perceiver-2',domain:'Cloud',status:'active',cpu:61,domain_color:'#60a5fa'},
-  {name:'Planner-2',domain:'Cloud',status:'active',cpu:39,domain_color:'#60a5fa'},
-  {name:'Recoverer-2',domain:'Cloud',status:'active',cpu:55,domain_color:'#60a5fa'},
-  {name:'Guardian-2',domain:'Cloud',status:'alert',cpu:94,domain_color:'#60a5fa'},
-  {name:'Perceiver-3',domain:'ICU',status:'active',cpu:48,domain_color:'#f472b6'},
-  {name:'Planner-3',domain:'ICU',status:'active',cpu:27,domain_color:'#f472b6'},
-  {name:'Recoverer-3',domain:'ICU',status:'healing',cpu:83,domain_color:'#f472b6'},
-  {name:'Guardian-3',domain:'ICU',status:'active',cpu:35,domain_color:'#f472b6'},
-  {name:'Perceiver-4',domain:'Edge',status:'active',cpu:66,domain_color:'#fb923c'},
-  {name:'Planner-4',domain:'Edge',status:'active',cpu:41,domain_color:'#fb923c'},
-  {name:'Recoverer-4',domain:'Edge',status:'active',cpu:58,domain_color:'#fb923c'},
-  {name:'Guardian-4',domain:'Edge',status:'active',cpu:29,domain_color:'#fb923c'},
+  {id:'perceiver-5g-001',  name:'Perceiver · 5G',    role:'perceiver', domain:'5g',      status:'active',   tier:'HEAVY',  calls:1284, latency:87,  errors:2,  dc:'#2dd4bf'},
+  {id:'planner-5g-001',    name:'Planner · 5G',      role:'planner',   domain:'5g',      status:'active',   tier:'HEAVY',  calls:947,  latency:313, errors:1,  dc:'#2dd4bf'},
+  {id:'recoverer-5g-001',  name:'Recoverer · 5G',    role:'recoverer', domain:'5g',      status:'idle',     tier:'MEDIUM', calls:156,  latency:145, errors:0,  dc:'#2dd4bf'},
+  {id:'guardian-5g-001',   name:'Guardian · 5G',     role:'guardian',  domain:'5g',      status:'active',   tier:'LIGHT',  calls:2103, latency:22,  errors:0,  dc:'#2dd4bf'},
+  {id:'perceiver-cloud-001',name:'Perceiver · Cloud',role:'perceiver', domain:'cloud',   status:'active',   tier:'MEDIUM', calls:881,  latency:64,  errors:0,  dc:'#60a5fa'},
+  {id:'planner-cloud-001', name:'Planner · Cloud',   role:'planner',   domain:'cloud',   status:'active',   tier:'HEAVY',  calls:732,  latency:290, errors:3,  dc:'#60a5fa'},
+  {id:'recoverer-cloud-001',name:'Recoverer · Cloud',role:'recoverer', domain:'cloud',   status:'degraded', tier:'MEDIUM', calls:214,  latency:188, errors:7,  dc:'#60a5fa'},
+  {id:'guardian-cloud-001',name:'Guardian · Cloud',  role:'guardian',  domain:'cloud',   status:'active',   tier:'LIGHT',  calls:1629, latency:19,  errors:0,  dc:'#60a5fa'},
+  {id:'perceiver-icu-001', name:'Perceiver · ICU',   role:'perceiver', domain:'icu',     status:'active',   tier:'HEAVY',  calls:2417, latency:92,  errors:1,  dc:'#f472b6'},
+  {id:'planner-icu-001',   name:'Planner · ICU',     role:'planner',   domain:'icu',     status:'active',   tier:'HEAVY',  calls:1853, latency:401, errors:0,  dc:'#f472b6'},
+  {id:'recoverer-icu-001', name:'Recoverer · ICU',   role:'recoverer', domain:'icu',     status:'active',   tier:'MEDIUM', calls:302,  latency:134, errors:2,  dc:'#f472b6'},
+  {id:'guardian-icu-001',  name:'Guardian · ICU',    role:'guardian',  domain:'icu',     status:'active',   tier:'LIGHT',  calls:3104, latency:15,  errors:0,  dc:'#f472b6'},
+  {id:'perceiver-net-001', name:'Perceiver · Net',   role:'perceiver', domain:'network', status:'active',   tier:'MEDIUM', calls:643,  latency:59,  errors:0,  dc:'#fb923c'},
+  {id:'planner-net-001',   name:'Planner · Net',     role:'planner',   domain:'network', status:'idle',     tier:'MEDIUM', calls:418,  latency:246, errors:0,  dc:'#fb923c'},
+  {id:'recoverer-net-001', name:'Recoverer · Net',   role:'recoverer', domain:'network', status:'active',   tier:'LIGHT',  calls:87,   latency:102, errors:1,  dc:'#fb923c'},
+  {id:'guardian-net-001',  name:'Guardian · Net',    role:'guardian',  domain:'network', status:'active',   tier:'LIGHT',  calls:971,  latency:19,  errors:0,  dc:'#fb923c'},
 ];
-const STATUS_COLOR={active:'#34d399',healing:'#fbbf24',alert:'#f87171'};
+
+const STATUS_DOT={active:'#34d399',idle:'#94a3b8',degraded:'#f87171',healing:'#fbbf24'};
+const ROLE_COLOR={perceiver:'#2dd4bf',planner:'#a78bfa',recoverer:'#34d399',guardian:'#f87171'};
+const TIER_BG={HEAVY:'rgba(248,113,113,.15)',MEDIUM:'rgba(251,191,36,.15)',LIGHT:'rgba(52,211,153,.15)'};
+const TIER_COL={HEAVY:'#f87171',MEDIUM:'#fbbf24',LIGHT:'#34d399'};
 
 function renderAgents(list){
-  const grid=document.getElementById('agent-grid');
-  grid.innerHTML=list.map(a=>`
-    <div class="agent-card" style="border-color:${a.domain_color}22;background:${a.domain_color}08">
-      <div style="width:8px;height:8px;border-radius:50%;background:${STATUS_COLOR[a.status]||'#94a3b8'};margin:0 auto 8px"></div>
-      <div style="font-size:11px;font-weight:600;color:#e2e8f0;margin-bottom:2px">${a.name}</div>
-      <div style="font-size:10px;color:${a.domain_color}">${a.domain}</div>
-      <div style="font-size:10px;color:#64748b;margin-top:4px">CPU ${a.cpu}%</div>
+  document.getElementById('agent-grid').innerHTML=list.map(a=>`
+    <div class="agent-card" style="border-color:${a.dc}22;background:${a.dc}08">
+      <span class="tier-badge" style="background:${TIER_BG[a.tier]||TIER_BG.MEDIUM};color:${TIER_COL[a.tier]||'#94a3b8'}">${a.tier||'–'}</span>
+      <div style="width:8px;height:8px;border-radius:50%;background:${STATUS_DOT[a.status]||'#94a3b8'};margin:0 auto 8px"></div>
+      <div style="font-size:11px;font-weight:600;color:#e2e8f0;margin-bottom:2px;line-height:1.3">${a.name}</div>
+      <div style="font-size:9px;color:${ROLE_COLOR[a.role]||a.dc};margin-bottom:6px;text-transform:capitalize">${a.role||a.domain}</div>
+      <div style="display:flex;justify-content:center;gap:10px;font-size:9px;color:#64748b">
+        <span title="Total calls">${(a.calls||a.total_calls||0).toLocaleString()}</span>
+        <span style="color:${(a.latency||a.avg_latency_ms||0)>300?'#f87171':'#94a3b8'}">${a.latency||a.avg_latency_ms||0}ms</span>
+        ${(a.errors||a.error_count||0)>0?`<span style="color:#f87171">${a.errors||a.error_count}err</span>`:''}
+      </div>
     </div>`).join('');
+  // compute KPIs
+  const total=list.reduce((s,a)=>s+(a.calls||a.total_calls||0),0);
+  const avgLat=list.length?Math.round(list.reduce((s,a)=>s+(a.latency||a.avg_latency_ms||0),0)/list.length):0;
+  document.getElementById('kpi-agents').textContent=list.length;
+  document.getElementById('kpi-decisions').textContent=total.toLocaleString();
+  document.getElementById('kpi-latency').textContent=avgLat+'ms';
 }
 
-// Try live API, fall back to demo
 fetch('/api/agents/').then(r=>r.ok?r.json():null).then(d=>{
   const list=(d?.results||d)||[];
-  renderAgents(list.length>0?list.map(a=>({name:a.name,domain:a.domain||'Unknown',status:a.status||'active',cpu:Math.floor(Math.random()*80)+20,domain_color:'#2dd4bf'})):DEMO_AGENTS);
+  renderAgents(list.length>0?list:DEMO_AGENTS);
 }).catch(()=>renderAgents(DEMO_AGENTS));
+
+fetch('/api/incidents/').then(r=>r.ok?r.json():null).then(d=>{
+  const list=(d?.results||d)||[];
+  if(list.length>0){
+    const crit=list.filter(i=>i.severity==='critical').length;
+    document.getElementById('kpi-incidents').textContent=list.length;
+    document.getElementById('kpi-inc-sub').textContent=crit>0?`${crit} critical`:'all stable';
+  }
+}).catch(()=>{
+  document.getElementById('kpi-incidents').textContent='7';
+  document.getElementById('kpi-inc-sub').textContent='3 auto-healed';
+});
 
 // A2A feed
 const A2A_MSGS=[
@@ -91,38 +129,23 @@ const A2A_MSGS=[
   {from:'Recoverer-3',to:'Planner-3',type:'heal.complete',msg:'ICU monitor pod restarted — SLO 99.2%',color:'#34d399'},
   {from:'Perceiver-4',to:'Planner-4',type:'latency.spike',msg:'Edge node latency 340ms — rerouting',color:'#fbbf24'},
   {from:'Guardian-1',to:'Perceiver-1',type:'heartbeat',msg:'All systems nominal — 87ms round-trip',color:'#a78bfa'},
+  {from:'Planner-2',to:'Recoverer-2',type:'scale.out',msg:'Auto-scaling +3 replicas — cloud cluster',color:'#60a5fa'},
+  {from:'Perceiver-3',to:'Planner-3',type:'vitals.alert',msg:'HRV spike detected — Ward 3A patient',color:'#f472b6'},
 ];
 let feedIdx=0;
 function pushFeedItem(){
-  const item=A2A_MSGS[feedIdx%A2A_MSGS.length]; feedIdx++;
+  const item=A2A_MSGS[feedIdx%A2A_MSGS.length];feedIdx++;
   const feed=document.getElementById('a2a-feed');
   const el=document.createElement('div');
   el.className='a2a-item';
   el.style.cssText=`border-left-color:${item.color};background:${item.color}0d`;
   el.innerHTML=`<div style="font-size:10px;font-weight:600;color:${item.color};margin-bottom:2px">${item.from} → ${item.to}</div>
     <div style="font-size:10px;color:#94a3b8;line-height:1.4">${item.msg}</div>
-    <div style="font-size:9px;color:#475569;margin-top:3px">${item.type} · just now</div>`;
+    <div style="font-size:9px;color:#475569;margin-top:3px">${item.type} · ${new Date().toLocaleTimeString('en',{hour12:false})}</div>`;
   feed.prepend(el);
   if(feed.children.length>12)feed.lastChild.remove();
 }
 for(let i=0;i<6;i++)pushFeedItem();
 setInterval(pushFeedItem,5000);
-
-// KPIs update
-const kpiEls=document.querySelectorAll('.kpi .text-2xl');
-// already rendered server-side
-</script>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-// Inject KPIs dynamically (server already rendered them, but let's keep live feel)
-const kpiData=[
-  {label:'Active Agents',value:'16',color:'#2dd4bf',sub:'across 4 domains'},
-  {label:'Incidents Today',value:'7',color:'#fbbf24',sub:'3 auto-healed'},
-  {label:'SLO Compliance',value:'99.1%',color:'#34d399',sub:'last 24 hours'},
-  {label:'A2A Messages',value:'1,247',color:'#a78bfa',sub:'since startup'},
-];
-// KPIs are already in the template via the loop below — this is just for live update
 </script>
 {% endblock %}
