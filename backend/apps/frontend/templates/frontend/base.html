@@ -1,183 +1,304 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{% block title %}Eraya{% endblock %} — Agent Swarm</title>
-<script>(function(){var t=localStorage.getItem('eraya-theme')||'dark';document.documentElement.classList.toggle('dark',t==='dark');}());</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config={darkMode:'class',theme:{extend:{colors:{eraya:{bg:'#060d1a',surface:'#0c1628'}}}}}
+tailwind.config={theme:{extend:{colors:{eraya:{bg:'#06060e',card:'rgba(255,255,255,.04)'}},fontFamily:{sans:['Inter','sans-serif'],brand:['Space Grotesk','sans-serif']}}}}
 </script>
 <style>
-:root{--glass-bg:rgba(255,255,255,0.85);--glass-border:rgba(20,184,166,0.15);--sidebar-bg:rgba(255,255,255,0.88);}
-html.dark{--glass-bg:rgba(6,13,26,0.85);--glass-border:rgba(255,255,255,0.07);--sidebar-bg:rgba(6,13,26,0.88);}
-.glass{background:var(--glass-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
-.sidebar-link{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:8px;font-size:12px;transition:all .15s;color:#64748b;}
-html.dark .sidebar-link{color:#94a3b8;}
-.sidebar-link:hover{background:rgba(20,184,166,.1);color:#0d9488;}
-html.dark .sidebar-link:hover{background:rgba(20,184,166,.12);color:#2dd4bf;}
-.sidebar-link.active{background:linear-gradient(to right,rgba(204,251,241,.8),rgba(207,250,254,.6));color:#0f766e;font-weight:600;border:1px solid rgba(153,246,228,.5);}
-html.dark .sidebar-link.active{background:linear-gradient(to right,rgba(20,184,166,.2),rgba(6,182,212,.1));color:#5eead4;border-color:rgba(20,184,166,.25);}
-.card{border-radius:16px;border:1px solid rgba(204,251,241,.8);background:rgba(255,255,255,.7);backdrop-filter:blur(8px);padding:20px;}
-html.dark .card{border-color:rgba(255,255,255,.07);background:rgba(255,255,255,.04);}
-.kpi{border-radius:12px;border:1px solid rgba(204,251,241,.6);background:rgba(255,255,255,.6);padding:16px;}
-html.dark .kpi{border-color:rgba(255,255,255,.06);background:rgba(255,255,255,.03);}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:500;}
+/* ── Reset & base ─────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'Inter',sans-serif;
+  background:#06060e;
+  color:#e2e8f0;
+  font-size:14px;
+  line-height:1.5;
+}
+
+/* ── Animated orbs ────────────────────────────────────────────── */
+.orb{position:fixed;border-radius:50%;filter:blur(72px);pointer-events:none;z-index:0;}
+.orb-1{width:55vw;height:55vw;top:-12%;left:-8%;
+  background:radial-gradient(circle at 40% 40%,rgba(56,189,248,.18) 0%,transparent 70%);
+  animation:orb-drift-1 22s ease-in-out infinite;}
+.orb-2{width:48vw;height:48vw;top:28%;right:-10%;
+  background:radial-gradient(circle at 60% 40%,rgba(99,102,241,.13) 0%,transparent 70%);
+  animation:orb-drift-2 28s ease-in-out infinite;}
+.orb-3{width:42vw;height:42vw;bottom:-8%;left:25%;
+  background:radial-gradient(circle at 50% 60%,rgba(14,165,233,.11) 0%,transparent 70%);
+  animation:orb-drift-3 34s ease-in-out infinite;}
+@keyframes orb-drift-1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3vw,4vh) scale(1.05)}66%{transform:translate(-2vw,2vh) scale(.97)}}
+@keyframes orb-drift-2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-4vw,3vh) scale(1.04)}70%{transform:translate(2vw,-2vh) scale(.98)}}
+@keyframes orb-drift-3{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(2vw,-3vh) scale(.96)}65%{transform:translate(-3vw,2vh) scale(1.03)}}
+
+/* ── Glass system ─────────────────────────────────────────────── */
+.glass-header{
+  background:transparent;
+  border-bottom:1px solid rgba(186,230,253,.08);
+}
+.glass-sidebar{
+  background:rgba(255,255,255,.02);
+  border-right:1px solid rgba(186,230,253,.08);
+}
+.card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:1rem;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(14,30,62,.04);
+  padding:1.25rem;
+}
+.kpi{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:.875rem;
+  padding:1rem;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(186,230,253,.15);border-radius:2px;}
 .scroll-hide::-webkit-scrollbar{display:none;}
 .scroll-hide{-ms-overflow-style:none;scrollbar-width:none;}
+
+/* ── Sidebar nav ──────────────────────────────────────────────── */
+.nav-item{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;
+  font-size:11.5px;font-weight:500;color:rgba(148,163,184,.7);
+  transition:all .15s;text-decoration:none;border:1px solid transparent;
+}
+.nav-item:hover{
+  color:rgba(186,230,253,.9);
+  background:rgba(56,189,248,.07);
+}
+.nav-item.active{
+  color:#7dd3fc;
+  background:rgba(56,189,248,.10);
+  border-color:rgba(56,189,248,.18);
+  font-weight:600;
+}
+
+/* ── Logo mark ────────────────────────────────────────────────── */
+.logo-mark{
+  width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#3b82f6,#38bdf8);
+  box-shadow:0 4px 14px rgba(59,130,246,.35);
+  font-weight:800;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;
+}
+
+/* ── Badges ───────────────────────────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 9px;
+  border-radius:999px;font-size:10px;font-weight:500;
+}
+
+/* ── Active pill indicator ────────────────────────────────────── */
+.pill-active{
+  background:linear-gradient(90deg,#93c5fd,#60a5fa,#38bdf8,#60a5fa,#93c5fd);
+  background-size:250% 100%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:shimmer 3.5s linear infinite;
+}
+@keyframes shimmer{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+/* ── Pulse dot ────────────────────────────────────────────────── */
+.pulse-blue{
+  width:7px;height:7px;border-radius:50%;background:#3b82f6;
+  box-shadow:0 0 0 4px rgba(59,130,246,.15);
+  animation:pulse-b 1.8s ease-in-out infinite;
+}
+@keyframes pulse-b{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.15)}50%{box-shadow:0 0 0 8px rgba(59,130,246,.06)}}
+
+/* ── Brand font class ─────────────────────────────────────────── */
+.brand-font{font-family:'Space Grotesk',sans-serif;}
+
+/* ── Layout ───────────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100%;position:relative;z-index:1;}
+#body-row{display:flex;flex:1;overflow:hidden;}
+#sidebar{width:216px;flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto;}
+#main{flex:1;overflow:auto;}
 </style>
 {% block extra_head %}{% endblock %}
 </head>
-<body class="flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-[#060d1a] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+<body>
 
-<!-- Ambient glow -->
-<div class="fixed inset-0 pointer-events-none z-0" aria-hidden>
-  <div style="position:absolute;top:0;left:25%;width:380px;height:380px;background:radial-gradient(ellipse,rgba(45,212,191,.05) 0%,transparent 70%);filter:blur(60px)"></div>
-  <div style="position:absolute;bottom:0;right:20%;width:380px;height:380px;background:radial-gradient(ellipse,rgba(139,92,246,.04) 0%,transparent 70%);filter:blur(60px)"></div>
-</div>
+<!-- Ambient orbs -->
+<div class="orb orb-1" aria-hidden="true"></div>
+<div class="orb orb-2" aria-hidden="true"></div>
+<div class="orb orb-3" aria-hidden="true"></div>
 
-<!-- ── Header ──────────────────────────────────────────────────────────────── -->
-<header class="glass relative z-30 flex-shrink-0 h-14 flex items-center justify-between px-4 border-b"
-        style="border-color:var(--glass-border)">
-  <div class="flex items-center gap-1.5 text-xs">
-    <a href="/dashboard/" class="text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-    </a>
-    <span class="text-slate-300 dark:text-slate-600">›</span>
-    <span class="font-medium text-slate-600 dark:text-slate-300">{% block page_title %}{% endblock %}</span>
-  </div>
-  <div class="flex items-center gap-3">
-    <span class="flex items-center gap-1.5">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-      <span class="text-[10px] text-slate-400 hidden sm:inline">Live</span>
-    </span>
-    <button onclick="erayaToggleTheme()" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-all" title="Toggle theme">
-      <span id="theme-icon-sun" class="hidden">☀️</span>
-      <span id="theme-icon-moon">🌙</span>
-    </button>
-    {% if user_picture %}
-    <img src="{{ user_picture }}" alt="{{ user_name }}" class="w-7 h-7 rounded-full object-cover ring-2 ring-teal-400/30">
-    {% else %}
-    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center text-white text-[11px] font-bold select-none">{{ user_name|first|upper }}</div>
-    {% endif %}
-    <div class="hidden sm:block leading-none">
-      <div class="text-xs font-medium text-slate-700 dark:text-slate-200">{{ user_name }}</div>
-      <div class="text-[9px] text-slate-400 mt-0.5">{{ user_role }}</div>
-    </div>
-    <a href="/auth/logout/" class="text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-colors ml-1" title="Sign out">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-    </a>
-  </div>
-</header>
+<div id="app">
 
-<!-- ── Body layout ──────────────────────────────────────────────────────────── -->
-<div class="relative z-10 flex flex-1 overflow-hidden">
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="glass-header flex-shrink-0 flex items-center justify-between px-5 h-14 relative z-30">
 
-  <!-- Sidebar -->
-  <aside class="w-56 flex-shrink-0 flex flex-col border-r overflow-y-auto scroll-hide"
-         style="background:var(--sidebar-bg);backdrop-filter:blur(18px);border-color:var(--glass-border)">
-    <!-- Logo -->
-    <div class="px-4 py-4 border-b flex items-center gap-2 flex-shrink-0" style="border-color:var(--glass-border)">
-      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-teal-400 flex items-center justify-center text-white font-bold text-xs shadow-sm">E</div>
-      <div>
-        <div class="text-sm font-bold tracking-wide text-slate-800 dark:text-slate-100">ERAYA</div>
-        <div class="text-[10px] text-slate-400 -mt-0.5">Agent Swarm</div>
+    <!-- Left: logo + breadcrumb -->
+    <div class="flex items-center gap-4">
+      <a href="/dashboard/" class="flex items-center gap-2.5 group">
+        <div class="logo-mark">E</div>
+        <div class="leading-none">
+          <div class="text-[13px] font-bold tracking-wide brand-font text-slate-100 group-hover:text-sky-300 transition-colors">ERAYA</div>
+          <div class="text-[9px] text-slate-500 mt-0.5 tracking-widest uppercase">Agent Swarm</div>
+        </div>
+      </a>
+      <div class="hidden sm:flex items-center gap-1.5 text-[11px]">
+        <span style="color:rgba(186,230,253,.2)">›</span>
+        <span class="text-slate-400 font-medium">{% block page_title %}{% endblock %}</span>
       </div>
     </div>
 
-    <!-- Major nav (icon grid) -->
-    <div class="px-3 py-3 border-b flex-shrink-0" style="border-color:var(--glass-border)">
-      <div class="grid grid-cols-4 gap-1">
-        {% for item in major_nav %}
-        <a href="{{ item.href }}" title="{{ item.label }}"
-           class="flex flex-col items-center gap-1 py-2 rounded-xl text-[9px] font-medium transition-all
-                  {% if page == item.id %}bg-gradient-to-b from-teal-100 to-cyan-100 dark:from-teal-900/40 dark:to-cyan-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800
-                  {% else %}text-slate-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400{% endif %}">
-          <span class="nav-icon text-sm" data-icon="{{ item.icon }}"></span>
-          <span>{{ item.label }}</span>
+    <!-- Right: live indicator + user -->
+    <div class="flex items-center gap-4">
+      <!-- Status chips -->
+      <div class="hidden md:flex items-center gap-2">
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium"
+             style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);color:#6ee7b7">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Live
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium"
+             style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:#93c5fd">
+          Django&nbsp;5.2
+        </div>
+        <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium"
+             style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);color:#c4b5fd">
+          Groq&nbsp;LLM
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="w-px h-6" style="background:rgba(255,255,255,.07)"></div>
+
+      <!-- User -->
+      {% if user_picture %}
+      <img src="{{ user_picture }}" alt="{{ user_name }}" class="w-8 h-8 rounded-full object-cover ring-2 ring-blue-400/30">
+      {% else %}
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold brand-font select-none"
+           style="background:linear-gradient(135deg,#3b82f6,#38bdf8);box-shadow:0 2px 8px rgba(59,130,246,.3)">{{ user_name|first|upper }}</div>
+      {% endif %}
+      <div class="hidden sm:block leading-none">
+        <div class="text-xs font-semibold text-slate-200">{{ user_name }}</div>
+        <div class="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wider">{{ user_role }}</div>
+      </div>
+
+      <a href="/auth/logout/" class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/10"
+         style="color:rgba(148,163,184,.4)" title="Sign out">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Body ────────────────────────────────────────────────── -->
+  <div id="body-row">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="glass-sidebar scroll-hide">
+      <!-- Domain cluster -->
+      <div class="px-3 pt-4 pb-3" style="border-bottom:1px solid rgba(186,230,253,.06)">
+        <div class="text-[9px] uppercase tracking-widest text-slate-600 mb-2 px-1">Domains</div>
+        <div class="grid grid-cols-4 gap-1">
+          {% for item in major_nav %}
+          <a href="{{ item.href }}" title="{{ item.label }}"
+             class="flex flex-col items-center gap-1 py-2 rounded-xl text-[9px] font-medium transition-all
+                    {% if page == item.id %}bg-blue-500/10 border border-blue-500/20 text-sky-300
+                    {% else %}text-slate-600 hover:text-sky-400 hover:bg-blue-500/06{% endif %}">
+            <span class="nav-icon text-sm" data-icon="{{ item.icon }}"></span>
+            <span class="leading-none text-center">{{ item.label }}</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Main nav -->
+      <nav class="flex-1 px-2.5 py-3 space-y-0.5">
+        {% for item in flat_nav %}
+        <a href="{{ item.href }}" class="nav-item {% if page == item.id %}active{% endif %}">
+          <span class="nav-icon flex-shrink-0" data-icon="{{ item.icon }}" style="width:14px;height:14px"></span>
+          <span class="flex-1 {% if page == item.id %}pill-active{% endif %}">{{ item.label }}</span>
+          {% if page == item.id %}
+          <span class="w-1 h-4 rounded-full flex-shrink-0" style="background:linear-gradient(to bottom,#60a5fa,#38bdf8)"></span>
+          {% endif %}
         </a>
         {% endfor %}
+      </nav>
+
+      <!-- Footer -->
+      <div class="px-3 py-3 flex-shrink-0" style="border-top:1px solid rgba(186,230,253,.06)">
+        <div class="flex items-center gap-2">
+          <div class="pulse-blue flex-shrink-0"></div>
+          <span class="text-[9px] text-slate-600 tracking-wide">16 agents · nominal</span>
+        </div>
+        <div class="mt-2 text-[9px] text-slate-700">Microsoft Build AI Hackathon 2026</div>
       </div>
-    </div>
+    </aside>
 
-    <!-- Flat nav -->
-    <nav class="flex-1 px-3 py-3 space-y-0.5">
-      {% for item in flat_nav %}
-      <a href="{{ item.href }}" class="sidebar-link {% if page == item.id %}active{% endif %}">
-        <span class="nav-icon" data-icon="{{ item.icon }}" style="width:12px;height:12px;flex-shrink:0"></span>
-        <span class="flex-1">{{ item.label }}</span>
-      </a>
-      {% endfor %}
-    </nav>
-
-    <!-- Footer -->
-    <div class="px-4 py-3 border-t flex-shrink-0" style="border-color:var(--glass-border)">
-      <div class="flex items-center gap-2">
-        <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-        <span class="text-[10px] text-slate-400">Live · Django backend</span>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Page content -->
-  <main class="flex-1 overflow-auto {% block main_class %}p-6{% endblock %}">
-    {% block content %}{% endblock %}
-  </main>
+    <!-- Main content -->
+    <main id="main" class="{% block main_class %}p-5{% endblock %}">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 </div>
 
-<!-- Share badge -->
+<!-- Share FAB -->
 <div class="fixed bottom-5 right-5 z-50" id="share-wrap">
-  <div id="share-card" class="hidden mb-2 w-64 rounded-2xl p-4 text-xs shadow-2xl card">
-    <p class="font-semibold text-slate-700 dark:text-white/90 mb-1">Eraya — Self-Healing Agent Swarm</p>
-    <p class="text-slate-400 dark:text-white/40 mb-3 leading-relaxed">Microsoft Build AI Hackathon 2026. Multi-domain autonomous agents with A2A messaging.</p>
-    <div class="text-teal-600 dark:text-teal-400 font-medium mb-1">Pardeep Sandhu</div>
-    <div class="text-slate-400 dark:text-white/30 mb-3">sandhupardeep300@gmail.com</div>
+  <div id="share-card" class="hidden mb-2 w-64 rounded-2xl p-4 text-xs shadow-2xl"
+       style="background:rgba(6,6,14,.92);border:1px solid rgba(255,255,255,.10);backdrop-filter:blur(20px)">
+    <p class="font-semibold text-slate-100 mb-1 brand-font">Eraya · Self-Healing Agent Swarm</p>
+    <p class="text-slate-500 mb-3 leading-relaxed" style="font-size:11px">Microsoft Build AI Hackathon 2026. Multi-domain autonomous agents with A2A messaging and Groq LLM.</p>
+    <div class="text-sky-400 font-medium mb-0.5">Pardeep Sandhu</div>
+    <div class="text-slate-600 mb-3" style="font-size:10px">sandhupardeep300@gmail.com</div>
     <div class="flex gap-2">
-      <button onclick="navigator.clipboard.writeText(location.href)" class="flex-1 py-1.5 rounded-xl text-[11px] font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 hover:bg-teal-500/20 transition-all">Copy Link</button>
-      <a href="mailto:sandhupardeep300@gmail.com" class="flex-1 py-1.5 rounded-xl text-[11px] font-medium text-center bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/50 hover:bg-slate-200 dark:hover:bg-white/10 transition-all">Email</a>
+      <button onclick="navigator.clipboard.writeText(location.href)"
+              class="flex-1 py-1.5 rounded-xl text-[11px] font-medium transition-all"
+              style="background:rgba(59,130,246,.1);color:#60a5fa;border:1px solid rgba(59,130,246,.2)">Copy Link</button>
+      <a href="mailto:sandhupardeep300@gmail.com" class="flex-1 py-1.5 rounded-xl text-[11px] font-medium text-center transition-all"
+         style="background:rgba(255,255,255,.04);color:#94a3b8;border:1px solid rgba(255,255,255,.08)">Email</a>
     </div>
   </div>
   <button onclick="document.getElementById('share-card').classList.toggle('hidden')"
-          class="px-4 py-2 rounded-full text-xs font-medium text-white shadow-lg transition-all hover:scale-105"
-          style="background:linear-gradient(to right,#0d9488,#06b6d4)">
+          class="px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg transition-all hover:scale-105 hover:shadow-blue-500/25 brand-font"
+          style="background:linear-gradient(135deg,#3b82f6,#38bdf8);box-shadow:0 4px 14px rgba(59,130,246,.3)">
     Share · Contact
   </button>
 </div>
 
-<!-- Lucide icons via CDN -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
-// ── Theme ──────────────────────────────────────────────────────────────────
-function erayaToggleTheme(){
-  const dark=document.documentElement.classList.toggle('dark');
-  localStorage.setItem('eraya-theme',dark?'dark':'light');
-  applyThemeIcons();
-}
-function applyThemeIcons(){
-  const dark=document.documentElement.classList.contains('dark');
-  document.getElementById('theme-icon-sun').classList.toggle('hidden',!dark);
-  document.getElementById('theme-icon-moon').classList.toggle('hidden',dark);
-}
-applyThemeIcons();
-
-// ── Lucide icon injection ──────────────────────────────────────────────────
+// Lucide SVG map
 const ICONS={
-  'layout-dashboard':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
-  'bot':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>',
-  'activity':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>',
-  'shield':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-  'map':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
-  'radio':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>',
-  'heart-pulse':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l1.5-3 2 6 1.5-3h6.78"/></svg>',
-  'git-branch':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>',
-  'alert-triangle':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  'file-text':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
-  'settings':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  'layout-dashboard':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  'bot':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16" stroke-linecap="round" stroke-width="3"/><line x1="16" y1="16" x2="16" y2="16" stroke-linecap="round" stroke-width="3"/></svg>',
+  'activity':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>',
+  'shield':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  'map':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="1,6 1,22 8,18 16,22 23,18 23,2 16,6 8,2"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
+  'radio':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>',
+  'heart-pulse':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l1.5-3 2 6 1.5-3h6.78"/></svg>',
+  'git-branch':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>',
+  'alert-triangle':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  'file-text':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+  'settings':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  'network':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>',
 };
 document.querySelectorAll('.nav-icon[data-icon]').forEach(el=>{
   const svg=ICONS[el.dataset.icon];
-  if(svg){el.innerHTML=svg;const s=el.querySelector('svg');if(s){s.style.width=el.style.width||'14px';s.style.height=el.style.height||'14px';}}
+  if(svg){
+    el.innerHTML=svg;
+    const s=el.querySelector('svg');
+    if(s){s.style.width=el.style.width||'14px';s.style.height=el.style.height||'14px';}
+  }
 });
 </script>
 {% block extra_scripts %}{% endblock %}

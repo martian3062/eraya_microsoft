@@ -1,63 +1,129 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Eraya — Sign In</title>
-<script>(function(){var t=localStorage.getItem('eraya-theme')||'dark';document.documentElement.classList.toggle('dark',t==='dark');}());</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={darkMode:'class'}</script>
 <style>
-body{margin:0;overflow:hidden;}
-#attractor-canvas{position:fixed;inset:0;z-index:0;}
-.veil{position:fixed;inset:0;z-index:1;pointer-events:none;
-  background:radial-gradient(ellipse 60% 80% at 20% 50%,rgba(6,13,26,.3) 0%,rgba(6,13,26,.7) 100%);}
-html:not(.dark) .veil{background:radial-gradient(ellipse 60% 80% at 20% 50%,rgba(253,250,244,.2) 0%,rgba(253,250,244,.6) 100%);}
-.glass-card{background:rgba(12,22,40,.75);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(20px);}
-html:not(.dark) .glass-card{background:rgba(255,255,255,.82);border-color:rgba(0,0,0,.08);}
-.inp{width:100%;padding:10px 14px;border-radius:12px;font-size:13px;outline:none;transition:all .2s;
-  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;}
-html:not(.dark) .inp{background:rgba(255,255,255,.9);border-color:#e2e8f0;color:#1e293b;}
-.inp:focus{border-color:#2dd4bf;box-shadow:0 0 0 3px rgba(45,212,191,.15);}
-.inp::placeholder{color:rgba(255,255,255,.3);}
-html:not(.dark) .inp::placeholder{color:#94a3b8;}
-.btn-primary{width:100%;padding:11px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;
-  background:linear-gradient(to right,#0d9488,#06b6d4);transition:all .2s;border:none;cursor:pointer;}
-.btn-primary:hover{filter:brightness(1.1);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'Inter',sans-serif;
+  background:#06060e;
+  color:#e2e8f0;
+}
+/* Orbs */
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
+.orb-1{width:60vw;height:60vw;top:-15%;left:-10%;
+  background:radial-gradient(circle at 40% 40%,rgba(56,189,248,.22) 0%,transparent 70%);
+  animation:od1 22s ease-in-out infinite;}
+.orb-2{width:50vw;height:50vw;top:30%;right:-12%;
+  background:radial-gradient(circle at 60% 40%,rgba(99,102,241,.16) 0%,transparent 70%);
+  animation:od2 28s ease-in-out infinite;}
+.orb-3{width:45vw;height:45vw;bottom:-10%;left:28%;
+  background:radial-gradient(circle at 50% 60%,rgba(14,165,233,.13) 0%,transparent 70%);
+  animation:od3 34s ease-in-out infinite;}
+@keyframes od1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3vw,4vh) scale(1.05)}66%{transform:translate(-2vw,2vh) scale(.97)}}
+@keyframes od2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-4vw,3vh) scale(1.04)}70%{transform:translate(2vw,-2vh) scale(.98)}}
+@keyframes od3{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(2vw,-3vh) scale(.96)}65%{transform:translate(-3vw,2vh) scale(1.03)}}
+/* Canvas */
+#attractor-canvas{position:fixed;inset:0;z-index:1;}
+/* Grid overlay */
+.grid-overlay{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(56,189,248,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(56,189,248,.03) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+/* Glass card */
+.glass-card{
+  background:rgba(6,6,14,.82);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:20px;
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.07),
+    0 32px 80px rgba(0,0,0,.6),
+    0 0 0 1px rgba(56,189,248,.05);
+}
+/* Inputs */
+.inp{
+  width:100%;padding:10px 14px;border-radius:11px;font-size:13px;
+  outline:none;transition:all .2s;font-family:'Inter',sans-serif;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  color:#e2e8f0;
+}
+.inp:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.18);}
+.inp::placeholder{color:rgba(148,163,184,.4);}
+/* Buttons */
+.btn-primary{
+  width:100%;padding:11px;border-radius:11px;font-size:13px;font-weight:600;
+  color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;
+  background:linear-gradient(135deg,#3b82f6,#38bdf8);
+  box-shadow:0 4px 14px rgba(59,130,246,.3);
+  transition:all .2s;
+}
+.btn-primary:hover{filter:brightness(1.1);box-shadow:0 6px 20px rgba(59,130,246,.4);}
 .btn-primary:disabled{opacity:.45;cursor:not-allowed;}
-.btn-outline{width:100%;padding:11px;border-radius:12px;font-size:13px;font-weight:500;
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);
-  transition:all .2s;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
-html:not(.dark) .btn-outline{background:rgba(255,255,255,.9);border-color:#e2e8f0;color:#374151;}
-.btn-outline:hover{background:rgba(255,255,255,.12);}
-html:not(.dark) .btn-outline:hover{background:#fff;}
-.err{display:flex;align-items:center;gap:6px;font-size:11px;color:#f87171;
-  background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:10px;padding:8px 12px;}
-.snippet{position:fixed;font-family:monospace;font-size:10px;letter-spacing:.04em;white-space:nowrap;pointer-events:none;z-index:2;transition:opacity 1.2s,transform 1.2s;}
+.btn-outline{
+  width:100%;padding:10px;border-radius:11px;font-size:13px;font-weight:500;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+  color:rgba(226,232,240,.8);transition:all .2s;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  font-family:'Inter',sans-serif;
+}
+.btn-outline:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18);}
+/* Error */
+.err{
+  display:flex;align-items:center;gap:6px;font-size:11px;
+  color:#f87171;background:rgba(248,113,113,.08);
+  border:1px solid rgba(248,113,113,.2);border-radius:10px;padding:8px 12px;
+}
+/* Floating snippets */
+.snippet{
+  position:fixed;font-family:'Space Grotesk',monospace;font-size:9.5px;
+  letter-spacing:.06em;white-space:nowrap;pointer-events:none;z-index:5;
+  transition:opacity 1.2s,transform 1.2s;color:rgba(125,211,252,.5);
+}
 </style>
 </head>
-<body class="bg-[#060d1a] dark:bg-[#060d1a]" style="background:linear-gradient(135deg,#08041a 0%,#0c1228 40%,#050f18 100%)">
+<body>
 
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
 <canvas id="attractor-canvas"></canvas>
-<div class="veil"></div>
-<div id="snippets-layer" style="position:fixed;inset:0;z-index:2;pointer-events:none"></div>
+<div class="grid-overlay"></div>
+<div id="snippets-layer" style="position:fixed;inset:0;z-index:4;pointer-events:none"></div>
 
-<!-- Logo -->
-<div style="position:fixed;top:24px;left:28px;z-index:10;display:flex;align-items:center;gap:10px">
-  <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#fb923c,#2dd4bf);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;box-shadow:0 4px 12px rgba(45,212,191,.3)">E</div>
-  <span style="font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55)">Eraya</span>
+<!-- Logo top-left -->
+<div style="position:fixed;top:22px;left:26px;z-index:10;display:flex;align-items:center;gap:10px">
+  <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#38bdf8);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:800;color:#fff;font-size:14px;box-shadow:0 4px 14px rgba(59,130,246,.35)">E</div>
+  <div>
+    <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(226,232,240,.8);font-family:'Space Grotesk',sans-serif">Eraya</div>
+    <div style="font-size:9px;color:rgba(148,163,184,.4);letter-spacing:.1em;text-transform:uppercase;margin-top:1px">Agent Swarm</div>
+  </div>
 </div>
 
-<!-- Theme toggle -->
-<button id="theme-btn" onclick="toggleTheme()" style="position:fixed;top:20px;right:24px;z-index:10;width:32px;height:32px;border-radius:50%;border:none;cursor:pointer;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
-  <span id="t-sun" class="hidden">☀️</span>
-  <span id="t-moon">🌙</span>
-</button>
+<!-- Hackathon badge top-right -->
+<div style="position:fixed;top:22px;right:26px;z-index:10;display:flex;align-items:center;gap:1.5px;padding:5px 12px;border-radius:999px;font-size:9.5px;font-weight:600;letter-spacing:.06em;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:rgba(147,197,253,.7)">
+  ● &nbsp;Microsoft Build AI Hackathon 2026
+</div>
 
-<!-- Login card -->
-<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:64px;z-index:10">
-  <div class="glass-card" style="width:288px;padding:28px;border-radius:20px;box-shadow:0 32px 80px rgba(0,0,0,.5)">
-    <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 4px" class="dark:text-white" id="card-title">Sign in</h1>
-    <p style="font-size:13px;color:rgba(255,255,255,.38);margin:0 0 20px">Self-healing agent console</p>
+<!-- Login card — right-aligned -->
+<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:80px;z-index:10">
+  <div class="glass-card" style="width:296px;padding:30px">
+
+    <!-- Header -->
+    <div style="margin-bottom:22px">
+      <h1 id="card-title" style="font-size:21px;font-weight:700;color:#f1f5f9;font-family:'Space Grotesk',sans-serif;margin-bottom:4px">Sign in</h1>
+      <p style="font-size:12px;color:rgba(148,163,184,.55)">Self-healing agent console</p>
+    </div>
 
     {% if error %}
     <div class="err" style="margin-bottom:16px">⚠ {{ error|title }}</div>
@@ -67,43 +133,56 @@ html:not(.dark) .btn-outline:hover{background:#fff;}
     <div id="step-entry" class="step">
       <div style="display:flex;flex-direction:column;gap:10px">
         <button class="btn-primary" onclick="showStep('name')">
-          🛡 Operator
+          🛡&nbsp; Operator access
         </button>
         <button class="btn-outline" onclick="showStep('email')">
-          ✉️ Sign in with Email
+          ✉️&nbsp; Sign in with Email
         </button>
-        <a href="/auth/google/" style="text-decoration:none">
+        <a href="/auth/google/" style="text-decoration:none;display:block">
           <button class="btn-outline" style="width:100%">
-            <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
             Continue with Google
           </button>
         </a>
-        <a href="/auth/guest/" style="text-decoration:none">
-          <button class="btn-outline" style="color:rgba(255,255,255,.35);width:100%;font-size:12px">👤 Guest</button>
+        <a href="/auth/guest/" style="text-decoration:none;display:block">
+          <button class="btn-outline" style="width:100%;color:rgba(148,163,184,.45);font-size:12px">👤&nbsp; Continue as Guest</button>
         </a>
+      </div>
+      <!-- Info strip -->
+      <div style="margin-top:18px;padding:10px 12px;border-radius:10px;background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.12)">
+        <div style="font-size:10px;color:rgba(147,197,253,.6);line-height:1.6">
+          <span style="color:rgba(147,197,253,.9);font-weight:600">Eraya</span> · Theme 05 Agent Swarms<br>
+          4-archetype self-healing framework<br>
+          Perceiver · Planner · Recoverer · Guardian
+        </div>
       </div>
     </div>
 
-    <!-- STEP: name (operator) -->
+    <!-- STEP: operator name -->
     <div id="step-name" class="step" style="display:none">
       <div style="display:flex;flex-direction:column;gap:12px">
         <input id="inp-name" class="inp" type="text" placeholder="Your name" autofocus
                onkeydown="if(event.key==='Enter')doOperator()">
-        <button class="btn-primary" onclick="doOperator()">Enter</button>
-        <button onclick="showStep('entry')" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;padding:4px">← Back</button>
+        <button class="btn-primary" onclick="doOperator()">→&nbsp; Enter console</button>
+        <button onclick="showStep('entry')" style="background:none;border:none;color:rgba(148,163,184,.35);font-size:12px;cursor:pointer;padding:4px;font-family:'Inter',sans-serif">← Back</button>
       </div>
     </div>
 
-    <!-- STEP: email (sign in) -->
+    <!-- STEP: email sign in -->
     <div id="step-email" class="step" style="display:none">
       <div style="display:flex;flex-direction:column;gap:10px">
         <div id="err-email" class="err" style="display:none"></div>
         <input id="inp-email" class="inp" type="email" placeholder="Email" autofocus onkeydown="if(event.key==='Enter')doLogin()">
         <input id="inp-pass" class="inp" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
-        <button id="btn-login" class="btn-primary" onclick="doLogin()">🔒 Sign in</button>
-        <div style="display:flex;justify-content:space-between;padding-top:4px">
-          <button onclick="showStep('register')" style="background:none;border:none;font-size:11px;color:#2dd4bf;cursor:pointer">Create account →</button>
-          <button onclick="showStep('entry')" style="background:none;border:none;font-size:11px;color:rgba(255,255,255,.25);cursor:pointer">← Back</button>
+        <button id="btn-login" class="btn-primary" onclick="doLogin()">🔒&nbsp; Sign in</button>
+        <div style="display:flex;justify-content:space-between;padding-top:2px">
+          <button onclick="showStep('register')" style="background:none;border:none;font-size:11px;color:#60a5fa;cursor:pointer;font-family:'Inter',sans-serif">Create account →</button>
+          <button onclick="showStep('entry')" style="background:none;border:none;font-size:11px;color:rgba(148,163,184,.3);cursor:pointer;font-family:'Inter',sans-serif">← Back</button>
         </div>
       </div>
     </div>
@@ -115,40 +194,62 @@ html:not(.dark) .btn-outline:hover{background:#fff;}
         <input id="inp-rname" class="inp" type="text" placeholder="Your name (optional)" autofocus>
         <input id="inp-remail" class="inp" type="email" placeholder="Email" onkeydown="if(event.key==='Enter')doRegister()">
         <input id="inp-rpass" class="inp" type="password" placeholder="Password (min 6 chars)" onkeydown="if(event.key==='Enter')doRegister()">
-        <button id="btn-reg" class="btn-primary" onclick="doRegister()">✨ Create account</button>
-        <div style="display:flex;justify-content:space-between;padding-top:4px">
-          <button onclick="showStep('email')" style="background:none;border:none;font-size:11px;color:#2dd4bf;cursor:pointer">Already have account →</button>
-          <button onclick="showStep('entry')" style="background:none;border:none;font-size:11px;color:rgba(255,255,255,.25);cursor:pointer">← Back</button>
+        <button id="btn-reg" class="btn-primary" onclick="doRegister()">✨&nbsp; Create account</button>
+        <div style="display:flex;justify-content:space-between;padding-top:2px">
+          <button onclick="showStep('email')" style="background:none;border:none;font-size:11px;color:#60a5fa;cursor:pointer;font-family:'Inter',sans-serif">Already have account →</button>
+          <button onclick="showStep('entry')" style="background:none;border:none;font-size:11px;color:rgba(148,163,184,.3);cursor:pointer;font-family:'Inter',sans-serif">← Back</button>
         </div>
       </div>
     </div>
+
   </div>
+</div>
+
+<!-- Left side: decorative stats -->
+<div style="position:fixed;left:60px;top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:20px">
+  {% for stat in login_stats %}
+  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;
+              box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">{{ stat.label }}</div>
+    <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:{{ stat.color }}">{{ stat.value }}</div>
+    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">{{ stat.sub }}</div>
+  </div>
+  {% empty %}
+  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Active Agents</div>
+    <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#60a5fa">16</div>
+    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">across 4 domains</div>
+  </div>
+  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Decisions / day</div>
+    <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#34d399">14,208</div>
+    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">autonomous actions</div>
+  </div>
+  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Mean TTHR</div>
+    <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#f472b6">1,240ms</div>
+    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">time to self-heal</div>
+  </div>
+  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">SLO Maintained</div>
+    <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#a78bfa">99.1%</div>
+    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">across all domains</div>
+  </div>
+  {% endfor %}
 </div>
 
 <script src="{% static 'frontend/js/attractor.js' %}"></script>
 <script>
-// ── Theme ──────────────────────────────────────────────────────────────────
-function toggleTheme(){
-  const d=document.documentElement.classList.toggle('dark');
-  localStorage.setItem('eraya-theme',d?'dark':'light');
-  document.getElementById('t-sun').classList.toggle('hidden',!d);
-  document.getElementById('t-moon').classList.toggle('hidden',d);
-}
-const isDark=document.documentElement.classList.contains('dark');
-document.getElementById('t-sun').classList.toggle('hidden',!isDark);
-document.getElementById('t-moon').classList.toggle('hidden',isDark);
-
-// ── Steps ──────────────────────────────────────────────────────────────────
+// Steps
 function showStep(name){
   document.querySelectorAll('.step').forEach(el=>el.style.display='none');
   document.getElementById('step-'+name).style.display='';
-  const titles={entry:'Sign in',name:'Enter your name',email:'Sign in',register:'Create account'};
+  const titles={entry:'Sign in',name:'Operator access',email:'Sign in',register:'Create account'};
   document.getElementById('card-title').textContent=titles[name]||'Sign in';
   const inp={name:'inp-name',email:'inp-email',register:'inp-rname'}[name];
   if(inp)setTimeout(()=>document.getElementById(inp)?.focus(),50);
 }
 
-// ── Operator ──────────────────────────────────────────────────────────────
 function doOperator(){
   const name=document.getElementById('inp-name').value.trim()||'Operator';
   const fd=new FormData();fd.append('name',name);
@@ -156,10 +257,8 @@ function doOperator(){
     .then(()=>location.href='/dashboard/');
 }
 
-// ── Email login ────────────────────────────────────────────────────────────
 async function doLogin(){
-  const btn=document.getElementById('btn-login');
-  const err=document.getElementById('err-email');
+  const btn=document.getElementById('btn-login'),err=document.getElementById('err-email');
   const email=document.getElementById('inp-email').value.trim();
   const pass=document.getElementById('inp-pass').value;
   err.style.display='none';
@@ -173,10 +272,8 @@ async function doLogin(){
   btn.disabled=false;btn.textContent='🔒 Sign in';
 }
 
-// ── Register ───────────────────────────────────────────────────────────────
 async function doRegister(){
-  const btn=document.getElementById('btn-reg');
-  const err=document.getElementById('err-reg');
+  const btn=document.getElementById('btn-reg'),err=document.getElementById('err-reg');
   const name=document.getElementById('inp-rname').value.trim();
   const email=document.getElementById('inp-remail').value.trim();
   const pass=document.getElementById('inp-rpass').value;
@@ -194,24 +291,24 @@ async function doRegister(){
 function showErr(el,msg){el.textContent='⚠ '+msg;el.style.display='flex';}
 function getCookie(n){const c=document.cookie.split(';').find(c=>c.trim().startsWith(n+'='));return c?decodeURIComponent(c.trim().slice(n.length+1)):'';}
 
-// ── Floating tech snippets ─────────────────────────────────────────────────
-const SNIPS=['perceiver·87ms','BLOCKED·R003','rsrp:−87dBm','planner·groq','self-heal→pod','cpu:84%→ok','a2a·7429','otel·8c2f…','hrv_alert·4B','anomaly·killed','recoverer·v2.3','kavacha·stopped','slo:99.1%','guardian·ok'];
-const SLOTS=[{x:4,y:8},{x:38,y:5},{x:20,y:18},{x:8,y:36},{x:34,y:48},{x:48,y:42},{x:15,y:58},{x:40,y:64},{x:6,y:74},{x:28,y:80},{x:44,y:86}];
+// Floating tech snippets
+const SNIPS=['perceiver·87ms','BLOCKED·R003','rsrp:−87dBm','planner·groq','self-heal→pod','cpu:84%→ok','a2a·7429','otel·8c2f','hrv_alert·4B','anomaly·killed','recoverer·v2','kavacha·stop','slo:99.1%','guardian·ok','groq:200ms','llm→plan','guardian·audit'];
+const SLOTS=[{x:5,y:10},{x:36,y:6},{x:22,y:20},{x:10,y:38},{x:32,y:50},{x:50,y:42},{x:17,y:62},{x:42,y:68},{x:7,y:76},{x:28,y:84},{x:46,y:88}];
 const layer=document.getElementById('snippets-layer');
 const spans=SLOTS.map((pos,i)=>{
   const el=document.createElement('span');
   el.className='snippet';
-  el.style.cssText=`left:${pos.x}%;top:${pos.y}%;opacity:0;transform:translateY(8px);color:#2dd4bf;font-size:10px;`;
+  el.style.cssText=`left:${pos.x}%;top:${pos.y}%;opacity:0;transform:translateY(8px)`;
   el.textContent=SNIPS[i%SNIPS.length];
   layer.appendChild(el);
   return el;
 });
-let visSet=new Set([0,1,2,3,4]);
-spans.forEach((el,i)=>{if(visSet.has(i)){el.style.opacity='.65';el.style.transform='translateY(0)';}});
+let vis=new Set([0,1,2,3,4]);
+spans.forEach((el,i)=>{if(vis.has(i)){el.style.opacity='.55';el.style.transform='translateY(0)';}});
 setInterval(()=>{
   const i=Math.floor(Math.random()*spans.length);
-  if(visSet.has(i)){visSet.delete(i);spans[i].style.opacity='0';spans[i].style.transform='translateY(8px)';}
-  else{spans[i].textContent=SNIPS[Math.floor(Math.random()*SNIPS.length)];visSet.add(i);spans[i].style.opacity='.6';spans[i].style.transform='translateY(0)';}
+  if(vis.has(i)){vis.delete(i);spans[i].style.opacity='0';spans[i].style.transform='translateY(8px)';}
+  else{spans[i].textContent=SNIPS[Math.floor(Math.random()*SNIPS.length)];vis.add(i);spans[i].style.opacity='.5';spans[i].style.transform='translateY(0)';}
 },1400);
 </script>
 </body>
