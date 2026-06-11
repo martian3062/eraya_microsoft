@@ -5,11 +5,11 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-#map-container{display:flex;height:100%;width:100%;background:#060d1a;}
+#map-container{display:flex;height:100%;width:100%;}
 #map{flex:1;}
-#feed-panel{width:272px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(6,13,26,.9);border-left:1px solid rgba(255,255,255,.07);backdrop-filter:blur(16px);}
+#feed-panel{width:272px;flex-shrink:0;display:flex;flex-direction:column;background:var(--sidebar-bg);border-left:1px solid var(--sidebar-border);backdrop-filter:blur(16px);}
 #kpi-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:500;display:flex;gap:8px;pointer-events:none;}
-.kpi-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:500;background:rgba(12,22,40,.85);backdrop-filter:blur(8px);}
+.kpi-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:500;background:var(--header-bg);border:1px solid var(--border);backdrop-filter:blur(8px);color:var(--fg-1);}
 .a2a-bubble{border-radius:10px;padding:10px 12px;border-left:2px solid;margin-bottom:6px;cursor:pointer;transition:filter .15s;}
 .a2a-bubble:hover{filter:brightness(1.15);}
 @keyframes ping2{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(2.5);opacity:0}}
@@ -22,24 +22,24 @@
   <div id="map-container">
     <div id="map"></div>
     <div id="feed-panel">
-      <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border-faint);flex-shrink:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
           <span style="width:6px;height:6px;border-radius:50%;background:#2dd4bf;display:inline-block;animation:pulse 2s infinite"></span>
-          <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.08em;text-transform:uppercase">Live Feed</span>
+          <span style="font-size:11px;font-weight:600;color:var(--fg-1);letter-spacing:.08em;text-transform:uppercase">Live Feed</span>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,.25)">Global agent events</div>
+        <div style="font-size:10px;color:var(--fg-4)">Global agent events</div>
       </div>
-      <div style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0">
+      <div style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border-faint);flex-shrink:0">
         {% for d,c in domain_colors %}<span style="font-size:10px;color:{{c}};display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:{{c}};display:inline-block"></span>{{d}}</span>{% endfor %}
       </div>
       <div id="news-feed" style="flex:1;overflow-y:auto;padding:10px 12px" class="scroll-hide"></div>
     </div>
   </div>
   <div id="kpi-bar">
-    <div class="kpi-pill" style="border:1px solid rgba(248,113,113,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#f87171;display:inline-block"></span><span style="color:#f87171">3</span><span style="color:rgba(255,255,255,.3)">Critical</span></div>
-    <div class="kpi-pill" style="border:1px solid rgba(251,191,36,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;display:inline-block"></span><span style="color:#fbbf24">7</span><span style="color:rgba(255,255,255,.3)">Warning</span></div>
-    <div class="kpi-pill" style="border:1px solid rgba(52,211,153,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#34d399;display:inline-block"></span><span style="color:#34d399">6</span><span style="color:rgba(255,255,255,.3)">Healthy</span></div>
-    <div class="kpi-pill" style="border:1px solid rgba(45,212,191,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#2dd4bf;display:inline-block"></span><span style="color:#2dd4bf">16</span><span style="color:rgba(255,255,255,.3)">Agents</span></div>
+    <div class="kpi-pill" style="border-color:rgba(248,113,113,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#f87171;display:inline-block"></span><span style="color:#f87171">3</span><span style="color:var(--fg-3)">Critical</span></div>
+    <div class="kpi-pill" style="border-color:rgba(251,191,36,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;display:inline-block"></span><span style="color:#fbbf24">7</span><span style="color:var(--fg-3)">Warning</span></div>
+    <div class="kpi-pill" style="border-color:rgba(52,211,153,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#34d399;display:inline-block"></span><span style="color:#34d399">6</span><span style="color:var(--fg-3)">Healthy</span></div>
+    <div class="kpi-pill" style="border-color:rgba(45,212,191,.3)"><span style="width:6px;height:6px;border-radius:50%;background:#2dd4bf;display:inline-block"></span><span style="color:#2dd4bf">16</span><span style="color:var(--fg-3)">Agents</span></div>
   </div>
 </div>
 {% endblock %}
@@ -94,13 +94,13 @@ function showDetail(inc){
   const ring=SEV_COL[inc.sev]||'#2dd4bf';
   const el=document.createElement('div');
   el.id='detail-card';
-  el.style.cssText=`position:absolute;bottom:32px;left:16px;z-index:500;width:240px;border-radius:14px;padding:16px;font-size:12px;background:rgba(12,22,40,.92);border:1px solid ${col}44;backdrop-filter:blur(12px)`;
+  el.style.cssText=`position:absolute;bottom:32px;left:16px;z-index:500;width:240px;border-radius:14px;padding:16px;font-size:12px;background:var(--card-bg);border:1px solid ${col}44;backdrop-filter:blur(12px)`;
   el.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:8px">
-    <span style="font-weight:600;color:rgba(255,255,255,.9)">${inc.city}, ${inc.country}</span>
-    <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,.25);cursor:pointer;font-size:16px;line-height:1">×</button>
+    <span style="font-weight:600;color:var(--fg-1)">${inc.city}, ${inc.country}</span>
+    <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:var(--fg-3);cursor:pointer;font-size:16px;line-height:1">×</button>
   </div>
   <div style="color:${col};font-size:10px;margin-bottom:6px">${inc.domain.toUpperCase()} · ${inc.agent}</div>
-  <div style="color:rgba(255,255,255,.65);line-height:1.5">${inc.msg}</div>
+  <div style="color:var(--fg-2);line-height:1.5">${inc.msg}</div>
   <span style="display:inline-block;margin-top:8px;padding:2px 8px;border-radius:999px;font-size:10px;background:${ring}22;color:${ring}">${inc.sev}</span>`;
   document.querySelector('#map-container').style.position='relative';
   document.getElementById('map').parentElement.appendChild(el);
@@ -118,9 +118,9 @@ function pushFeed(){
   div.style.cssText=`border-left-color:${ring};background:${col}10`;
   div.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px">
     <span style="font-size:10px;font-weight:600;color:${col}">${inc.agent} · ${inc.city}</span>
-    <span style="font-size:9px;color:rgba(255,255,255,.2)">now</span>
+    <span style="font-size:9px;color:var(--fg-4)">now</span>
   </div>
-  <div style="font-size:10px;color:rgba(255,255,255,.6);line-height:1.4">${inc.msg}</div>
+  <div style="font-size:10px;color:var(--fg-2);line-height:1.4">${inc.msg}</div>
   <span style="display:inline-block;margin-top:4px;font-size:9px;padding:1px 6px;border-radius:999px;background:${ring}1a;color:${ring}">${inc.sev}</span>`;
   div.onclick=()=>showDetail(inc);
   feed.prepend(div);

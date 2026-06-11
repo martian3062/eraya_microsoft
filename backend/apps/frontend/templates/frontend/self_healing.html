@@ -102,8 +102,8 @@ function pushLog(sev,checker,target,detail,domain){
   row.style.cssText=`background:${bg};border-left:2px solid ${col}`;
   row.innerHTML=`<span style="color:${col};font-size:10px;padding:1px 6px;border-radius:999px;background:${col}18;flex-shrink:0">${sev}</span>
     <div style="flex:1"><span style="color:${DOMAINS_DATA[domain]?.color||'#2dd4bf'};font-weight:600">${checker} → ${target}</span>
-    <span style="color:rgba(255,255,255,.5);margin-left:6px">${detail}</span></div>
-    <span style="font-size:9px;color:rgba(255,255,255,.2);flex-shrink:0">${now}</span>`;
+    <span style="color:var(--fg-2);margin-left:6px">${detail}</span></div>
+    <span style="font-size:9px;color:var(--fg-4);flex-shrink:0">${now}</span>`;
   log.prepend(row);
   if(log.children.length>60)log.lastChild.remove();
   totalChecks++;
@@ -195,7 +195,7 @@ setInterval(loadHistory,30000);
   <div class="overflow-x-auto">
     <table class="w-full text-left">
       <thead>
-        <tr class="border-b" style="border-color:rgba(255,255,255,.06)">
+        <tr class="border-b" style="border-color:var(--border-faint)">
           <th class="pb-2 px-3 text-[9px] uppercase tracking-wider text-slate-500">ID</th>
           <th class="pb-2 px-3 text-[9px] uppercase tracking-wider text-slate-500">Domain</th>
           <th class="pb-2 px-3 text-[9px] uppercase tracking-wider text-slate-500">Incident</th>

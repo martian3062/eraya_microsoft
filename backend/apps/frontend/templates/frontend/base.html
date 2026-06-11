@@ -1,89 +1,193 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{% block title %}Eraya{% endblock %} — Agent Swarm</title>
+<!-- Apply saved theme before paint to avoid flash -->
+<script>(function(){var t=localStorage.getItem('eraya-theme');if(t==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');}());</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config={theme:{extend:{colors:{eraya:{bg:'#06060e',card:'rgba(255,255,255,.04)'}},fontFamily:{sans:['Inter','sans-serif'],brand:['Space Grotesk','sans-serif']}}}}
+tailwind.config={
+  darkMode:'class',
+  theme:{extend:{
+    fontFamily:{sans:['Inter','sans-serif'],brand:['Space Grotesk','sans-serif']}
+  }}
+}
 </script>
 <style>
-/* ── Reset & base ─────────────────────────────────────────────── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+/* ── CSS variable system ──────────────────────────────────────── */
+:root {
+  --page-bg: linear-gradient(135deg,#f0f9ff 0%,#f5f3ff 50%,#f0f9ff 100%);
+  --card-bg: rgba(255,255,255,.78);
+  --card-border: rgba(148,163,184,.2);
+  --card-shadow: 0 1px 4px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9);
+  --kpi-bg: rgba(255,255,255,.62);
+  --kpi-border: rgba(148,163,184,.14);
+  --sidebar-bg: rgba(255,255,255,.75);
+  --sidebar-border: rgba(148,163,184,.15);
+  --header-bg: rgba(255,255,255,.82);
+  --header-border: rgba(148,163,184,.15);
+  --border: rgba(148,163,184,.2);
+  --border-faint: rgba(148,163,184,.1);
+  /* Text */
+  --fg-1: #1e293b;
+  --fg-2: #475569;
+  --fg-3: #64748b;
+  --fg-4: #94a3b8;
+  --fg-sep: rgba(100,116,139,.25);
+  /* Nav */
+  --nav-text: #475569;
+  --nav-hover-bg: rgba(59,130,246,.07);
+  --nav-hover-text: #1e40af;
+  --nav-active-bg: rgba(59,130,246,.10);
+  --nav-active-border: rgba(59,130,246,.22);
+  --nav-active-text: #1d4ed8;
+  /* Orbs */
+  --orb-c1: rgba(56,189,248,.42);
+  --orb-c2: rgba(99,102,241,.3);
+  --orb-c3: rgba(14,165,233,.26);
+}
+html.dark {
+  --page-bg: #06060e;
+  --card-bg: rgba(255,255,255,.04);
+  --card-border: rgba(255,255,255,.10);
+  --card-shadow: inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(14,30,62,.04);
+  --kpi-bg: rgba(255,255,255,.03);
+  --kpi-border: rgba(255,255,255,.08);
+  --sidebar-bg: rgba(255,255,255,.02);
+  --sidebar-border: rgba(186,230,253,.08);
+  --header-bg: rgba(6,6,14,.7);
+  --header-border: rgba(186,230,253,.08);
+  --border: rgba(255,255,255,.10);
+  --border-faint: rgba(255,255,255,.06);
+  --fg-1: #e2e8f0;
+  --fg-2: rgba(255,255,255,.6);
+  --fg-3: rgba(255,255,255,.38);
+  --fg-4: rgba(255,255,255,.22);
+  --fg-sep: rgba(255,255,255,.12);
+  --nav-text: rgba(148,163,184,.65);
+  --nav-hover-bg: rgba(56,189,248,.07);
+  --nav-hover-text: rgba(186,230,253,.9);
+  --nav-active-bg: rgba(56,189,248,.10);
+  --nav-active-border: rgba(56,189,248,.18);
+  --nav-active-text: #7dd3fc;
+  --orb-c1: rgba(56,189,248,.18);
+  --orb-c2: rgba(99,102,241,.13);
+  --orb-c3: rgba(14,165,233,.11);
+}
+
+/* ── Reset ────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}
 body{
   font-family:'Inter',sans-serif;
-  background:#06060e;
-  color:#e2e8f0;
+  background:var(--page-bg);
+  color:var(--fg-1);
   font-size:14px;
   line-height:1.5;
+  transition:background .3s,color .3s;
 }
 
-/* ── Animated orbs ────────────────────────────────────────────── */
-.orb{position:fixed;border-radius:50%;filter:blur(72px);pointer-events:none;z-index:0;}
+/* ── Orbs ─────────────────────────────────────────────────────── */
+.orb{position:fixed;border-radius:50%;filter:blur(72px);pointer-events:none;z-index:0;transition:opacity .4s;}
 .orb-1{width:55vw;height:55vw;top:-12%;left:-8%;
-  background:radial-gradient(circle at 40% 40%,rgba(56,189,248,.18) 0%,transparent 70%);
-  animation:orb-drift-1 22s ease-in-out infinite;}
+  background:radial-gradient(circle at 40% 40%,var(--orb-c1) 0%,transparent 70%);
+  animation:od1 22s ease-in-out infinite;}
 .orb-2{width:48vw;height:48vw;top:28%;right:-10%;
-  background:radial-gradient(circle at 60% 40%,rgba(99,102,241,.13) 0%,transparent 70%);
-  animation:orb-drift-2 28s ease-in-out infinite;}
+  background:radial-gradient(circle at 60% 40%,var(--orb-c2) 0%,transparent 70%);
+  animation:od2 28s ease-in-out infinite;}
 .orb-3{width:42vw;height:42vw;bottom:-8%;left:25%;
-  background:radial-gradient(circle at 50% 60%,rgba(14,165,233,.11) 0%,transparent 70%);
-  animation:orb-drift-3 34s ease-in-out infinite;}
-@keyframes orb-drift-1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3vw,4vh) scale(1.05)}66%{transform:translate(-2vw,2vh) scale(.97)}}
-@keyframes orb-drift-2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-4vw,3vh) scale(1.04)}70%{transform:translate(2vw,-2vh) scale(.98)}}
-@keyframes orb-drift-3{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(2vw,-3vh) scale(.96)}65%{transform:translate(-3vw,2vh) scale(1.03)}}
+  background:radial-gradient(circle at 50% 60%,var(--orb-c3) 0%,transparent 70%);
+  animation:od3 34s ease-in-out infinite;}
+@keyframes od1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3vw,4vh) scale(1.05)}66%{transform:translate(-2vw,2vh) scale(.97)}}
+@keyframes od2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-4vw,3vh) scale(1.04)}70%{transform:translate(2vw,-2vh) scale(.98)}}
+@keyframes od3{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(2vw,-3vh) scale(.96)}65%{transform:translate(-3vw,2vh) scale(1.03)}}
 
-/* ── Glass system ─────────────────────────────────────────────── */
+/* ── Glass components ─────────────────────────────────────────── */
 .glass-header{
-  background:transparent;
-  border-bottom:1px solid rgba(186,230,253,.08);
+  background:var(--header-bg);
+  border-bottom:1px solid var(--header-border);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
 }
 .glass-sidebar{
-  background:rgba(255,255,255,.02);
-  border-right:1px solid rgba(186,230,253,.08);
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--sidebar-border);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
 }
 .card{
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.10);
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
   border-radius:1rem;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(14,30,62,.04);
+  box-shadow:var(--card-shadow);
   padding:1.25rem;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  transition:background .3s,border-color .3s;
 }
 .kpi{
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.08);
+  background:var(--kpi-bg);
+  border:1px solid var(--kpi-border);
   border-radius:.875rem;
   padding:1rem;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  transition:background .3s,border-color .3s;
 }
+
+/* ── Text utilities (dark-mode overrides for Tailwind fixed classes) */
+html.dark .text-slate-900{color:#f1f5f9;}
+html.dark .text-slate-800{color:#e2e8f0;}
+html.dark .text-slate-700{color:#cbd5e1;}
+html.dark .text-slate-600{color:#94a3b8;}
+html.dark .text-slate-500{color:#64748b;}
+html.dark .text-slate-400{color:#475569;}
+html:not(.dark) .dark\:text-slate-200{color:#1e293b;}
+html:not(.dark) .dark\:text-slate-300{color:#334155;}
 
 /* ── Scrollbar ────────────────────────────────────────────────── */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(186,230,253,.15);border-radius:2px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .scroll-hide::-webkit-scrollbar{display:none;}
 .scroll-hide{-ms-overflow-style:none;scrollbar-width:none;}
 
 /* ── Sidebar nav ──────────────────────────────────────────────── */
 .nav-item{
   display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;
-  font-size:11.5px;font-weight:500;color:rgba(148,163,184,.7);
+  font-size:11.5px;font-weight:500;color:var(--nav-text);
   transition:all .15s;text-decoration:none;border:1px solid transparent;
 }
-.nav-item:hover{
-  color:rgba(186,230,253,.9);
-  background:rgba(56,189,248,.07);
-}
+.nav-item:hover{color:var(--nav-hover-text);background:var(--nav-hover-bg);}
 .nav-item.active{
-  color:#7dd3fc;
-  background:rgba(56,189,248,.10);
-  border-color:rgba(56,189,248,.18);
+  color:var(--nav-active-text);
+  background:var(--nav-active-bg);
+  border-color:var(--nav-active-border);
   font-weight:600;
 }
+
+/* ── Shimmer text (active nav label) ─────────────────────────── */
+.pill-active{
+  background:linear-gradient(90deg,#93c5fd,#60a5fa,#38bdf8,#60a5fa,#93c5fd);
+  background-size:250% 100%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:shimmer 3.5s linear infinite;
+}
+html:not(.dark) .pill-active{
+  background:linear-gradient(90deg,#1d4ed8,#3b82f6,#0ea5e9,#3b82f6,#1d4ed8);
+  background-size:250% 100%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:shimmer 3.5s linear infinite;
+}
+@keyframes shimmer{0%{background-position:100% 50%}100%{background-position:0% 50%}}
 
 /* ── Logo mark ────────────────────────────────────────────────── */
 .logo-mark{
@@ -94,33 +198,28 @@ body{
   font-weight:800;color:#fff;font-size:13px;font-family:'Space Grotesk',sans-serif;
 }
 
-/* ── Badges ───────────────────────────────────────────────────── */
-.badge{
-  display:inline-flex;align-items:center;gap:4px;padding:2px 9px;
-  border-radius:999px;font-size:10px;font-weight:500;
-}
-
-/* ── Active pill indicator ────────────────────────────────────── */
-.pill-active{
-  background:linear-gradient(90deg,#93c5fd,#60a5fa,#38bdf8,#60a5fa,#93c5fd);
-  background-size:250% 100%;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  background-clip:text;
-  animation:shimmer 3.5s linear infinite;
-}
-@keyframes shimmer{0%{background-position:100% 50%}100%{background-position:0% 50%}}
-
 /* ── Pulse dot ────────────────────────────────────────────────── */
 .pulse-blue{
-  width:7px;height:7px;border-radius:50%;background:#3b82f6;
+  width:7px;height:7px;border-radius:50%;background:#3b82f6;flex-shrink:0;
   box-shadow:0 0 0 4px rgba(59,130,246,.15);
-  animation:pulse-b 1.8s ease-in-out infinite;
+  animation:pb 1.8s ease-in-out infinite;
 }
-@keyframes pulse-b{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.15)}50%{box-shadow:0 0 0 8px rgba(59,130,246,.06)}}
+@keyframes pb{0%,100%{box-shadow:0 0 0 4px rgba(59,130,246,.15)}50%{box-shadow:0 0 0 8px rgba(59,130,246,.06)}}
 
-/* ── Brand font class ─────────────────────────────────────────── */
+/* ── Theme toggle ─────────────────────────────────────────────── */
+.theme-btn{
+  width:32px;height:32px;border-radius:8px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--border-faint);color:var(--fg-3);
+  transition:all .2s;
+}
+.theme-btn:hover{background:var(--border);color:var(--fg-1);}
+
+/* ── Brand font ───────────────────────────────────────────────── */
 .brand-font{font-family:'Space Grotesk',sans-serif;}
+
+/* ── Badge ────────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:500;}
 
 /* ── Layout ───────────────────────────────────────────────────── */
 #app{display:flex;flex-direction:column;height:100%;position:relative;z-index:1;}
@@ -142,57 +241,59 @@ body{
   <!-- ── Header ──────────────────────────────────────────────── -->
   <header class="glass-header flex-shrink-0 flex items-center justify-between px-5 h-14 relative z-30">
 
-    <!-- Left: logo + breadcrumb -->
     <div class="flex items-center gap-4">
       <a href="/dashboard/" class="flex items-center gap-2.5 group">
         <div class="logo-mark">E</div>
         <div class="leading-none">
-          <div class="text-[13px] font-bold tracking-wide brand-font text-slate-100 group-hover:text-sky-300 transition-colors">ERAYA</div>
-          <div class="text-[9px] text-slate-500 mt-0.5 tracking-widest uppercase">Agent Swarm</div>
+          <div class="text-[13px] font-bold tracking-wide brand-font dark:text-slate-100 text-slate-800 group-hover:text-blue-600 dark:group-hover:text-sky-300 transition-colors">ERAYA</div>
+          <div class="text-[9px] dark:text-slate-500 text-slate-400 mt-0.5 tracking-widest uppercase">Agent Swarm</div>
         </div>
       </a>
       <div class="hidden sm:flex items-center gap-1.5 text-[11px]">
-        <span style="color:rgba(186,230,253,.2)">›</span>
-        <span class="text-slate-400 font-medium">{% block page_title %}{% endblock %}</span>
+        <span class="dark:text-slate-700 text-slate-300">›</span>
+        <span class="dark:text-slate-400 text-slate-500 font-medium">{% block page_title %}{% endblock %}</span>
       </div>
     </div>
 
-    <!-- Right: live indicator + user -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3">
       <!-- Status chips -->
       <div class="hidden md:flex items-center gap-2">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium"
-             style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);color:#6ee7b7">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          Live
-        </div>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium"
-             style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:#93c5fd">
-          Django&nbsp;5.2
-        </div>
-        <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium"
-             style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);color:#c4b5fd">
-          Groq&nbsp;LLM
-        </div>
+        <span class="badge" style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);color:#10b981">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live
+        </span>
+        <span class="badge hidden lg:inline-flex" style="background:rgba(59,130,246,.09);border:1px solid rgba(59,130,246,.2);color:#3b82f6">
+          Django 5.2
+        </span>
+        <span class="badge hidden xl:inline-flex" style="background:rgba(167,139,250,.09);border:1px solid rgba(167,139,250,.2);color:#a78bfa">
+          Groq LLM
+        </span>
       </div>
 
-      <!-- Divider -->
-      <div class="w-px h-6" style="background:rgba(255,255,255,.07)"></div>
+      <div class="w-px h-6" style="background:var(--border-faint)"></div>
+
+      <!-- Theme toggle -->
+      <button class="theme-btn" onclick="erayaToggleTheme()" title="Toggle light/dark">
+        <span id="th-sun" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </span>
+        <span id="th-moon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </span>
+      </button>
 
       <!-- User -->
       {% if user_picture %}
       <img src="{{ user_picture }}" alt="{{ user_name }}" class="w-8 h-8 rounded-full object-cover ring-2 ring-blue-400/30">
       {% else %}
-      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold brand-font select-none"
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold brand-font select-none flex-shrink-0"
            style="background:linear-gradient(135deg,#3b82f6,#38bdf8);box-shadow:0 2px 8px rgba(59,130,246,.3)">{{ user_name|first|upper }}</div>
       {% endif %}
       <div class="hidden sm:block leading-none">
-        <div class="text-xs font-semibold text-slate-200">{{ user_name }}</div>
-        <div class="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wider">{{ user_role }}</div>
+        <div class="text-xs font-semibold dark:text-slate-200 text-slate-800">{{ user_name }}</div>
+        <div class="text-[9px] dark:text-slate-500 text-slate-400 mt-0.5 uppercase tracking-wider">{{ user_role }}</div>
       </div>
 
-      <a href="/auth/logout/" class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/10"
-         style="color:rgba(148,163,184,.4)" title="Sign out">
+      <a href="/auth/logout/" class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/10 dark:text-slate-600 text-slate-300 hover:text-red-500" title="Sign out">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -204,17 +305,16 @@ body{
   <!-- ── Body ────────────────────────────────────────────────── -->
   <div id="body-row">
 
-    <!-- Sidebar -->
     <aside id="sidebar" class="glass-sidebar scroll-hide">
       <!-- Domain cluster -->
-      <div class="px-3 pt-4 pb-3" style="border-bottom:1px solid rgba(186,230,253,.06)">
-        <div class="text-[9px] uppercase tracking-widest text-slate-600 mb-2 px-1">Domains</div>
+      <div class="px-3 pt-4 pb-3" style="border-bottom:1px solid var(--border-faint)">
+        <div class="text-[9px] uppercase tracking-widest dark:text-slate-600 text-slate-400 mb-2 px-1">Domains</div>
         <div class="grid grid-cols-4 gap-1">
           {% for item in major_nav %}
           <a href="{{ item.href }}" title="{{ item.label }}"
              class="flex flex-col items-center gap-1 py-2 rounded-xl text-[9px] font-medium transition-all
-                    {% if page == item.id %}bg-blue-500/10 border border-blue-500/20 text-sky-300
-                    {% else %}text-slate-600 hover:text-sky-400 hover:bg-blue-500/06{% endif %}">
+                    {% if page == item.id %}bg-blue-500/10 border border-blue-400/20 text-blue-600 dark:text-sky-300
+                    {% else %}dark:text-slate-600 text-slate-400 hover:text-blue-500 dark:hover:text-sky-400 hover:bg-blue-500/07{% endif %}">
             <span class="nav-icon text-sm" data-icon="{{ item.icon }}"></span>
             <span class="leading-none text-center">{{ item.label }}</span>
           </a>
@@ -236,12 +336,12 @@ body{
       </nav>
 
       <!-- Footer -->
-      <div class="px-3 py-3 flex-shrink-0" style="border-top:1px solid rgba(186,230,253,.06)">
-        <div class="flex items-center gap-2">
-          <div class="pulse-blue flex-shrink-0"></div>
-          <span class="text-[9px] text-slate-600 tracking-wide">16 agents · nominal</span>
+      <div class="px-3 py-3 flex-shrink-0" style="border-top:1px solid var(--border-faint)">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="pulse-blue"></div>
+          <span class="text-[9px] dark:text-slate-600 text-slate-400 tracking-wide">16 agents · nominal</span>
         </div>
-        <div class="mt-2 text-[9px] text-slate-700">Microsoft Build AI Hackathon 2026</div>
+        <div class="text-[9px] dark:text-slate-700 text-slate-400">Microsoft Build AI Hackathon 2026</div>
       </div>
     </aside>
 
@@ -253,23 +353,23 @@ body{
 </div>
 
 <!-- Share FAB -->
-<div class="fixed bottom-5 right-5 z-50" id="share-wrap">
-  <div id="share-card" class="hidden mb-2 w-64 rounded-2xl p-4 text-xs shadow-2xl"
-       style="background:rgba(6,6,14,.92);border:1px solid rgba(255,255,255,.10);backdrop-filter:blur(20px)">
-    <p class="font-semibold text-slate-100 mb-1 brand-font">Eraya · Self-Healing Agent Swarm</p>
-    <p class="text-slate-500 mb-3 leading-relaxed" style="font-size:11px">Microsoft Build AI Hackathon 2026. Multi-domain autonomous agents with A2A messaging and Groq LLM.</p>
-    <div class="text-sky-400 font-medium mb-0.5">Pardeep Sandhu</div>
-    <div class="text-slate-600 mb-3" style="font-size:10px">sandhupardeep300@gmail.com</div>
+<div class="fixed bottom-5 right-5 z-50">
+  <div id="share-card" class="hidden mb-2 w-64 rounded-2xl p-4 text-xs shadow-2xl card">
+    <p class="font-semibold dark:text-slate-100 text-slate-800 mb-1 brand-font">Eraya · Self-Healing Agent Swarm</p>
+    <p class="dark:text-slate-500 text-slate-500 mb-3 leading-relaxed" style="font-size:11px">Microsoft Build AI Hackathon 2026. Multi-domain autonomous agents with A2A messaging and Groq LLM.</p>
+    <div class="text-sky-500 dark:text-sky-400 font-medium mb-0.5">Pardeep Sandhu</div>
+    <div class="dark:text-slate-600 text-slate-400 mb-3" style="font-size:10px">sandhupardeep300@gmail.com</div>
     <div class="flex gap-2">
       <button onclick="navigator.clipboard.writeText(location.href)"
               class="flex-1 py-1.5 rounded-xl text-[11px] font-medium transition-all"
-              style="background:rgba(59,130,246,.1);color:#60a5fa;border:1px solid rgba(59,130,246,.2)">Copy Link</button>
-      <a href="mailto:sandhupardeep300@gmail.com" class="flex-1 py-1.5 rounded-xl text-[11px] font-medium text-center transition-all"
-         style="background:rgba(255,255,255,.04);color:#94a3b8;border:1px solid rgba(255,255,255,.08)">Email</a>
+              style="background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.2)">Copy Link</button>
+      <a href="mailto:sandhupardeep300@gmail.com"
+         class="flex-1 py-1.5 rounded-xl text-[11px] font-medium text-center transition-all dark:text-slate-500 text-slate-500 hover:opacity-80"
+         style="background:var(--border-faint);border:1px solid var(--border)">Email</a>
     </div>
   </div>
   <button onclick="document.getElementById('share-card').classList.toggle('hidden')"
-          class="px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg transition-all hover:scale-105 hover:shadow-blue-500/25 brand-font"
+          class="px-4 py-2 rounded-full text-xs font-semibold text-white shadow-lg transition-all hover:scale-105 brand-font"
           style="background:linear-gradient(135deg,#3b82f6,#38bdf8);box-shadow:0 4px 14px rgba(59,130,246,.3)">
     Share · Contact
   </button>
@@ -277,7 +377,20 @@ body{
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
-// Lucide SVG map
+// ── Theme ──────────────────────────────────────────────────────
+function erayaToggleTheme(){
+  const dark=document.documentElement.classList.toggle('dark');
+  localStorage.setItem('eraya-theme',dark?'dark':'light');
+  _syncThemeIcon();
+}
+function _syncThemeIcon(){
+  const dark=document.documentElement.classList.contains('dark');
+  document.getElementById('th-sun').style.display=dark?'':'none';
+  document.getElementById('th-moon').style.display=dark?'none':'';
+}
+_syncThemeIcon();
+
+// ── Icons ──────────────────────────────────────────────────────
 const ICONS={
   'layout-dashboard':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
   'bot':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16" stroke-linecap="round" stroke-width="3"/><line x1="16" y1="16" x2="16" y2="16" stroke-linecap="round" stroke-width="3"/></svg>',
@@ -294,11 +407,7 @@ const ICONS={
 };
 document.querySelectorAll('.nav-icon[data-icon]').forEach(el=>{
   const svg=ICONS[el.dataset.icon];
-  if(svg){
-    el.innerHTML=svg;
-    const s=el.querySelector('svg');
-    if(s){s.style.width=el.style.width||'14px';s.style.height=el.style.height||'14px';}
-  }
+  if(svg){el.innerHTML=svg;const s=el.querySelector('svg');if(s){s.style.width=el.style.width||'14px';s.style.height=el.style.height||'14px';}}
 });
 </script>
 {% block extra_scripts %}{% endblock %}

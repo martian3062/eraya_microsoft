@@ -1,30 +1,68 @@
 {% load static %}<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Eraya — Sign In</title>
+<!-- apply saved theme before paint -->
+<script>(function(){var t=localStorage.getItem('eraya-theme');if(t==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');}());</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overflow:hidden;}
+:root{
+  --lbody-bg:#f0f9ff;
+  --lbody-gradient:linear-gradient(135deg,#f0f9ff 0%,#f5f3ff 50%,#f0f9ff 100%);
+  --lcard-bg:rgba(255,255,255,.88);
+  --lcard-border:rgba(148,163,184,.2);
+  --lcard-shadow:0 24px 64px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.9);
+  --lstat-bg:rgba(255,255,255,.78);
+  --lstat-border:rgba(148,163,184,.18);
+  --linp-bg:rgba(255,255,255,.9);
+  --linp-border:#e2e8f0;
+  --linp-text:#1e293b;
+  --ltext-1:#1e293b;
+  --ltext-2:#475569;
+  --ltext-3:#64748b;
+  --lsnip-color:rgba(59,130,246,.5);
+}
+html.dark{
+  --lbody-bg:#06060e;
+  --lbody-gradient:#06060e;
+  --lcard-bg:rgba(6,6,14,.82);
+  --lcard-border:rgba(255,255,255,.10);
+  --lcard-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 32px 80px rgba(0,0,0,.6),0 0 0 1px rgba(56,189,248,.05);
+  --lstat-bg:rgba(255,255,255,.04);
+  --lstat-border:rgba(255,255,255,.08);
+  --linp-bg:rgba(255,255,255,.06);
+  --linp-border:rgba(255,255,255,.10);
+  --linp-text:#e2e8f0;
+  --ltext-1:#e2e8f0;
+  --ltext-2:rgba(255,255,255,.6);
+  --ltext-3:rgba(148,163,184,.55);
+  --lsnip-color:rgba(125,211,252,.5);
+}
 body{
   font-family:'Inter',sans-serif;
-  background:#06060e;
-  color:#e2e8f0;
+  background:var(--lbody-gradient);
+  color:var(--ltext-1);
+  transition:background .3s,color .3s;
 }
 /* Orbs */
 .orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;}
 .orb-1{width:60vw;height:60vw;top:-15%;left:-10%;
-  background:radial-gradient(circle at 40% 40%,rgba(56,189,248,.22) 0%,transparent 70%);
+  background:radial-gradient(circle at 40% 40%,rgba(56,189,248,.32) 0%,transparent 70%);
   animation:od1 22s ease-in-out infinite;}
 .orb-2{width:50vw;height:50vw;top:30%;right:-12%;
-  background:radial-gradient(circle at 60% 40%,rgba(99,102,241,.16) 0%,transparent 70%);
+  background:radial-gradient(circle at 60% 40%,rgba(99,102,241,.24) 0%,transparent 70%);
   animation:od2 28s ease-in-out infinite;}
 .orb-3{width:45vw;height:45vw;bottom:-10%;left:28%;
-  background:radial-gradient(circle at 50% 60%,rgba(14,165,233,.13) 0%,transparent 70%);
+  background:radial-gradient(circle at 50% 60%,rgba(14,165,233,.2) 0%,transparent 70%);
   animation:od3 34s ease-in-out infinite;}
+html.dark .orb-1{background:radial-gradient(circle at 40% 40%,rgba(56,189,248,.18) 0%,transparent 70%);}
+html.dark .orb-2{background:radial-gradient(circle at 60% 40%,rgba(99,102,241,.13) 0%,transparent 70%);}
+html.dark .orb-3{background:radial-gradient(circle at 50% 60%,rgba(14,165,233,.11) 0%,transparent 70%);}
 @keyframes od1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3vw,4vh) scale(1.05)}66%{transform:translate(-2vw,2vh) scale(.97)}}
 @keyframes od2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-4vw,3vh) scale(1.04)}70%{transform:translate(2vw,-2vh) scale(.98)}}
 @keyframes od3{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(2vw,-3vh) scale(.96)}65%{transform:translate(-3vw,2vh) scale(1.03)}}
@@ -40,26 +78,24 @@ body{
 }
 /* Glass card */
 .glass-card{
-  background:rgba(6,6,14,.82);
-  border:1px solid rgba(255,255,255,.10);
+  background:var(--lcard-bg);
+  border:1px solid var(--lcard-border);
   border-radius:20px;
   backdrop-filter:blur(24px);
   -webkit-backdrop-filter:blur(24px);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.07),
-    0 32px 80px rgba(0,0,0,.6),
-    0 0 0 1px rgba(56,189,248,.05);
+  box-shadow:var(--lcard-shadow);
+  transition:background .3s,border-color .3s;
 }
 /* Inputs */
 .inp{
   width:100%;padding:10px 14px;border-radius:11px;font-size:13px;
   outline:none;transition:all .2s;font-family:'Inter',sans-serif;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.10);
-  color:#e2e8f0;
+  background:var(--linp-bg);
+  border:1px solid var(--linp-border);
+  color:var(--linp-text);
 }
 .inp:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.18);}
-.inp::placeholder{color:rgba(148,163,184,.4);}
+.inp::placeholder{color:var(--ltext-3);}
 /* Buttons */
 .btn-primary{
   width:100%;padding:11px;border-radius:11px;font-size:13px;font-weight:600;
@@ -72,12 +108,12 @@ body{
 .btn-primary:disabled{opacity:.45;cursor:not-allowed;}
 .btn-outline{
   width:100%;padding:10px;border-radius:11px;font-size:13px;font-weight:500;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
-  color:rgba(226,232,240,.8);transition:all .2s;cursor:pointer;
+  background:var(--lstat-bg);border:1px solid var(--lstat-border);
+  color:var(--ltext-2);transition:all .2s;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:10px;
   font-family:'Inter',sans-serif;
 }
-.btn-outline:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18);}
+.btn-outline:hover{filter:brightness(.97);}
 /* Error */
 .err{
   display:flex;align-items:center;gap:6px;font-size:11px;
@@ -88,7 +124,7 @@ body{
 .snippet{
   position:fixed;font-family:'Space Grotesk',monospace;font-size:9.5px;
   letter-spacing:.06em;white-space:nowrap;pointer-events:none;z-index:5;
-  transition:opacity 1.2s,transform 1.2s;color:rgba(125,211,252,.5);
+  transition:opacity 1.2s,transform 1.2s;color:var(--lsnip-color);
 }
 </style>
 </head>
@@ -110,9 +146,16 @@ body{
   </div>
 </div>
 
-<!-- Hackathon badge top-right -->
-<div style="position:fixed;top:22px;right:26px;z-index:10;display:flex;align-items:center;gap:1.5px;padding:5px 12px;border-radius:999px;font-size:9.5px;font-weight:600;letter-spacing:.06em;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:rgba(147,197,253,.7)">
-  ● &nbsp;Microsoft Build AI Hackathon 2026
+<!-- Theme toggle + badge top-right -->
+<div style="position:fixed;top:22px;right:26px;z-index:10;display:flex;align-items:center;gap:10px">
+  <button id="login-theme-btn" onclick="loginToggleTheme()"
+    style="width:32px;height:32px;border-radius:8px;border:1px solid var(--lstat-border);background:var(--lstat-bg);color:var(--ltext-3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:14px" title="Toggle theme">
+    <span id="lt-sun" style="display:none">☀️</span>
+    <span id="lt-moon">🌙</span>
+  </button>
+  <div style="padding:5px 12px;border-radius:999px;font-size:9.5px;font-weight:600;letter-spacing:.06em;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:rgba(59,130,246,.8)">
+    ● &nbsp;Microsoft Build AI Hackathon 2026
+  </div>
 </div>
 
 <!-- Login card — right-aligned -->
@@ -121,8 +164,8 @@ body{
 
     <!-- Header -->
     <div style="margin-bottom:22px">
-      <h1 id="card-title" style="font-size:21px;font-weight:700;color:#f1f5f9;font-family:'Space Grotesk',sans-serif;margin-bottom:4px">Sign in</h1>
-      <p style="font-size:12px;color:rgba(148,163,184,.55)">Self-healing agent console</p>
+      <h1 id="card-title" style="font-size:21px;font-weight:700;color:var(--ltext-1);font-family:'Space Grotesk',sans-serif;margin-bottom:4px">Sign in</h1>
+      <p style="font-size:12px;color:var(--ltext-3)">Self-healing agent console</p>
     </div>
 
     {% if error %}
@@ -208,38 +251,50 @@ body{
 <!-- Left side: decorative stats -->
 <div style="position:fixed;left:60px;top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:20px">
   {% for stat in login_stats %}
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;
-              box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
-    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">{{ stat.label }}</div>
+  <div style="background:var(--lstat-bg);border:1px solid var(--lstat-border);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:var(--ltext-3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">{{ stat.label }}</div>
     <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:{{ stat.color }}">{{ stat.value }}</div>
-    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">{{ stat.sub }}</div>
+    <div style="font-size:9px;color:var(--ltext-3);margin-top:2px">{{ stat.sub }}</div>
   </div>
   {% empty %}
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
-    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Active Agents</div>
+  <div style="background:var(--lstat-bg);border:1px solid var(--lstat-border);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:var(--ltext-3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Active Agents</div>
     <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#60a5fa">16</div>
-    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">across 4 domains</div>
+    <div style="font-size:9px;color:var(--ltext-3);margin-top:2px">across 4 domains</div>
   </div>
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
-    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Decisions / day</div>
+  <div style="background:var(--lstat-bg);border:1px solid var(--lstat-border);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:var(--ltext-3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Decisions / day</div>
     <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#34d399">14,208</div>
-    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">autonomous actions</div>
+    <div style="font-size:9px;color:var(--ltext-3);margin-top:2px">autonomous actions</div>
   </div>
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
-    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Mean TTHR</div>
+  <div style="background:var(--lstat-bg);border:1px solid var(--lstat-border);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:var(--ltext-3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Mean TTHR</div>
     <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#f472b6">1,240ms</div>
-    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">time to self-heal</div>
+    <div style="font-size:9px;color:var(--ltext-3);margin-top:2px">time to self-heal</div>
   </div>
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
-    <div style="font-size:9px;color:rgba(148,163,184,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">SLO Maintained</div>
+  <div style="background:var(--lstat-bg);border:1px solid var(--lstat-border);border-radius:14px;padding:14px 18px;min-width:160px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">
+    <div style="font-size:9px;color:var(--ltext-3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">SLO Maintained</div>
     <div style="font-size:22px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#a78bfa">99.1%</div>
-    <div style="font-size:9px;color:rgba(148,163,184,.35);margin-top:2px">across all domains</div>
+    <div style="font-size:9px;color:var(--ltext-3);margin-top:2px">across all domains</div>
   </div>
   {% endfor %}
 </div>
 
 <script src="{% static 'frontend/js/attractor.js' %}"></script>
 <script>
+// Theme
+function loginToggleTheme(){
+  const dark=document.documentElement.classList.toggle('dark');
+  localStorage.setItem('eraya-theme',dark?'dark':'light');
+  _syncLoginThemeIcon();
+}
+function _syncLoginThemeIcon(){
+  const dark=document.documentElement.classList.contains('dark');
+  document.getElementById('lt-sun').style.display=dark?'':'none';
+  document.getElementById('lt-moon').style.display=dark?'none':'';
+}
+_syncLoginThemeIcon();
+
 // Steps
 function showStep(name){
   document.querySelectorAll('.step').forEach(el=>el.style.display='none');

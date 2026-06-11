@@ -96,11 +96,11 @@ function pushMsg(){
   el.style.cssText=`animation:fadeIn .3s ease`;
   el.innerHTML=`<div class="bubble" style="background:${dc}0d;border:1px solid ${dc}22">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:10px;font-weight:600;color:${dc}">${m.from} <span style="color:rgba(255,255,255,.25)">→</span> ${m.to}</div>
-      <span style="font-size:9px;color:rgba(255,255,255,.2)">${now}</span>
+      <div style="font-size:10px;font-weight:600;color:${dc}">${m.from} <span style="color:var(--fg-sep)">→</span> ${m.to}</div>
+      <span style="font-size:9px;color:var(--fg-4)">${now}</span>
     </div>
     <span style="display:inline-block;margin-bottom:6px;padding:1px 8px;border-radius:999px;font-size:9px;background:${tc}1a;color:${tc}">${m.type}</span>
-    <div class="bubble-inner" style="color:rgba(255,255,255,.7)">${MSGS_TEXT[m.type]||m.type}</div>
+    <div class="bubble-inner" style="color:var(--fg-1)">${MSGS_TEXT[m.type]||m.type}</div>
     <div class="mono-footer">${JSON.stringify(m.payload)}</div>
   </div>`;
   feed.prepend(el);
@@ -134,10 +134,10 @@ function injectDrillMessages(s){
           <div style="font-size:10px;font-weight:600;color:${dc}">${m.from} <span style="color:rgba(255,255,255,.25)">→</span> ${m.to}
             <span style="margin-left:6px;font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(167,139,250,.15);color:#a78bfa">🔴 DRILL</span>
           </div>
-          <span style="font-size:9px;color:rgba(255,255,255,.2)">${now}</span>
+          <span style="font-size:9px;color:var(--fg-4)">${now}</span>
         </div>
         <span style="display:inline-block;margin-bottom:6px;padding:1px 8px;border-radius:999px;font-size:9px;background:${tc}1a;color:${tc}">${m.type}</span>
-        <div class="bubble-inner" style="color:rgba(255,255,255,.8)">${m.text||MSGS_TEXT[m.type]||''}</div>
+        <div class="bubble-inner" style="color:var(--fg-1)">${m.text||MSGS_TEXT[m.type]||''}</div>
         <div class="mono-footer">${JSON.stringify(m.payload)}</div>
       </div>`;
       feed.prepend(el);
