@@ -4,7 +4,12 @@ import sys
 
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'eraya.settings.development')
+    # Force deploy settings on Render (same logic as wsgi.py)
+    if os.environ.get('RENDER'):
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'eraya.settings.deploy'
+    else:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'eraya.settings.development')
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
