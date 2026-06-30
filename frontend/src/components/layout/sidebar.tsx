@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Bot, Activity, GitBranch,
-  AlertTriangle, FileText, Settings, Shield, Radio, HeartPulse, Map,
+  AlertTriangle, FileText, Settings, Shield, Radio, HeartPulse, Map, Wallet,
 } from "lucide-react";
 import { useErayaStore } from "@/store";
 import { useAuthStore } from "@/store/auth";
@@ -40,6 +40,7 @@ const MAJOR = [
       { label: "5G Self-Healing", href: "/domains/5g" },
       { label: "Cloud Cost",      href: "/domains/cloud" },
       { label: "ICU Monitoring",  href: "/domains/icu" },
+      { label: "Casper DeFi",     href: "/domains/casper_defi" },
       { label: "Network",         href: "/domains/network" },
     ],
   },
@@ -57,6 +58,7 @@ const MAJOR = [
 ];
 
 const FLAT = [
+  { label: "DeFi Console",  href: "/defi/portfolio", icon: Wallet },
   { label: "Global Map",    href: "/map",           icon: Map },
   { label: "A2A Chat",      href: "/a2a-chat",      icon: Radio },
   { label: "Self-Heal",     href: "/self-healing",  icon: HeartPulse },

@@ -25,6 +25,13 @@ export const api = {
   domains: () => apiFetch<{ domains: DomainInfo[] }>("/api/domains/"),
   domainStatus: (name: string) => apiFetch<DomainHealth>(`/api/domains/${name}/status/`),
   domainSignals: (name: string) => apiFetch<{ signals: Signal[] }>(`/api/domains/${name}/signals/`),
+  casperDashboard: () => apiFetch<CasperDashboard>("/api/domains/casper_defi/dashboard/"),
+  casperPortfolio: () => apiFetch<CasperPortfolio>("/api/domains/casper_defi/portfolio/"),
+  casperYields: () => apiFetch<{ yields: CasperYield[] }>("/api/domains/casper_defi/yields/"),
+  casperConsensus: () => apiFetch<CasperConsensus>("/api/domains/casper_defi/consensus/"),
+  casperReputation: () => apiFetch<CasperReputation>("/api/domains/casper_defi/reputation/"),
+  casperTransactions: () => apiFetch<{ transactions: CasperTransaction[] }>("/api/domains/casper_defi/transactions/"),
+  casperThreats: () => apiFetch<{ threats: CasperThreat[] }>("/api/domains/casper_defi/threats/"),
 
   // Incidents
   incidents: () => apiFetch<PagedResponse<Incident>>("/api/incidents/"),
@@ -121,6 +128,104 @@ export interface DomainInfo { name: string; status: string }
 export interface DomainHealth { domain: string; status: string; [key: string]: unknown }
 export interface Signal { timestamp: number; source: string; features: Record<string, number> }
 export interface PagedResponse<T> { count: number; results: T[] }
+
+// Casper DeFi types
+export interface CasperWallet {
+  agent_id: string;
+  account_hash: string;
+  balance_motes: number;
+  network: string;
+}
+export interface CasperHolding {
+  asset: string;
+  amount: number;
+  value_usd: number;
+  allocation_pct: number;
+}
+export interface CasperPortfolio {
+  total_value_usd: number;
+  pnl_24h_pct: number;
+  risk_score: number;
+  holdings: CasperHolding[];
+  wallets: CasperWallet[];
+}
+export interface CasperYield {
+  protocol: string;
+  pool: string;
+  apy_current: number;
+  apy_7d_avg: number;
+  tvl_usd: number;
+  slippage_bps: number;
+  status: string;
+}
+export interface CasperVote {
+  agent_id: string;
+  role: string;
+  vote: "approve" | "reject" | "abstain";
+  rationale: string;
+  timestamp: number;
+}
+export interface CasperConsensus {
+  proposal_id: string;
+  proposer: string;
+  title: string;
+  action: Record<string, unknown>;
+  context: Record<string, unknown>;
+  votes: CasperVote[];
+  status: string;
+  threshold: number;
+  approval_ratio: number;
+  required_votes: number;
+  quorum_votes: number;
+  created_at: number;
+  deadline: number;
+  explorer_url: string;
+}
+export interface CasperReputationAgent {
+  agent_id: string;
+  role: string;
+  score: number;
+  ema_reward: number;
+  successful_actions: number;
+  slashed_motes: number;
+  trend: string;
+}
+export interface CasperReputation {
+  agents: CasperReputationAgent[];
+  on_chain_anchor: string;
+  recent_records: Record<string, unknown>[];
+}
+export interface CasperTransaction {
+  deploy_hash: string;
+  type: string;
+  status: string;
+  agent_id: string;
+  amount_motes: number;
+  fee_motes: number;
+  timestamp: number;
+  explorer_url: string;
+}
+export interface CasperThreat {
+  threat_id: string;
+  type: string;
+  severity: number;
+  severity_label: "medium" | "high" | "critical";
+  target: string;
+  summary: string;
+  status: string;
+  timestamp: number;
+  evidence: Record<string, unknown>;
+}
+export interface CasperDashboard {
+  network: DomainHealth;
+  latest_signal: Signal;
+  portfolio: CasperPortfolio;
+  yields: CasperYield[];
+  consensus: CasperConsensus;
+  reputation: CasperReputation;
+  transactions: CasperTransaction[];
+  threats: CasperThreat[];
+}
 
 // KAVACHA security types
 export interface TimelineStep {

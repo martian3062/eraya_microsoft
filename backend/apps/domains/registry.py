@@ -6,6 +6,14 @@ if TYPE_CHECKING:
     from .base import ErayaEnvironment
 
 _registry: dict[str, "ErayaEnvironment"] = {}
+_bootstrapped = False
+
+
+def _ensure_bootstrapped() -> None:
+    global _bootstrapped
+    if not _bootstrapped:
+        _bootstrap_domains()
+        _bootstrapped = True
 
 
 def register_domain(name: str, env: "ErayaEnvironment") -> None:
@@ -13,10 +21,12 @@ def register_domain(name: str, env: "ErayaEnvironment") -> None:
 
 
 def get_domain(name: str) -> "ErayaEnvironment | None":
+    _ensure_bootstrapped()
     return _registry.get(name)
 
 
 def get_registered_domains() -> list[str]:
+    _ensure_bootstrapped()
     return list(_registry.keys())
 
 
@@ -24,7 +34,9 @@ def _bootstrap_domains() -> None:
     from .telecom.adapter import TelecomEnvironment
     from .cloud.adapter import CloudEnvironment
     from .icu.adapter import ICUEnvironment
+    from .casper_defi.adapter import CasperDeFiEnvironment
 
     register_domain("5g", TelecomEnvironment())
     register_domain("cloud", CloudEnvironment())
     register_domain("icu", ICUEnvironment())
+    register_domain("casper_defi", CasperDeFiEnvironment())

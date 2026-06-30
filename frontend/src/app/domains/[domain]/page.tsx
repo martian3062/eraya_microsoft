@@ -27,6 +27,12 @@ const DOMAIN_META: Record<string, { title: string; subtitle: string; primaryMetr
     primaryMetric: "sepsis_risk",
     color: "from-emerald-400 to-teal-400",
   },
+  casper_defi: {
+    title: "Casper DeFi",
+    subtitle: "CSPR.cloud + CSPR.trade MCP telemetry",
+    primaryMetric: "apy_current",
+    color: "from-amber-400 to-teal-400",
+  },
   network: {
     title: "Network Intelligence",
     subtitle: "Wi-Fi signal monitoring · device telemetry · anomaly detection",

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 import time
 from typing import Any, Callable
@@ -25,7 +26,13 @@ _bus_instance: A2ABus | None = None
 def get_bus() -> A2ABus:
     global _bus_instance
     if _bus_instance is None:
-        _bus_instance = A2ABus()
+        backend = os.environ.get("A2A_BUS_BACKEND", "memory")
+        x402_enabled = os.environ.get("ERAYA_X402_ENABLED", "true").lower() in {"1", "true", "yes"}
+        if x402_enabled:
+            from .x402_bus import X402EnabledBus
+            _bus_instance = X402EnabledBus(backend=backend)
+        else:
+            _bus_instance = A2ABus(backend=backend)
     return _bus_instance
 
 

@@ -14,6 +14,34 @@
 
 ---
 
+## Casper Branch Upgrade
+
+The `caspr` branch extends ERAYA from a general self-healing swarm into a Casper DeFi agent swarm:
+
+- `casper_defi` domain adapter with CSPR.cloud/CSPR.trade-shaped telemetry, portfolio state, yield monitor, transaction log, and available DeFi actions.
+- Demo-safe Casper MCP and CSPR.click wallet facades under `backend/core/casper/`; set `CSPR_CLOUD_REST_URL`, `CASPER_MCP_URL`, `CSPR_TRADE_MCP_URL`, or `CSPR_CLICK_API_URL` to move from deterministic demo mode toward live providers.
+- x402-aware A2A message support and `X402EnabledBus` for paid inter-agent requests.
+- Swarm quorum protocol for high-stakes DeFi execution, plus a reputation tracker with on-chain-anchor-shaped batches.
+- KAVACHA DeFi policy rules R004-R008 and a proactive threat scanner for mempool, liquidity, and governance risk.
+- Next.js DeFi console routes: `/defi/portfolio`, `/defi/yield-monitor`, `/defi/swarm-consensus`, `/defi/reputation`, `/defi/transactions`, `/defi/threat-radar`.
+
+API smoke checks:
+
+```bash
+cd backend
+python manage.py check
+python manage.py shell -c "from django.test import Client; c=Client(); print(c.get('/api/domains/casper_defi/dashboard/').status_code)"
+```
+
+Frontend check:
+
+```bash
+cd frontend
+npm run build
+```
+
+---
+
 ## What is Eraya?
 
 Eraya is a **domain-agnostic 4-archetype agent swarm** that self-heals real-world adaptive systems — 5G networks, hospital ICUs, cloud infrastructure — where state changes every 50 ms and failure modes are adversarial.

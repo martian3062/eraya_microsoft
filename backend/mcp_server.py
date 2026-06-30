@@ -37,7 +37,8 @@ mcp = FastMCP(
         "You have access to the Eraya self-healing agent swarm. "
         "Use these tools to monitor agent health, inject failure scenarios, "
         "run security attack simulations, and read the Guardian audit log. "
-        "The swarm manages 5G networks, cloud infrastructure, and ICU monitoring."
+        "The swarm manages 5G networks, cloud infrastructure, ICU monitoring, "
+        "and Casper DeFi treasury agents."
     ),
 )
 
@@ -107,6 +108,15 @@ def get_domain_signal_snapshot(domain: str) -> dict:
     Returns live metric readings (RSRP/SINR/CQI for 5G, CPU/cost for cloud, etc.)
     """
     return _get(f"/api/domains/{domain}/signals/")
+
+
+@mcp.tool()
+def get_casper_defi_dashboard() -> dict:
+    """
+    Get the Casper DeFi operator snapshot: portfolio, live yield monitor,
+    quorum vote state, reputation ledger, transactions, and threat radar.
+    """
+    return _get("/api/domains/casper_defi/dashboard/")
 
 
 @mcp.tool()

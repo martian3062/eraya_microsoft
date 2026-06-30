@@ -66,6 +66,23 @@ class AuditRecord:
     timestamp: float
 
 
+def _metric(action: dict[str, Any], context: dict[str, Any], key: str, default: float = 0.0) -> float:
+    """Read policy metrics from action, action.parameters, context, or context.features."""
+    sources = [
+        action,
+        action.get("parameters", {}) if isinstance(action.get("parameters"), dict) else {},
+        context,
+        context.get("features", {}) if isinstance(context.get("features"), dict) else {},
+    ]
+    for source in sources:
+        if key in source:
+            try:
+                return float(source[key])
+            except (TypeError, ValueError):
+                return default
+    return default
+
+
 # ─── PolicyAuditor ────────────────────────────────────────────────────────────
 
 class PolicyAuditor:
@@ -76,6 +93,7 @@ class PolicyAuditor:
         {
             "id": "R001",
             "description": "ICU actions require confidence > 0.8",
+            "severity": VerdictSeverity.BLOCK,
             "check": lambda action, ctx: not (
                 ctx.get("domain") == "icu" and ctx.get("confidence", 1.0) < 0.8
             ),
@@ -83,14 +101,63 @@ class PolicyAuditor:
         {
             "id": "R002",
             "description": "Actions cannot override Guardian quarantine",
+            "severity": VerdictSeverity.BLOCK,
             "check": lambda action, ctx: action.get("action_id") != "lift_quarantine",
         },
         {
             "id": "R003",
             "description": "High-risk actions require guardian approval flag",
+            "severity": VerdictSeverity.BLOCK,
             "check": lambda action, ctx: not (
                 ctx.get("risk_score", 0) > 0.85
                 and not action.get("guardian_approved", False)
+            ),
+        },
+        {
+            "id": "R004",
+            "description": "No single DeFi position can exceed 25% of treasury TVL",
+            "severity": VerdictSeverity.BLOCK,
+            "check": lambda action, ctx: not (
+                ctx.get("domain") == "casper_defi"
+                and _metric(action, ctx, "single_position_pct") > 0.25
+            ),
+        },
+        {
+            "id": "R005",
+            "description": "Single DeFi swap cannot exceed 5% of treasury",
+            "severity": VerdictSeverity.BLOCK,
+            "check": lambda action, ctx: not (
+                ctx.get("domain") == "casper_defi"
+                and _metric(action, ctx, "treasury_tvl") > 0
+                and _metric(action, ctx, "swap_value_usd") > _metric(action, ctx, "treasury_tvl") * 0.05
+            ),
+        },
+        {
+            "id": "R006",
+            "description": "Target APY is more than 3x market average",
+            "severity": VerdictSeverity.WARN,
+            "check": lambda action, ctx: not (
+                ctx.get("domain") == "casper_defi"
+                and _metric(action, ctx, "market_avg_apy") > 0
+                and _metric(action, ctx, "target_apy") > _metric(action, ctx, "market_avg_apy") * 3
+            ),
+        },
+        {
+            "id": "R007",
+            "description": "Block DeFi swaps with more than 1% estimated slippage",
+            "severity": VerdictSeverity.BLOCK,
+            "check": lambda action, ctx: not (
+                ctx.get("domain") == "casper_defi"
+                and _metric(action, ctx, "estimated_slippage_bps") > 100
+            ),
+        },
+        {
+            "id": "R008",
+            "description": "Quarantine pool interaction if liquidity dropped more than 50% in 24h",
+            "severity": VerdictSeverity.QUARANTINE,
+            "check": lambda action, ctx: not (
+                ctx.get("domain") == "casper_defi"
+                and _metric(action, ctx, "liquidity_drop_24h_pct") > 0.50
             ),
         },
     ]
@@ -120,7 +187,7 @@ class PolicyAuditor:
                     violations.append(PolicyViolation(
                         rule_id=rule["id"],
                         description=rule["description"],
-                        severity=VerdictSeverity.BLOCK,
+                        severity=rule.get("severity", VerdictSeverity.BLOCK),
                         evidence={"action": action, "context": context},
                     ))
             except Exception as exc:
@@ -306,8 +373,13 @@ class GuardianAgent(ErayaAgent):
         verdict.violations = violations
 
         if violations:
-            max_severity = max(v.severity.value for v in violations)
-            verdict.severity = VerdictSeverity(max_severity)
+            severity_order = {
+                VerdictSeverity.APPROVE: 0,
+                VerdictSeverity.WARN: 1,
+                VerdictSeverity.BLOCK: 2,
+                VerdictSeverity.QUARANTINE: 3,
+            }
+            verdict.severity = max(violations, key=lambda v: severity_order[v.severity]).severity
             verdict.approved = verdict.severity not in (
                 VerdictSeverity.BLOCK, VerdictSeverity.QUARANTINE
             )

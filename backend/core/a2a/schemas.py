@@ -62,10 +62,16 @@ class A2AMessage(BaseModel):
         "capability.query",
         "capability.response",
         "quarantine",
+        "consensus.propose",
+        "consensus.vote",
+        "consensus.result",
+        "threat.detected",
+        "payment.proof",
     ]
     domain: str = "generic"
     payload: dict[str, Any] = Field(default_factory=dict)
     signature: str | None = None
+    payment_proof: dict[str, Any] | None = None
     timestamp: datetime = Field(default_factory=_now)
     correlation_id: str | None = None
 
