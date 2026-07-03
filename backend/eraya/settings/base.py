@@ -141,13 +141,13 @@ ERAYA = {
     'LATENCY_BUDGET_MS': env.int('LATENCY_BUDGET_MS', default=500),
 
     # Agentic AI providers (caspr upgrade) - all optional, graceful fallback
-    # LLM cascade (Tier 1): Groq -> Kimi -> Featherless
+    # LLM cascade (Tier 1): Groq -> Kimi -> local open-source HF model
     'KIMI_API_KEY': env('KIMI_API_KEY', default=''),
-    'FEATHERLESS_API_KEY': env('FEATHERLESS_API_KEY', default=''),
     'SARVAM_API_KEY': env('SARVAM_API_KEY', default=''),
     'GROQ_MODEL': env('GROQ_MODEL', default='llama-3.3-70b-versatile'),
     'KIMI_MODEL': env('KIMI_MODEL', default='kimi-k2-0711-preview'),
-    'FEATHERLESS_MODEL': env('FEATHERLESS_MODEL', default='meta-llama/Meta-Llama-3.1-8B-Instruct'),
+    'HF_LOCAL_LLM_ENABLED': env('HF_LOCAL_LLM_ENABLED', default='false'),
+    'HF_LOCAL_LLM_MODEL': env('HF_LOCAL_LLM_MODEL', default='flan-t5-small'),
     # ML (Tier 2)
     'HF_TOKEN': env('HF_TOKEN', default=env('HUGGINGFACE_TOKEN', default='')),
     'TABPFN_API_KEY': env('TABPFN_API_KEY', default=''),

@@ -2,13 +2,14 @@
 LLM cascade facade - Tier-1 planning brain for the swarm.
 
 Tries providers in order and returns the first success:
-    Groq (fast) -> Kimi / Moonshot (long-context) -> Featherless (open-model catalog)
+    Groq (fast) -> Kimi / Moonshot (long-context) -> local Hugging Face model
 
-All three speak the OpenAI-compatible /chat/completions API, so we call them with
-plain httpx (no per-provider SDK needed). Every call is defensive: a missing key or
-a failed request just moves to the next provider. If none are configured/reachable,
-`complete()` returns None and the caller falls back to its own logic (e.g. the
-PlannerAgent's Thompson-Sampling Tier 2).
+Groq and Kimi speak the OpenAI-compatible /chat/completions API, so we call them
+with plain httpx. The local HF fallback uses core.agents.local_models and only
+loads when the cloud providers fail or are absent. Every path is defensive: a
+missing key/package/model just moves to the next provider. If none are
+configured/reachable, `complete()` returns None and the caller falls back to its
+own logic (e.g. the PlannerAgent's Thompson-Sampling Tier 2).
 """
 from __future__ import annotations
 
@@ -23,7 +24,6 @@ logger = logging.getLogger("eraya.providers.llm")
 _CHAIN = [
     ("groq",        "https://api.groq.com/openai/v1", "GROQ_API_KEY",        "GROQ_MODEL",        "llama-3.3-70b-versatile"),
     ("kimi",        "https://api.moonshot.ai/v1",     "KIMI_API_KEY",        "KIMI_MODEL",        "kimi-k2-0711-preview"),
-    ("featherless", "https://api.featherless.ai/v1",  "FEATHERLESS_API_KEY", "FEATHERLESS_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct"),
 ]
 
 
@@ -67,6 +67,9 @@ def complete(system: str, user: str, json_mode: bool = True, max_tokens: int = 5
         except Exception as exc:
             logger.warning("LLM provider '%s' failed, cascading: %s", name, exc)
             continue
+    local = _complete_local(system, user, json_mode, max_tokens)
+    if local is not None:
+        return local
     return None
 
 
@@ -85,4 +88,35 @@ def complete_json(system: str, user: str, max_tokens: int = 512):
 
 def available() -> list[str]:
     """Names of providers that currently have a key configured."""
-    return [name for name, _, key_name, _, _ in _CHAIN if config.get(key_name)]
+    providers = [name for name, _, key_name, _, _ in _CHAIN if config.get(key_name)]
+    if _local_enabled():
+        providers.append("local_hf")
+    return providers
+
+
+def _local_enabled() -> bool:
+    raw = config.get("HF_LOCAL_LLM_ENABLED", "false").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def _complete_local(system: str, user: str, json_mode: bool, max_tokens: int):
+    if not _local_enabled():
+        return None
+    model_key = config.get("HF_LOCAL_LLM_MODEL", "flan-t5-small")
+    try:
+        from core.agents.local_models import get_model
+        prompt = f"{system}\n\n{user}"
+        if json_mode and "json" not in prompt.lower():
+            prompt += "\n\nRespond with a valid JSON object."
+        model = get_model(model_key)
+        old_limit = model.max_new_tokens
+        model.max_new_tokens = min(max_tokens, old_limit)
+        try:
+            text = model.generate(prompt)
+        finally:
+            model.max_new_tokens = old_limit
+        if text:
+            return {"text": text, "provider": "local_hf", "model": model.model_id}
+    except Exception as exc:
+        logger.warning("Local HF LLM fallback unavailable: %s", exc)
+    return None

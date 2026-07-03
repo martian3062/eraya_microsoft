@@ -52,7 +52,7 @@ The `caspr` upgrade wires a full agentic-AI toolchain into the swarm. **Every pr
 |----------|---------------|-------------------|---------|
 | **Groq** | Fast LLM planning (`llama-3.3-70b`) | Planner · Tier 1 | `GROQ_API_KEY` |
 | **Kimi (Moonshot)** | Long-context planning / reasoning | Planner · Tier 1 (alt) | `KIMI_API_KEY` |
-| **Featherless AI** | Serverless access to open-model catalog | Planner · Tier 1 fallback | `FEATHERLESS_API_KEY` |
+| **Open-source HF local LLM** | Small local fallback (`flan-t5-small`, `t5-small`, `distilgpt2`) | Planner · Tier 1 fallback | `HF_LOCAL_LLM_ENABLED` |
 | **Hugging Face (<=300M)** | Sentiment / anomaly / embeddings | Perceiver · Tier 2 (CPU) | `HF_TOKEN` |
 | **TabPFN 3** | Tabular foundation model - portfolio/risk scoring | Perceiver · Tier 2 (CPU) | `TABPFN_API_KEY` |
 | **Pinecone** | Managed vector memory / RAG | ErayaGraph memory | `PINECONE_API_KEY` |
@@ -70,7 +70,7 @@ The `caspr` upgrade wires a full agentic-AI toolchain into the swarm. **Every pr
 ### How they realize the 3-tier cascade
 
 ```
-Tier 1 (GPU / LLM)      Groq  ->  Kimi (long-context)  ->  Featherless (open-model fallback)
+Tier 1 (GPU / LLM)      Groq  ->  Kimi (long-context)  ->  local HF small model
 Tier 2 (CPU models)     TabPFN 3 (risk)  +  Hugging Face <=300M (sentiment / embeddings)
 Tier 3 (deterministic)  existing KAVACHA rules + numpy heuristics
 ```
@@ -696,7 +696,7 @@ Hardware: **NVIDIA GeForce RTX 4050 Laptop GPU**
 | **MCP** | FastMCP (`mcp` SDK) — 8 tools + 2 resources |
 | **Infra** | Docker Compose · Redis 7 · NATS 2.10 · Chroma · Jaeger 1.62 |
 | **Ingestion** | Firecrawl · Bright Data · ZenRows · TinyFish AI |
-| **LLM (extended)** | Groq `llama-3.3-70b` · Kimi (Moonshot, long-context) · Featherless (serverless open models) · Sarvam (Indic, optional) |
+| **LLM (extended)** | Groq `llama-3.3-70b` · Kimi (Moonshot, long-context) · local open-source HF fallback · Sarvam (Indic, optional) |
 | **ML - Tier 2 (extended)** | TabPFN 3 (tabular risk) · Hugging Face <=300M (sentiment / anomaly / embeddings) |
 | **Memory (extended)** | Pinecone (managed vectors) · CyborgDB (encrypted vectors) |
 | **Orchestration** | n8n (workflows · alerts · schedules) |
@@ -845,7 +845,8 @@ CHROMA_PORT=8001
 # Put real values in backend/.env (git-ignored). Never commit real keys.
 #   LLM tier
 KIMI_API_KEY=                       # Moonshot / Kimi - long-context planner
-FEATHERLESS_API_KEY=                # serverless open-model catalog
+HF_LOCAL_LLM_ENABLED=false          # optional local open-source HF fallback
+HF_LOCAL_LLM_MODEL=flan-t5-small
 SARVAM_API_KEY=                     # Indic multilingual (optional)
 #   ML tier
 HF_TOKEN=                           # Hugging Face - <=300M models, embeddings

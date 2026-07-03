@@ -7,7 +7,7 @@ the caller simply falls back to deterministic behaviour.
 
     from core.providers import llm, risk, memory, ingestion, orchestration, assets
 
-    plan = llm.complete_json(system, user)        # Groq -> Kimi -> Featherless
+    plan = llm.complete_json(system, user)        # Groq -> Kimi -> local HF
     md   = ingestion.fetch_markdown(url)          # Firecrawl -> ZenRows -> BrightData
     rag.ingest_url("casper_defi", url)            # ingestion -> VectorStore
     orchestration.notify("guardian.veto", {...})  # n8n webhook
@@ -24,7 +24,8 @@ def status() -> dict:
     """Which providers are currently configured (key present)."""
     from . import devtools, embeddings, llm, sarvam
     keys = [
-        "GROQ_API_KEY", "KIMI_API_KEY", "FEATHERLESS_API_KEY", "SARVAM_API_KEY",
+        "GROQ_API_KEY", "KIMI_API_KEY", "SARVAM_API_KEY",
+        "HF_LOCAL_LLM_ENABLED", "HF_LOCAL_LLM_MODEL",
         "HF_TOKEN", "TABPFN_API_KEY", "PINECONE_API_KEY", "CYBORGDB_API_KEY",
         "FIRECRAWL_API_KEY", "BRIGHTDATA_API_KEY", "ZENROWS_API_KEY", "TINYFISH_API_KEY",
         "N8N_WEBHOOK_URL", "ZERVE_API_KEY", "STITCH_API_KEY", "PEXELS_API_KEY",

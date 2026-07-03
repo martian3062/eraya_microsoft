@@ -72,7 +72,7 @@ class LLMPlannerAgent(PlannerAgent):
         self._last_provider = "groq"
 
     def _plan_tier1(self, context: PerceptionResult) -> ActionPlan:
-        # LLM cascade: Groq -> Kimi -> Featherless (see core/providers/llm.py).
+        # LLM cascade: Groq -> Kimi -> local HF (see core/providers/llm.py).
         from core.providers import llm as _llm
 
         action_ids = [a["action_id"] for a in self._domain_actions] or ["noop"]
