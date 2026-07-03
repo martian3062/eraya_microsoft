@@ -154,6 +154,9 @@ ERAYA = {
     # Memory
     'PINECONE_API_KEY': env('PINECONE_API_KEY', default=''),
     'PINECONE_INDEX': env('PINECONE_INDEX', default='eraya'),
+    'PINECONE_DIMENSION': env.int('PINECONE_DIMENSION', default=384),
+    'PINECONE_CLOUD': env('PINECONE_CLOUD', default='aws'),
+    'PINECONE_REGION': env('PINECONE_REGION', default='us-east-1'),
     'CYBORGDB_API_KEY': env('CYBORGDB_API_KEY', default=''),
     # Ingestion
     'FIRECRAWL_API_KEY': env('FIRECRAWL_API_KEY', default=''),

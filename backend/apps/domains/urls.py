@@ -3,6 +3,9 @@ from . import views
 
 urlpatterns = [
     path("", views.domain_list, name="domain-list"),
+    path("providers/status/", views.provider_status, name="provider-status"),
+    path("rag/ingest/", views.rag_ingest, name="rag-ingest"),
+    path("rag/query/", views.rag_query, name="rag-query"),
     path("casper_defi/dashboard/", views.casper_dashboard, name="casper-dashboard"),
     path("casper_defi/portfolio/", views.casper_portfolio, name="casper-portfolio"),
     path("casper_defi/yields/", views.casper_yields, name="casper-yields"),

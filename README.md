@@ -80,6 +80,14 @@ Tier 3 (deterministic)  existing KAVACHA rules + numpy heuristics
 - **Orchestration:** n8n runs scheduled Perceiver scrapes, routes Guardian vetoes to alert channels, and triggers Recoverer webhooks.
 - **Dev / design:** Zerve backtests the TabPFN risk models, Stitch generates console UI, Pexels supplies imagery.
 
+### Live provider/RAG endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/domains/providers/status/?domain=casper_defi` | Shows configured provider families, embedding backend, and active vector-memory backend |
+| `POST /api/domains/rag/ingest/` | Fetches a URL through Firecrawl -> ZenRows -> Bright Data -> plain HTTP and stores it in VectorStore |
+| `GET /api/domains/rag/query/?domain=casper_defi&q=treasury` | Retrieves matching RAG context from Pinecone, Chroma, or in-memory fallback |
+
 > **Redundancy guidance:** keep **Firecrawl** as the primary scraper with **Bright Data** as the hard-target fallback - **ZenRows** overlaps both and can be dropped. Use **Pinecone** as the primary vector store and **CyborgDB** only for the encrypted/sensitive tier. **Sarvam** is optional (only if you add an Indic-language operator UI).
 
 ---
@@ -826,6 +834,10 @@ HUGGINGFACE_TOKEN=
 
 # Vector
 PINECONE_API_KEY=
+PINECONE_INDEX=eraya
+PINECONE_DIMENSION=384
+PINECONE_CLOUD=aws
+PINECONE_REGION=us-east-1
 CHROMA_HOST=localhost
 CHROMA_PORT=8001
 

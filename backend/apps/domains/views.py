@@ -55,6 +55,44 @@ def domain_actions(request, domain: str):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
+def provider_status(request):
+    from core.memory import VectorStore
+    from core.providers import status
+
+    domain = request.query_params.get("domain", "casper_defi")
+    return Response({
+        "providers": status(),
+        "memory": VectorStore(domain).stats(),
+    })
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def rag_ingest(request):
+    from core.providers import rag
+
+    domain = request.data.get("domain", "casper_defi")
+    url = request.data.get("url", "")
+    query = request.data.get("query") or None
+    result = rag.ingest_url(domain, url, query)
+    return Response(result, status=200 if result.get("ok") else 400)
+
+
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def rag_query(request):
+    from core.providers import rag
+
+    data = request.data if request.method == "POST" else request.query_params
+    domain = data.get("domain", "casper_defi")
+    query = data.get("q") or data.get("query") or ""
+    k = data.get("k", 5)
+    result = rag.query(domain, query, k)
+    return Response(result, status=200 if result.get("ok") else 400)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def casper_dashboard(request):
     env = _get_casper_env()
     if env is None:

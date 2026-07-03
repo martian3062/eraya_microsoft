@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 
 from . import config
+from .embeddings import dimension
 
 logger = logging.getLogger("eraya.providers.memory")
 
@@ -32,12 +33,35 @@ class PineconeStore:
             from pinecone import Pinecone
             pc = Pinecone(api_key=key)
             self._index_name = index or config.get("PINECONE_INDEX", "eraya")
+            self._ensure_index(pc)
             self._index = pc.Index(self._index_name)
             self.ok = True
             logger.info("PineconeStore ready - index '%s' ns '%s'", self._index_name, domain)
         except Exception as exc:
             logger.warning("Pinecone unavailable: %s", exc)
             self.ok = False
+
+    def _ensure_index(self, pc) -> None:
+        try:
+            existing = pc.list_indexes()
+            names = [
+                item["name"] if isinstance(item, dict) else getattr(item, "name", "")
+                for item in existing
+            ]
+            if self._index_name in names:
+                return
+            from pinecone import ServerlessSpec
+            pc.create_index(
+                name=self._index_name,
+                dimension=dimension(),
+                metric=config.get("PINECONE_METRIC", "cosine"),
+                spec=ServerlessSpec(
+                    cloud=config.get("PINECONE_CLOUD", "aws"),
+                    region=config.get("PINECONE_REGION", "us-east-1"),
+                ),
+            )
+        except Exception as exc:
+            logger.warning("Pinecone index ensure failed: %s", exc)
 
     def upsert(self, doc_id: str, vector: list[float], metadata: dict, text: str = "") -> bool:
         if not self.ok:

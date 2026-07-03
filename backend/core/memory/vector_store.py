@@ -1,5 +1,5 @@
 """
-VectorStore — semantic memory for agent context retrieval.
+VectorStore - semantic memory for agent context retrieval.
 
 Uses Chroma (local dev) with optional pgvector (production).
 Agents store perception results and retrieve similar past contexts.
@@ -12,6 +12,8 @@ import uuid
 from typing import Any
 
 logger = logging.getLogger("eraya.memory.vector")
+
+_FALLBACK_STORES: dict[str, list[dict[str, Any]]] = {}
 
 
 class VectorStore:
@@ -27,7 +29,7 @@ class VectorStore:
         self._collection = None
         self._embedding_fn = None
         self._pinecone = None   # managed vector backend (core/providers/memory.py)
-        self._fallback: list[dict[str, Any]] = []  # in-memory if Chroma unavailable
+        self._fallback = _FALLBACK_STORES.setdefault(self._collection_name, [])
         self._init()
 
     def _init(self) -> None:
@@ -51,7 +53,7 @@ class VectorStore:
                 name=self._collection_name,
                 metadata={"domain": self.domain},
             )
-            logger.info("VectorStore: connected to Chroma — collection '%s'", self._collection_name)
+            logger.info("VectorStore: connected to Chroma - collection '%s'", self._collection_name)
         except Exception as exc:
             logger.warning("Chroma unavailable, using in-memory fallback: %s", exc)
             self._client = None
@@ -60,7 +62,7 @@ class VectorStore:
             from sentence_transformers import SentenceTransformer
             self._embedding_fn = SentenceTransformer("all-MiniLM-L6-v2")
         except ImportError:
-            logger.debug("sentence-transformers not installed — embeddings disabled")
+            logger.debug("sentence-transformers not installed - using provider embeddings")
 
     def store(self, text: str, metadata: dict[str, Any]) -> str:
         doc_id = str(uuid.uuid4())
@@ -119,10 +121,11 @@ class VectorStore:
         return matches[:k]
 
     def _embed(self, text: str) -> list[float] | None:
-        if self._embedding_fn is None:
-            return None
         try:
-            return self._embedding_fn.encode(text).tolist()
+            if self._embedding_fn is not None:
+                return self._embedding_fn.encode(text).tolist()
+            from core.providers.embeddings import embed_text
+            return embed_text(text)
         except Exception:
             return None
 

@@ -9,16 +9,20 @@ the caller simply falls back to deterministic behaviour.
 
     plan = llm.complete_json(system, user)        # Groq -> Kimi -> Featherless
     md   = ingestion.fetch_markdown(url)          # Firecrawl -> ZenRows -> BrightData
+    rag.ingest_url("casper_defi", url)            # ingestion -> VectorStore
     orchestration.notify("guardian.veto", {...})  # n8n webhook
 """
 from . import config  # noqa: F401
 
-__all__ = ["config", "llm", "risk", "memory", "ingestion", "orchestration", "assets", "status"]
+__all__ = [
+    "config", "llm", "risk", "memory", "ingestion", "orchestration", "assets",
+    "embeddings", "rag", "devtools", "sarvam", "status",
+]
 
 
 def status() -> dict:
     """Which providers are currently configured (key present)."""
-    from . import llm
+    from . import devtools, embeddings, llm, sarvam
     keys = [
         "GROQ_API_KEY", "KIMI_API_KEY", "FEATHERLESS_API_KEY", "SARVAM_API_KEY",
         "HF_TOKEN", "TABPFN_API_KEY", "PINECONE_API_KEY", "CYBORGDB_API_KEY",
@@ -27,5 +31,8 @@ def status() -> dict:
     ]
     return {
         "llm_chain": llm.available(),
+        "embedding_backend": embeddings.backend(),
+        "sarvam": sarvam.enabled(),
+        "devtools": devtools.status(),
         "configured": [k for k in keys if config.get(k)],
     }
