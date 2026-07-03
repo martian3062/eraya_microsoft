@@ -42,6 +42,48 @@ npm run build
 
 ---
 
+## Agentic AI Provider Integrations
+
+The `caspr` upgrade wires a full agentic-AI toolchain into the swarm. **Every provider is a graceful-fallback facade** - the same principle as the 3-tier cascade: if a key is missing or a call fails, the agent drops to a deterministic fallback and the swarm keeps running. No provider is a hard dependency. All keys live in `backend/.env` (git-ignored) and are **never** committed to the repo.
+
+### Providers mapped to the swarm
+
+| Provider | Role in ERAYA | Where it plugs in | Env var |
+|----------|---------------|-------------------|---------|
+| **Groq** | Fast LLM planning (`llama-3.3-70b`) | Planner · Tier 1 | `GROQ_API_KEY` |
+| **Kimi (Moonshot)** | Long-context planning / reasoning | Planner · Tier 1 (alt) | `KIMI_API_KEY` |
+| **Featherless AI** | Serverless access to open-model catalog | Planner · Tier 1 fallback | `FEATHERLESS_API_KEY` |
+| **Hugging Face (<=300M)** | Sentiment / anomaly / embeddings | Perceiver · Tier 2 (CPU) | `HF_TOKEN` |
+| **TabPFN 3** | Tabular foundation model - portfolio/risk scoring | Perceiver · Tier 2 (CPU) | `TABPFN_API_KEY` |
+| **Pinecone** | Managed vector memory / RAG | ErayaGraph memory | `PINECONE_API_KEY` |
+| **CyborgDB** | Encrypted vector memory (sensitive context) | Guardian memory | `CYBORGDB_API_KEY` |
+| **Firecrawl** | LLM-ready web ingestion | Perceiver signal source | `FIRECRAWL_API_KEY` |
+| **Bright Data** | Anti-bot scraping (hard targets) | Perceiver ingestion fallback | `BRIGHTDATA_API_KEY` |
+| **ZenRows** | Scraping API (optional) | Perceiver ingestion fallback | `ZENROWS_API_KEY` |
+| **TinyFish AI** | Structured natural-language web extraction | Perceiver ingestion | `TINYFISH_API_KEY` |
+| **Sarvam AI** | Indic multilingual / voice (optional) | Operator UI (optional) | `SARVAM_API_KEY` |
+| **n8n** | Scheduled scrapes, veto alerts, recovery webhooks | Orchestration sidecar | `N8N_API_KEY` · `N8N_WEBHOOK_URL` |
+| **Zerve AI** | Model + strategy backtesting | Dev-time | `ZERVE_API_KEY` |
+| **Stitch** | UI generation for the console | Dev-time | `STITCH_API_KEY` |
+| **Pexels** | Media / imagery for console & landing | Assets | `PEXELS_API_KEY` |
+
+### How they realize the 3-tier cascade
+
+```
+Tier 1 (GPU / LLM)      Groq  ->  Kimi (long-context)  ->  Featherless (open-model fallback)
+Tier 2 (CPU models)     TabPFN 3 (risk)  +  Hugging Face <=300M (sentiment / embeddings)
+Tier 3 (deterministic)  existing KAVACHA rules + numpy heuristics
+```
+
+- **Ingestion (Perceiver signal sources):** Firecrawl (primary) -> Bright Data / ZenRows (anti-bot fallback); TinyFish for structured extraction.
+- **Memory (ErayaGraph):** Pinecone for general RAG context; CyborgDB for encrypted, security-sensitive agent memory.
+- **Orchestration:** n8n runs scheduled Perceiver scrapes, routes Guardian vetoes to alert channels, and triggers Recoverer webhooks.
+- **Dev / design:** Zerve backtests the TabPFN risk models, Stitch generates console UI, Pexels supplies imagery.
+
+> **Redundancy guidance:** keep **Firecrawl** as the primary scraper with **Bright Data** as the hard-target fallback - **ZenRows** overlaps both and can be dropped. Use **Pinecone** as the primary vector store and **CyborgDB** only for the encrypted/sensitive tier. **Sarvam** is optional (only if you add an Indic-language operator UI).
+
+---
+
 ## What is Eraya?
 
 Eraya is a **domain-agnostic 4-archetype agent swarm** that self-heals real-world adaptive systems — 5G networks, hospital ICUs, cloud infrastructure — where state changes every 50 ms and failure modes are adversarial.
@@ -645,6 +687,12 @@ Hardware: **NVIDIA GeForce RTX 4050 Laptop GPU**
 | **Observability** | OpenTelemetry SDK · Jaeger · Prometheus · Grafana · structlog · MLflow |
 | **MCP** | FastMCP (`mcp` SDK) — 8 tools + 2 resources |
 | **Infra** | Docker Compose · Redis 7 · NATS 2.10 · Chroma · Jaeger 1.62 |
+| **Ingestion** | Firecrawl · Bright Data · ZenRows · TinyFish AI |
+| **LLM (extended)** | Groq `llama-3.3-70b` · Kimi (Moonshot, long-context) · Featherless (serverless open models) · Sarvam (Indic, optional) |
+| **ML - Tier 2 (extended)** | TabPFN 3 (tabular risk) · Hugging Face <=300M (sentiment / anomaly / embeddings) |
+| **Memory (extended)** | Pinecone (managed vectors) · CyborgDB (encrypted vectors) |
+| **Orchestration** | n8n (workflows · alerts · schedules) |
+| **Dev / Design** | Zerve AI (backtests) · Stitch (UI generation) · Pexels (media) |
 
 ---
 
@@ -773,13 +821,37 @@ RAM_LIMIT_GB=8
 LATENCY_BUDGET_MS=100
 
 # LLM
-GROQ_API_KEY=gsk_...             # free tier — enables LLMPlannerAgent tier1
-HUGGINGFACE_TOKEN=hf_...
+GROQ_API_KEY=                    # enables LLMPlannerAgent tier1
+HUGGINGFACE_TOKEN=
 
 # Vector
-PINECONE_API_KEY=pcsk_...
+PINECONE_API_KEY=
 CHROMA_HOST=localhost
 CHROMA_PORT=8001
+
+# Agentic AI providers - all OPTIONAL (graceful fallback if unset).
+# Put real values in backend/.env (git-ignored). Never commit real keys.
+#   LLM tier
+KIMI_API_KEY=                       # Moonshot / Kimi - long-context planner
+FEATHERLESS_API_KEY=                # serverless open-model catalog
+SARVAM_API_KEY=                     # Indic multilingual (optional)
+#   ML tier
+HF_TOKEN=                           # Hugging Face - <=300M models, embeddings
+TABPFN_API_KEY=                     # TabPFN 3 - tabular risk scoring
+#   Memory
+CYBORGDB_API_KEY=                   # encrypted vector memory
+#   Ingestion
+FIRECRAWL_API_KEY=                  # primary web ingestion
+BRIGHTDATA_API_KEY=                 # anti-bot scraping fallback
+ZENROWS_API_KEY=                    # scraping API (optional)
+TINYFISH_API_KEY=                   # structured NL extraction
+#   Orchestration
+N8N_WEBHOOK_URL=                    # n8n inbound webhook
+N8N_API_KEY=                        # n8n REST API
+#   Dev / assets
+ZERVE_API_KEY=                      # backtesting canvas
+STITCH_API_KEY=                     # UI generation
+PEXELS_API_KEY=                     # media / imagery
 
 # Messaging
 REDIS_URL=redis://localhost:6379/0

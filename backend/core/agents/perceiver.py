@@ -46,6 +46,7 @@ class PerceiverAgent(ErayaAgent):
         self._feature_history: list[np.ndarray] = []
         self._state_labels: list[str] = ["normal", "degraded", "critical", "recovering"]
         self._initialized = False
+        self._tabpfn = None   # lazy TabPFN 3 refiner (core/providers/risk.py)
 
     # ─── Tier 1: Transformer + GNN ────────────────────────────────────────────
 
@@ -85,6 +86,13 @@ class PerceiverAgent(ErayaAgent):
             state_label, confidence = self._hmm_refine(
                 state_label, confidence, features_smooth
             )
+
+        # TabPFN 3 tabular-foundation-model refinement (core/providers/risk.py).
+        # No-op until enough labelled history AND tabpfn is available; otherwise
+        # the XGBoost/HMM result stands unchanged.
+        state_label, confidence = self._tabpfn_refine(
+            state_label, confidence, features_smooth
+        )
 
         risk_score = self._compute_risk(features_smooth, state_label)
 
@@ -164,6 +172,39 @@ class PerceiverAgent(ErayaAgent):
             else:
                 confidence = max(0.0, confidence - 0.1)
                 state_label = hmm_state if confidence < 0.5 else state_label
+        except Exception:
+            pass
+        return state_label, confidence
+
+    def _tabpfn_refine(
+        self, state_label: str, confidence: float, features: np.ndarray
+    ) -> tuple[str, float]:
+        """Refine (state_label, confidence) with TabPFN 3 when available.
+
+        Feeds the current (smoothed features -> current label) into a rolling
+        in-context buffer, then asks TabPFN for its own prediction. Fully
+        graceful: returns the inputs unchanged if the refiner or its deps are
+        absent, or if there isn't enough labelled history yet.
+        """
+        try:
+            if self._tabpfn is None:
+                from core.providers.risk import TabPFNRefiner
+                self._tabpfn = TabPFNRefiner()
+            label_idx = (
+                self._state_labels.index(state_label)
+                if state_label in self._state_labels else 0
+            )
+            self._tabpfn.observe(features, label_idx)
+            pred = self._tabpfn.predict(features)
+            if pred is not None:
+                idx, conf = pred
+                new_label = self._state_labels[idx % len(self._state_labels)]
+                # Blend: agreement boosts confidence; disagreement only flips
+                # the label when TabPFN is clearly more certain.
+                if new_label == state_label:
+                    confidence = min(1.0, max(confidence, conf) + 0.05)
+                elif conf > confidence:
+                    state_label, confidence = new_label, conf
         except Exception:
             pass
         return state_label, confidence

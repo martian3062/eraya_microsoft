@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import uuid
 from typing import Any
 
@@ -70,24 +69,11 @@ class LLMPlannerAgent(PlannerAgent):
     ):
         super().__init__(agent_id, domain)
         self._model = model
-        self._groq_client = None
-
-    def _get_client(self):
-        if self._groq_client is None:
-            try:
-                from groq import Groq
-                api_key = os.environ.get("GROQ_API_KEY", "")
-                if not api_key:
-                    raise ValueError("GROQ_API_KEY not set")
-                self._groq_client = Groq(api_key=api_key)
-            except Exception as exc:
-                logger.warning("Groq client unavailable: %s", exc)
-        return self._groq_client
+        self._last_provider = "groq"
 
     def _plan_tier1(self, context: PerceptionResult) -> ActionPlan:
-        client = self._get_client()
-        if client is None:
-            raise NotImplementedError("Groq unavailable — falling back to tier2")
+        # LLM cascade: Groq -> Kimi -> Featherless (see core/providers/llm.py).
+        from core.providers import llm as _llm
 
         action_ids = [a["action_id"] for a in self._domain_actions] or ["noop"]
         user_msg = _USER_TEMPLATE.format(
@@ -99,22 +85,11 @@ class LLMPlannerAgent(PlannerAgent):
             actions=action_ids,
         )
 
-        try:
-            response = client.chat.completions.create(
-                model=self._model,
-                messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
-                    {"role": "user",   "content": user_msg},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.1,
-                max_tokens=256,
-            )
-            raw = response.choices[0].message.content
-            data: dict[str, Any] = json.loads(raw)
-        except Exception as exc:
-            logger.warning("LLM tier1 call failed: %s", exc)
-            raise NotImplementedError(f"LLM call failed: {exc}") from exc
+        res = _llm.complete_json(_SYSTEM_PROMPT, user_msg, max_tokens=256)
+        if res is None:
+            raise NotImplementedError("LLM cascade unavailable - falling back to tier2")
+        data: dict[str, Any] = res["data"]
+        self._last_provider = res["provider"]
 
         action_id = data.get("action_id", "noop")
         # Verify the LLM chose a real registered action; fall back to noop
@@ -133,7 +108,7 @@ class LLMPlannerAgent(PlannerAgent):
             rationale=data.get("rationale", "LLM decision"),
             confidence=float(data.get("confidence", context.confidence)),
             expected_reward=float(data.get("expected_reward", 0.7)),
-            tier_used="tier1_llm",
+            tier_used=f"tier1_{self._last_provider}",
             requires_guardian_approval=bool(
                 data.get("requires_guardian_approval", context.risk_score > 0.7)
             ),

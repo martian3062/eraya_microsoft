@@ -26,10 +26,21 @@ class VectorStore:
         self._client = None
         self._collection = None
         self._embedding_fn = None
+        self._pinecone = None   # managed vector backend (core/providers/memory.py)
         self._fallback: list[dict[str, Any]] = []  # in-memory if Chroma unavailable
         self._init()
 
     def _init(self) -> None:
+        # Preferred backend: Pinecone (managed) when PINECONE_API_KEY is set.
+        try:
+            from core.providers.memory import PineconeStore
+            ps = PineconeStore(self.domain)
+            if ps.ok:
+                self._pinecone = ps
+                logger.info("VectorStore: using Pinecone backend for '%s'", self.domain)
+        except Exception as exc:
+            logger.debug("Pinecone backend not used: %s", exc)
+
         try:
             import chromadb
             from django.conf import settings
@@ -55,6 +66,10 @@ class VectorStore:
         doc_id = str(uuid.uuid4())
         embedding = self._embed(text)
 
+        if self._pinecone is not None and embedding is not None:
+            if self._pinecone.upsert(doc_id, embedding, metadata, text):
+                return doc_id
+
         if self._collection is not None and embedding is not None:
             try:
                 self._collection.add(
@@ -72,6 +87,11 @@ class VectorStore:
 
     def retrieve(self, query: str, k: int = 5) -> list[dict[str, Any]]:
         embedding = self._embed(query)
+
+        if self._pinecone is not None and embedding is not None:
+            hits = self._pinecone.query(embedding, k)
+            if hits:
+                return hits
 
         if self._collection is not None and embedding is not None:
             try:
@@ -115,8 +135,9 @@ class VectorStore:
                 count = len(self._fallback)
         else:
             count = len(self._fallback)
+        backend = "pinecone" if self._pinecone else ("chroma" if self._collection else "in-memory")
         return {
             "domain": self.domain,
-            "backend": "chroma" if self._collection else "in-memory",
+            "backend": backend,
             "document_count": count,
         }

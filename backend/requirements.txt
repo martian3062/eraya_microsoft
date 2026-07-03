@@ -74,3 +74,14 @@ opentelemetry-instrumentation-django>=0.48b0
 # ─── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
 structlog==24.4.0
+
+# ─── Agentic AI providers (caspr upgrade) ─────────────────────────────────────
+# All OPTIONAL - the core/providers facades degrade gracefully if these are
+# absent. httpx-only providers (Kimi, Featherless, Firecrawl, ZenRows, Bright
+# Data, TinyFish, n8n, Pexels, HF Inference API) need NO extra package - they
+# use the httpx already pinned above. Install the ones below only for the
+# features you actually run:
+pinecone>=5.0.0                 # managed vector memory   (PINECONE_API_KEY)
+# cyborgdb>=0.1.0               # encrypted vector memory (CYBORGDB_API_KEY)
+# tabpfn>=2.0.0                 # local TabPFN 3 tabular model (CPU/GPU)
+# tabpfn-client>=0.1.0          # hosted TabPFN 3         (TABPFN_API_KEY)
