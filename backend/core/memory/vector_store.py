@@ -131,7 +131,9 @@ class VectorStore:
 
     def stats(self) -> dict[str, Any]:
         count = 0
-        if self._collection is not None:
+        if self._pinecone is not None:
+            count = self._pinecone.count()
+        elif self._collection is not None:
             try:
                 count = self._collection.count()
             except Exception:

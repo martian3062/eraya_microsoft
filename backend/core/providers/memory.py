@@ -91,6 +91,19 @@ class PineconeStore:
             logger.warning("Pinecone query failed: %s", exc)
             return []
 
+    def count(self) -> int:
+        if not self.ok:
+            return 0
+        try:
+            stats = self._index.describe_index_stats()
+            namespaces = stats.get("namespaces", {}) if isinstance(stats, dict) else getattr(stats, "namespaces", {})
+            namespace_stats = namespaces.get(self._namespace, {}) if namespaces else {}
+            if isinstance(namespace_stats, dict):
+                return int(namespace_stats.get("vector_count", 0))
+            return int(getattr(namespace_stats, "vector_count", 0))
+        except Exception:
+            return 0
+
 
 class CyborgStore:
     """Encrypted vector store for sensitive Guardian/KAVACHA context."""

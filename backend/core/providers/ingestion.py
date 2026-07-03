@@ -110,5 +110,5 @@ def extract_structured(url: str, query: str, timeout: int = 60):
         resp.raise_for_status()
         return resp.json()
     except Exception as exc:
-        logger.warning("TinyFish extract failed: %s", exc)
-        return None
+        logger.debug("TinyFish extract unavailable: %s", exc)
+    return None
