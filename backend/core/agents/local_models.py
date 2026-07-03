@@ -48,6 +48,20 @@ class ModelEntry:
         if self._pipeline is not None:
             return self._pipeline
         try:
+            token = os.environ.get("HUGGINGFACE_TOKEN") or None
+            if self.task == "text2text-generation":
+                from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+                logger.info("Loading model %s ...", self.model_id)
+                tokenizer = AutoTokenizer.from_pretrained(self.model_id, token=token)
+                model = AutoModelForSeq2SeqLM.from_pretrained(self.model_id, token=token)
+                model.eval()
+                self._pipeline = {
+                    "mode": "seq2seq",
+                    "tokenizer": tokenizer,
+                    "model": model,
+                }
+                logger.info("Loaded %s.", self.model_id)
+                return self._pipeline
             from transformers import pipeline as hf_pipeline
             logger.info("Loading model %s …", self.model_id)
             kwargs: dict[str, Any] = {
@@ -74,6 +88,23 @@ class ModelEntry:
     def generate(self, prompt: str) -> str:
         pipe = self.load()
         try:
+            if isinstance(pipe, dict) and pipe.get("mode") == "seq2seq":
+                import torch
+                tokenizer = pipe["tokenizer"]
+                model = pipe["model"]
+                inputs = tokenizer(
+                    prompt,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=1024,
+                )
+                with torch.no_grad():
+                    ids = model.generate(
+                        **inputs,
+                        max_new_tokens=self.max_new_tokens,
+                        do_sample=False,
+                    )
+                return tokenizer.decode(ids[0], skip_special_tokens=True)
             if self.task == "text2text-generation":
                 out = pipe(prompt, max_new_tokens=self.max_new_tokens, do_sample=False)
                 return out[0]["generated_text"]
