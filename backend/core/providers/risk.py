@@ -46,15 +46,20 @@ class TabPFNRefiner:
         except Exception:
             pass
         try:
-            import os
             key = config.get("TABPFN_API_KEY")
-            if key:
-                os.environ.setdefault("TABPFN_API_TOKEN", key)
+            if not key:
+                self._ok = False
+                return False
+            import tabpfn_client
+            # Non-interactive auth: set_access_token() is the call that actually
+            # authenticates a headless service (env var alone does not).
+            tabpfn_client.set_access_token(key)
             from tabpfn_client import TabPFNClassifier  # type: ignore
             self._Cls = TabPFNClassifier
-            self._ok = bool(key)
-            return self._ok
-        except Exception:
+            self._ok = True
+            return True
+        except Exception as exc:
+            logger.warning("TabPFN hosted client auth failed: %s", exc)
             self._ok = False
             return False
 
