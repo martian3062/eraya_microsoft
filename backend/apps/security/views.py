@@ -371,3 +371,68 @@ class SpoofSimView(APIView):
             "presented_signature": f"{presented_sig[:16]}…",
             "audit_id": record_id,
         })
+
+
+# ─── Feature C — Critic Review (LLM-as-judge, adversarial) ────────────────────
+
+DEFAULT_DEFI_ACTION = {
+    "action_id": "rebalance_treasury",
+    "from_pool": "cspr-usdc",
+    "to_pool": "cspr-eth-highyield",
+    "amount_usd": 180000,
+    "target_apy": 14.16,
+    "reversibility": 0.4,
+    "guardian_approved": False,
+}
+
+DEFAULT_DEFI_CONTEXT = {
+    "domain": "casper_defi",
+    "risk_score": 0.78,
+    "single_position_pct": 0.42,
+    "slippage_estimate_bps": 52.0,
+    "liquidity_depth_usd": 852000.0,
+    "governance_quorum_pct": 47.0,
+    "treasury_tvl": 820000.0,
+}
+
+
+class CriticReviewView(APIView):
+    """
+    POST /api/v1/security/critic-review/
+
+    Independent LLM-as-judge review of a proposed DeFi treasury action, using
+    the ERAYA LLM cascade (Groq → Kimi → local HF). This is the adversarial
+    "second opinion" the swarm runs before quorum/execution.
+
+    Body (all optional): { "action": {...}, "context": {...} }
+    Additive only — no new models, no core agent changes.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        action = request.data.get("action") or DEFAULT_DEFI_ACTION
+        context = request.data.get("context") or DEFAULT_DEFI_CONTEXT
+
+        from core.providers import critic as _critic
+        review = _critic.review(action, context)
+
+        timeline: list[dict] = [
+            {"step": "proposed", "ok": True,
+             "detail": f"Planner proposes: {action.get('action_id', 'action')}"},
+            {"step": "reviewed", "ok": True,
+             "detail": f"Critic ({review['provider']}) verdict: {review['verdict']}",
+             "score": round(review["risk_score"], 3)},
+        ]
+        for r in review["risks"][:3]:
+            timeline.append({"step": "risk", "ok": review["verdict"] == "APPROVE", "detail": r})
+        timeline.append({"step": "recommendation", "ok": True, "detail": review["recommendation"]})
+
+        return Response({
+            "verdict": review["verdict"],
+            "risk_score": round(review["risk_score"], 4),
+            "confidence": round(review["confidence"], 3),
+            "provider": review["provider"],
+            "risks": review["risks"],
+            "recommendation": review["recommendation"],
+            "timeline": timeline,
+        })
