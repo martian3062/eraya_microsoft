@@ -122,6 +122,48 @@ class CasperMCPClient:
             "status": "active",
         }
 
+    # ── live REST helper + validator set (feeds the decentralization detector) ──
+
+    def _live_get(self, path: str, params: dict | None = None):
+        """GET against CSPR.cloud when configured; None on any failure/demo."""
+        if not self.rest_url:
+            return None
+        try:
+            import httpx
+            headers = {}
+            api_key = os.environ.get("CSPR_CLOUD_API_KEY")
+            if api_key:
+                headers["Authorization"] = api_key
+            resp = httpx.get(f"{self.rest_url.rstrip('/')}/{path.lstrip('/')}",
+                             headers=headers, params=params or {}, timeout=15)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception:
+            return None
+
+    def get_validators(self) -> list[dict[str, Any]]:
+        """Live validator set from CSPR.cloud (stake + uptime), else demo set."""
+        raw = self._live_get("validators", {"page": 1, "page_size": 50})
+        rows = (raw or {}).get("data") if isinstance(raw, dict) else raw
+        if rows:
+            out = []
+            for v in rows:
+                out.append({
+                    "validator": v.get("public_key") or v.get("validator") or "?",
+                    "stake": float(v.get("total_stake", v.get("self_stake", 0)) or 0),
+                    "uptime_pct": float(v.get("uptime", v.get("uptime_pct", 100)) or 100),
+                })
+            if out:
+                return out
+        # Demo fallback — a plausible, mildly-centralised testnet set.
+        return [
+            {"validator": "validator-01", "stake": 3_200_000, "uptime_pct": 99.4},
+            {"validator": "validator-02", "stake": 1_100_000, "uptime_pct": 99.0},
+            {"validator": "validator-03", "stake": 640_000, "uptime_pct": 98.4},
+            {"validator": "validator-17", "stake": 420_000, "uptime_pct": 99.2},
+            {"validator": "validator-22", "stake": 210_000, "uptime_pct": 93.1},
+        ]
+
     def execute_swap(self, token_a: str, token_b: str, amount: float) -> dict[str, Any]:
         return {
             "status": "submitted",

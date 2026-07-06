@@ -7,9 +7,10 @@ real testnet transaction whose transfer-id encodes the evidence-hash prefix —
 producing a verifiable https://testnet.cspr.live/deploy/<hash> link. Without
 those env vars every call is a no-op (demo mode), so the live site is unaffected.
 
-Casper-version note: pycspr 1.2.0 targets Casper 1.x native transfers. If the
-testnet is Casper 2.0 (Condor), only `_submit_transfer()` needs updating — the
-public interface (`anchoring_enabled`, `anchor_anomaly`) is stable.
+Signing uses the canonical `casper-client` CLI via subprocess (set
+`CASPER_CLIENT_BIN` to override the path). This is version-robust across Casper
+1.x / 2.0 — only the CLI flags would change. The public interface
+(`anchoring_enabled`, `anchor_anomaly`) is stable regardless.
 
 Default account (overridable via env):
     CASPER_PUBLIC_KEY   = 0202f47d42c6d9b836fe93777489699ae33f12a924a8f2520ace7bb84226a2e4bf69
@@ -21,10 +22,10 @@ import hashlib
 import logging
 import os
 import time
-from urllib.parse import urlparse
 
 logger = logging.getLogger("eraya.casper.anchor")
 
+_DEFAULT_PUBLIC_KEY = "0202f47d42c6d9b836fe93777489699ae33f12a924a8f2520ace7bb84226a2e4bf69"
 _ANCHOR_AMOUNT_MOTES = 2_500_000_000  # 2.5 CSPR self-transfer (min native transfer)
 _RATE_LIMIT_S = 300                    # at most one anchor per anomaly type / 5 min
 _last_anchor: dict[str, float] = {}
@@ -77,38 +78,39 @@ def anchor_anomaly(finding: dict) -> dict | None:
     }
 
 
-def _rpc_host_port(rpc_url: str) -> tuple[str, int]:
-    parsed = urlparse(rpc_url if "://" in rpc_url else f"http://{rpc_url}")
-    return parsed.hostname or "127.0.0.1", parsed.port or 7777
-
-
 def _submit_transfer(transfer_id: int) -> str | None:
-    """Build, sign, and send a native self-transfer carrying `transfer_id`.
+    """Send a native self-transfer carrying `transfer_id` via casper-client.
 
-    Isolated so the Casper-1.x vs 2.0 details live in one place.
+    Isolated so all Casper CLI specifics live in one place. Returns the deploy
+    hash on success, else None.
     """
-    import pycspr
+    import json
+    import subprocess
 
     key_path = os.environ["CASPER_SECRET_KEY_PATH"]
-    algo_name = os.environ.get("CASPER_SECRET_KEY_ALGO", "SECP256K1").upper()
+    rpc = os.environ["CASPER_NODE_RPC_URL"]
     chain = os.environ.get("CASPER_CHAIN_NAME", "casper-test")
-    host, port = _rpc_host_port(os.environ["CASPER_NODE_RPC_URL"])
+    target = os.environ.get("CASPER_PUBLIC_KEY", _DEFAULT_PUBLIC_KEY)  # self-transfer
+    client_bin = os.environ.get("CASPER_CLIENT_BIN", "casper-client")
 
-    algo = getattr(pycspr.KeyAlgorithm, algo_name)
-    keypair = pycspr.parse_private_key(key_path, algo)
-
-    client = pycspr.NodeClient(pycspr.NodeConnectionInfo(host=host, port_rpc=port))
-
-    params = pycspr.create_deploy_parameters(account=keypair, chain_name=chain)
-    deploy = pycspr.create_transfer(
-        params,
-        amount=_ANCHOR_AMOUNT_MOTES,
-        target=keypair.account_key,   # self-transfer (evidence anchor, funds returned)
-        correlation_id=transfer_id,
-    )
-    deploy.approve(keypair)
-    client.send_deploy(deploy)
-    return deploy.hash.hex() if hasattr(deploy.hash, "hex") else str(deploy.hash)
+    cmd = [
+        client_bin, "transfer",
+        "--node-address", rpc,
+        "--chain-name", chain,
+        "--secret-key", key_path,
+        "--amount", str(_ANCHOR_AMOUNT_MOTES),
+        "--target-account", target,
+        "--transfer-id", str(transfer_id),
+        "--payment-amount", os.environ.get("CASPER_TRANSFER_PAYMENT_MOTES", "100000000"),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
+    if proc.returncode != 0:
+        logger.warning("casper-client transfer failed: %s", (proc.stderr or "")[:200])
+        return None
+    try:
+        return json.loads(proc.stdout).get("result", {}).get("deploy_hash")
+    except Exception:
+        return None
 
 
 def status() -> dict:

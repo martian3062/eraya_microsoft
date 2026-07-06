@@ -1,0 +1,25 @@
+[package]
+name = "anomaly-anchor"
+version = "0.1.0"
+edition = "2021"
+description = "ERAYA KAVACHA — on-chain anchor for detected network anomalies (Casper)."
+
+# NOTE: pin these to the Casper protocol version of the target testnet.
+# Casper 1.5.x -> casper-contract 3.x / casper-types 3.x
+# Casper 2.0 (Condor) -> casper-contract 4.x / casper-types 4.x
+# Adjust before `cargo build` if `casper-client get-node-status` reports otherwise.
+[dependencies]
+casper-contract = "4.0.0"
+casper-types = "4.0.1"
+
+[[bin]]
+name = "anomaly_anchor"
+path = "src/main.rs"
+bench = false
+doctest = false
+test = false
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"

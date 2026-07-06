@@ -152,3 +152,63 @@ def casper_threats(request):
     if env is None:
         return Response({"error": "Casper DeFi domain not registered"}, status=404)
     return Response({"threats": env.threats()})
+
+
+# ─── x402 — agent-economy micropayments (HTTP 402) ────────────────────────────
+
+_MARKET_RESOURCE = "/api/v1/domains/casper_defi/market-data/"
+
+
+def _market_payload() -> dict:
+    from core.casper.mcp import CasperMCPClient
+    client = CasperMCPClient()
+    pool = client.get_pool_info("cspr-usdc")
+    market = client.get_market_snapshot()
+    return {
+        "cspr_price": 0.0234,
+        "volume_24h": int(market.get("tx_volume_24h", 0)),
+        "pool_tvl_usd": pool.get("pool_tvl_usd"),
+        "apy_current": pool.get("apy_current"),
+        "network": client.network,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def casper_market_data(request):
+    """Paid resource. Returns 402 + an x402 challenge unless a valid X-Payment
+    proof is presented; then returns the market data (x402 flow, steps 1-4)."""
+    from core.casper import x402
+
+    if not x402.enabled():
+        return Response(_market_payload())
+
+    xpay = request.headers.get("X-Payment", "")
+    nonce = request.headers.get("X-Payment-Nonce")
+    if xpay:
+        result = x402.verify(xpay, _MARKET_RESOURCE, nonce=nonce)
+        if result["ok"]:
+            payload = _market_payload()
+            payload["x402"] = {"paid": True, "verified": result["verified"],
+                               "payer": result["payer"], "mode": result["mode"]}
+            return Response(payload)
+        ch = x402.challenge(_MARKET_RESOURCE)
+        resp = Response({**ch, "error": result["reason"]}, status=402)
+    else:
+        ch = x402.challenge(_MARKET_RESOURCE)
+        resp = Response(ch, status=402)
+    for k, v in ch["headers"].items():
+        resp[k] = v
+    return resp
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def x402_verify(request):
+    """Facilitator: verify an X-Payment proof (structural + amount + on-chain when
+    CSPR.cloud is configured)."""
+    from core.casper import x402
+    header = request.data.get("x_payment") or request.headers.get("X-Payment", "")
+    resource = request.data.get("resource", _MARKET_RESOURCE)
+    nonce = request.data.get("nonce")
+    return Response(x402.verify(header, resource, nonce=nonce))
