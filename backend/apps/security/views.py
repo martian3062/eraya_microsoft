@@ -436,3 +436,66 @@ class CriticReviewView(APIView):
             "recommendation": review["recommendation"],
             "timeline": timeline,
         })
+
+
+# ─── Feature D — Network Anomaly Scan (statistical, Tor-technique lineage) ─────
+
+class AnomalyScanView(APIView):
+    """
+    POST /api/v1/security/anomaly-scan/
+
+    Runs the statistical network-anomaly engine over current Casper telemetry:
+    rolling baselines / z-scores (OONI-style), MEV flow-correlation, governance
+    Sybil clustering (Gini/entropy), and validator decentralization (Nakamoto).
+    Returns findings + a network-health summary + an animation timeline.
+
+    Additive only — no models. Runs on demo OR live CasperMCPClient data.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from core.casper.anomaly import get_engine
+        from core.casper.mcp import CasperMCPClient
+
+        client = CasperMCPClient()
+        findings, health = get_engine("casper_defi").scan(client)
+
+        timeline: list[dict] = [{
+            "step": "baseline", "ok": True,
+            "detail": f"Rolling baselines updated · mempool z={health.get('mempool_zscore')}σ",
+        }]
+        for f in findings:
+            timeline.append({
+                "step": f["type"], "ok": f["severity"] < 0.85,
+                "detail": f["summary"], "score": round(f["severity"], 3),
+            })
+        timeline.append({
+            "step": "health",
+            "ok": health.get("overall") == "nominal",
+            "detail": (f"Network health: {health.get('overall')} · "
+                       f"stake Gini={health.get('stake_gini')} · "
+                       f"Nakamoto={health.get('nakamoto_coefficient')}"),
+        })
+
+        # Part B: anchor high-severity anomalies on-chain (graceful no-op in demo).
+        anchors: list[dict] = []
+        try:
+            from core.casper.anchor import anchor_anomaly, anchoring_enabled
+            if anchoring_enabled():
+                for f in findings:
+                    if f["severity"] >= 0.85:
+                        rec = anchor_anomaly(f)
+                        if rec:
+                            anchors.append(rec)
+        except Exception:
+            pass
+
+        return Response({
+            "mode": client.mode,
+            "network_health": health,
+            "anomaly_count": len(findings),
+            "critical_count": sum(1 for f in findings if f["severity"] >= 0.85),
+            "findings": findings,
+            "anchors": anchors,
+            "timeline": timeline,
+        })

@@ -47,18 +47,27 @@ class ThreatScanner:
         ]
 
     def scan_cycle(self) -> list[Threat]:
-        threats: list[Threat] = []
-        for deploy in self.client.get_pending_deploys():
-            if self._is_sandwich_risk(deploy):
-                threats.append(Threat(
-                    threat_id=str(uuid.uuid4())[:8],
-                    type="sandwich_attack",
-                    severity=0.9,
-                    target=deploy["pool"],
-                    summary="High-slippage swap in mempool could front-run treasury execution.",
-                    evidence=deploy,
-                ))
+        # Statistical anomaly intelligence (Tor-technique lineage): rolling
+        # baselines/z-scores, MEV flow-correlation, governance Sybil clustering
+        # and validator decentralization. See core/casper/anomaly.py.
+        from core.casper.anomaly import get_engine
 
+        findings, health = get_engine("casper_defi").scan(self.client)
+        self._last_health = health
+
+        threats: list[Threat] = [
+            Threat(
+                threat_id=str(uuid.uuid4())[:8],
+                type=f["type"],
+                severity=float(f["severity"]),
+                target=f["target"],
+                summary=f["summary"],
+                evidence=f.get("evidence", {}),
+            )
+            for f in findings
+        ]
+
+        # Complement: legacy liquidity-drain snapshot check across watched pools.
         for pool in self.watched_pools:
             state = self.client.query_contract_state(pool["address"])
             last = float(state.get("last_liquidity", 0) or 1)
@@ -74,20 +83,20 @@ class ThreatScanner:
                     evidence={**state, "drop_pct": round(drop, 3)},
                 ))
 
-        governance_state = self.client.query_contract_state("governance-demo")
-        if governance_state.get("suspicious_votes", 0) > 0:
-            threats.append(Threat(
-                threat_id=str(uuid.uuid4())[:8],
-                type="governance_attack",
-                severity=0.85,
-                target="dao-governance",
-                summary="Concentrated voting burst detected on active proposals.",
-                evidence=governance_state,
-            ))
-
         for threat in threats:
             self._publish(threat)
         return threats
+
+    def network_health(self) -> dict[str, Any]:
+        """Latest network-health summary from the anomaly engine (Gini, Nakamoto,
+        open/critical anomaly counts). Populated by the most recent scan_cycle()."""
+        health = getattr(self, "_last_health", None)
+        if health:
+            return health
+        from core.casper.anomaly import get_engine
+        _, health = get_engine("casper_defi").scan(self.client)
+        self._last_health = health
+        return health
 
     @staticmethod
     def _is_sandwich_risk(deploy: dict[str, Any]) -> bool:
