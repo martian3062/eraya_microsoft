@@ -61,3 +61,8 @@ nats_data/
 # ─── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 torch_install.log
+
+# Presentation build workspace
+ppt_eraya_casper/node_modules/
+ppt_eraya_casper/scratch/textbox-test.png
+~$*.pptx

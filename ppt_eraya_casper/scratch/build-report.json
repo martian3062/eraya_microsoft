@@ -1,0 +1,15 @@
+{
+  "deck": "output/output.pptx",
+  "rootCopy": "../ERAYA_Casper_7_slide_deck.pptx",
+  "slideCount": 7,
+  "previews": [
+    "scratch/rendered-pptx/slide-01.png",
+    "scratch/rendered-pptx/slide-02.png",
+    "scratch/rendered-pptx/slide-03.png",
+    "scratch/rendered-pptx/slide-04.png",
+    "scratch/rendered-pptx/slide-05.png",
+    "scratch/rendered-pptx/slide-06.png",
+    "scratch/rendered-pptx/slide-07.png"
+  ],
+  "source": "README.md, ERAYA_Casper_Advancement_Plan.md, live dashboard API"
+}
