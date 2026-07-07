@@ -116,6 +116,7 @@ async function loadOnchain(){
 }
 
 loadDashboard();loadOnchain();
+setInterval(()=>{loadDashboard();loadOnchain();},10000);
 window.addEventListener('resize',()=>{});
 </script>
 {% endblock %}

@@ -50,10 +50,11 @@
 setTimeout(()=>{const l=document.getElementById('loader');if(l)l.classList.add('hide');},1800);
 document.getElementById('ent-enter').href=DEMO+'dashboard/';
 document.getElementById('ent-updates').href=DEMO+'updates/';
-(async()=>{try{const d=await jget('/api/domains/casper_defi/dashboard/'),p=d.portfolio||{};
+async function loadHomeKpis(){try{const d=await jget('/api/domains/casper_defi/dashboard/'),p=d.portfolio||{};
   const oc=await jget('/api/domains/casper_defi/onchain/').catch(()=>({}));
   const treasury=oc.total_cspr!=null?oc.total_cspr.toLocaleString()+' CSPR':fmtUSD(p.total_value_usd);
   document.getElementById('home-kpis').innerHTML=[['Treasury (on-chain)',treasury,A],['Risk (TabPFN)',p.risk_score??'—',A_DEEP],['Active threats',(d.threats||[]).length,A],['Network','Casper 2.0',A_SOFT]].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:19px;font-weight:700;color:${c}">${v}</div></div>`).join('');
-}catch(e){}})();
+}catch(e){}}
+loadHomeKpis();setInterval(loadHomeKpis,10000);
 </script>
 {% endblock %}
