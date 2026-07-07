@@ -125,12 +125,13 @@ function waSpeak(t){if(!t||!document.getElementById('wa-voice').checked||!window
 let _waRec=null;
 function waMic(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition,mic=document.getElementById('wa-mic');
-  if(!SR){waAdd('cop-bot','Voice input isn\'t supported in this browser — please type your command.');return;}
+  if(!window.isSecureContext){waAdd('cop-bot','🔒 Voice needs a secure (HTTPS) connection — this site is on HTTP, so the browser blocks the mic. Please type your command, e.g. “send 25 coins”.');return;}
+  if(!SR){waAdd('cop-bot','Voice input isn\'t supported in this browser — try Chrome/Edge, or type your command.');return;}
   if(_waRec){_waRec.stop();return;}
   _waRec=new SR();_waRec.lang='en-US';_waRec.interimResults=false;_waRec.maxAlternatives=1;
   mic.style.background='var(--a-deep)';mic.style.color='#fff';mic.textContent='●';
   _waRec.onresult=e=>{const t=e.results[0][0].transcript;document.getElementById('wa-in').value=t;waSend();};
-  _waRec.onerror=()=>{};
+  _waRec.onerror=e=>{waAdd('cop-bot','🎤 Voice error: '+((e&&e.error)||'unknown')+' — please type your command instead.');};
   _waRec.onend=()=>{mic.style.background='';mic.style.color='';mic.textContent='🎤';_waRec=null;};
   _waRec.start();
 }

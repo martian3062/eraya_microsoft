@@ -174,7 +174,8 @@ async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');d
   document.getElementById('cop-state').textContent='voice ready';}
 function copSend(){const i=document.getElementById('cop-text'),q=i.value.trim();if(!q)return;i.value='';copAsk(q);}
 function copMic(){
-  if(!_SR){document.getElementById('cop-state').textContent='voice unsupported';copAdd('cop-bot','Voice input is not supported in this browser — please type instead.');return;}
+  if(!window.isSecureContext){document.getElementById('cop-state').textContent='needs HTTPS';copAdd('cop-bot','🔒 Voice needs a secure (HTTPS) connection — this site is on HTTP, so the browser blocks the mic. Please type instead.');return;}
+  if(!_SR){document.getElementById('cop-state').textContent='voice unsupported';copAdd('cop-bot','Voice input is not supported in this browser — try Chrome/Edge, or type instead.');return;}
   const mic=document.getElementById('cop-mic');
   if(_copRec){_copRec.stop();return;}
   _copRec=new _SR();_copRec.lang='en-US';_copRec.interimResults=false;_copRec.maxAlternatives=1;
