@@ -162,6 +162,72 @@ def casper_onchain(request):
     return Response(snapshot())
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def casper_pay(request):
+    """Bot autopay — a real Casper testnet transfer (Swarm-ops → Treasury).
+    Guardian sets the policy (cap); Recoverer executes. Policy-capped for safety."""
+    import os
+    from core.casper.onchain import send_transfer, _TREASURY_PK
+    try:
+        amount = float(request.data.get("amount_cspr", 2.5))
+    except (TypeError, ValueError):
+        amount = 2.5
+    amount = max(2.5, min(amount, 25.0))  # Guardian policy cap
+    target = request.data.get("target") or os.environ.get("CASPER_ANCHOR_RECIPIENT", _TREASURY_PK)
+    res = send_transfer(target, int(amount * 1_000_000_000)) or {"ok": False, "error": "signing not configured"}
+    res["policy"] = {"cap_cspr": 25.0, "route": "Swarm-ops → Treasury",
+                     "set_by": "Guardian", "executed_by": "Recoverer"}
+    return Response(res, status=200 if res.get("ok") else 400)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def casper_copilot(request):
+    """Advisory Copilot — voice/text Q&A about the swarm + Casper treasury."""
+    import json
+    q = (request.data.get("question") or "").strip()
+    if not q:
+        return Response({"answer": "Ask me about the treasury, anomalies, the agent swarm, "
+                                   "KAVACHA security, x402, or on-chain anchoring."})
+    ctx = {}
+    try:
+        from core.casper.onchain import snapshot
+        s = snapshot()
+        ctx["treasury_cspr"] = s.get("total_cspr")
+        ctx["network"] = s.get("network")
+    except Exception:
+        pass
+    try:
+        env = _get_casper_env()
+        if env:
+            ctx["active_threats"] = [t.get("type") for t in (env.threats() or [])][:5]
+    except Exception:
+        pass
+    system = (
+        "You are ERAYA Copilot, the advisory voice assistant for a live self-healing agentic "
+        "DeFi treasury on the Casper blockchain. The swarm has 4 agents (Perceiver, Planner, "
+        "Recoverer, Guardian) plus an independent Critic. Capabilities: KAVACHA security "
+        "(prompt-injection + A2A spoof defense), statistical network-anomaly intelligence anchored "
+        "on Casper testnet, x402 micropayments, TabPFN risk scoring, and bot autopay. Answer like a "
+        "concise spoken advisor: 2-3 short sentences, practical and specific. No markdown, no lists "
+        "— your reply is read aloud."
+    )
+    user = f"Live system context: {json.dumps(ctx)}\n\nUser asks: {q}"
+    ans = None
+    try:
+        from core.providers import llm
+        out = llm.groq_chat("llama-3.3-70b-versatile", system, user, max_tokens=220, temperature=0.6)
+        ans = (out or {}).get("text")
+    except Exception:
+        ans = None
+    if not ans:
+        ans = (f"Treasury is {ctx.get('treasury_cspr', '—')} CSPR on {ctx.get('network', 'Casper testnet')}. "
+               "I can explain the swarm, anomalies, KAVACHA, x402, or on-chain anchoring — "
+               "the language model is momentarily unavailable.")
+    return Response({"answer": ans, "context": ctx})
+
+
 @api_view(["GET", "POST"])
 @permission_classes([AllowAny])
 def casper_swarm_chat(request):

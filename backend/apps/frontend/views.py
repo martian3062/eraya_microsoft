@@ -313,6 +313,9 @@ def demo_analytics(request):
 def demo_swarm(request):
     return render(request, "frontend/demo_swarm.html")
 
+def demo_kavacha(request):
+    return render(request, "frontend/demo_kavacha.html")
+
 def demo_ppt_pdf(request):
     import os
     from django.conf import settings

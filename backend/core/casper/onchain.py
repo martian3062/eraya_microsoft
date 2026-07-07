@@ -43,6 +43,41 @@ def balance_motes(public_key: str):
         return None
 
 
+def send_transfer(target: str, amount_motes: int, memo_id: int | None = None) -> dict:
+    """Real on-chain CSPR transfer (bot pay). Returns {ok, tx, explorer_url,...}."""
+    import json
+    import random
+    import subprocess
+
+    key = os.environ.get("CASPER_SECRET_KEY_PATH")
+    rpc = os.environ.get("CASPER_NODE_RPC_URL")
+    if not (key and rpc):
+        return {"ok": False, "error": "signing not configured (need key + RPC)"}
+    memo = memo_id if memo_id is not None else random.randint(1, 10 ** 9)
+    client = os.environ.get("CASPER_CLIENT_BIN", "casper-client")
+    cmd = [
+        client, "put-transaction", "transfer",
+        "--node-address", rpc, "--chain-name", os.environ.get("CASPER_CHAIN_NAME", "casper-test"),
+        "--secret-key", key, "--target", target,
+        "--transfer-amount", str(int(amount_motes)), "--id", str(memo),
+        "--pricing-mode", "classic", "--payment-amount", "100000000",
+        "--gas-price-tolerance", "1", "--standard-payment", "true",
+    ]
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
+        if p.returncode != 0:
+            return {"ok": False, "error": (p.stderr or "")[:200]}
+        d = json.loads(p.stdout).get("result", {})
+        th = d.get("transaction_hash") or d.get("deploy_hash")
+        if isinstance(th, dict):
+            th = next(iter(th.values()), None)
+        return {"ok": True, "tx": th, "memo_id": memo,
+                "amount_cspr": round(int(amount_motes) / MOTES_PER_CSPR, 4), "target": target,
+                "explorer_url": f"https://testnet.cspr.live/transaction/{th}"}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:200]}
+
+
 def snapshot() -> dict:
     """Real treasury snapshot: live balances of the swarm's Casper accounts."""
     treasury_pk = os.environ.get("CASPER_ANCHOR_RECIPIENT", _TREASURY_PK)
