@@ -13,6 +13,11 @@ urlpatterns = [
     path("auth/logout/",            views.logout_view,         name="logout"),
     # Pages
     path("demo/",                   views.demo,                name="demo"),
+    path("demo/dashboard/",         views.demo_dashboard,      name="demo_dashboard"),
+    path("demo/anomaly/",           views.demo_anomaly,        name="demo_anomaly"),
+    path("demo/security/",          views.demo_security,       name="demo_security"),
+    path("demo/critic/",            views.demo_critic,         name="demo_critic"),
+    path("demo/x402/",              views.demo_x402,           name="demo_x402"),
     path("dashboard/",              views.dashboard,           name="dashboard"),
     path("map/",                    views.map_view,            name="map"),
     path("a2a-chat/",               views.a2a_chat,            name="a2a_chat"),

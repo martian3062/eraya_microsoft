@@ -1,0 +1,37 @@
+{% extends "frontend/demo_base.html" %}
+{% block title %}eraya — Anomaly Intelligence{% endblock %}
+{% block page %}anomaly{% endblock %}
+{% block content %}
+<section class="card" style="margin-bottom:16px">
+  <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+    <div class="flex items-center gap-2"><span class="chip">2</span><span class="sec-title">Network Anomaly Intelligence <span class="sec-sub">· statistical detection → anchored on Casper</span></span></div>
+    <button id="scan-btn" class="btn" onclick="runAnomalyScan()">⚡ Run Live Anomaly Scan</button>
+  </div>
+  <div id="scan-out" style="color:var(--fg3);font-size:13px">Rolling baselines, Gini &amp; Nakamoto coefficients over mempool / governance / validator telemetry — then <b style="color:var(--a)">critical anomalies are anchored as real Casper testnet transactions</b>.</div>
+</section>
+<section class="card">
+  <div class="flex items-center gap-2 mb-1"><span class="chip">6</span><span class="sec-title">On-Chain Proof <span class="sec-sub">· real Casper testnet transactions from this session</span></span></div>
+  <div id="chain-log" style="font-size:12px;color:var(--fg3);margin-top:10px">Run a scan above — critical anomalies get anchored and appear here with live cspr.live links.</div>
+</section>
+{% endblock %}
+{% block page_js %}
+<script>
+const chainTxns=[];
+function addChainTxn(t){chainTxns.unshift(t);document.getElementById('chain-log').innerHTML=chainTxns.map(t=>`<div class="row" style="display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(244,120,95,.06);border:1px solid rgba(244,120,95,.18);margin-bottom:6px"><div><span class="badge badge-a">${esc(t.label)}</span><span class="mono" style="color:var(--fg3);font-size:11px;margin-left:6px">${esc(t.hash.slice(0,20))}…</span></div><a href="${t.url}" target="_blank" style="font-size:11px;white-space:nowrap">view on cspr.live ↗</a></div>`).join('');}
+async function runAnomalyScan(){
+  const btn=document.getElementById('scan-btn'),out=document.getElementById('scan-out');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Scanning + anchoring…';
+  out.innerHTML='<div style="color:var(--fg3)">Running statistical detectors and submitting on-chain anchors (real testnet transactions — ~15s)…</div>';
+  try{
+    const {data:d}=await jpost('/api/v1/security/anomaly-scan/',{}),h=d.network_health||{};
+    let html=`<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">${[['Anomalies',d.anomaly_count,A],['Critical',d.critical_count,A_DEEP],['Stake Gini',h.stake_gini,A],['Nakamoto',h.nakamoto_coefficient,A_SOFT]].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:20px;font-weight:700;color:${c}">${v??'—'}</div></div>`).join('')}</div>`;
+    html+=`<div style="font-size:12px;color:var(--fg2);margin-bottom:8px">Network health: <b style="color:${h.overall==='critical'?A_DEEP:h.overall==='nominal'?A_SOFT:A}">${esc(h.overall)}</b></div>`;
+    (d.findings||[]).forEach(f=>{const c=sev(f.severity);html+=`<div class="tl-step" style="border-color:${c}"><span class="badge" style="background:${c}22;color:${c}">${esc(f.type)}</span><div style="flex:1"><span style="color:var(--fg)">${esc(f.summary)}</span></div><span class="mono" style="color:${c}">sev ${f.severity}</span></div>`;});
+    if((d.anchors||[]).length){html+=`<div style="margin-top:12px;font-size:12px;color:${A}"><b>⛓ Anchored on Casper testnet:</b></div>`;d.anchors.forEach(a=>{html+=`<div class="tl-step" style="border-color:${A}"><span style="color:${A}">⛓</span><div style="flex:1"><span style="color:var(--fg)">${esc(a.anomaly_type)}</span><div class="mono" style="color:var(--fg3);font-size:11px">tx ${esc(a.deploy_hash.slice(0,28))}…</div></div><a href="${a.explorer_url}" target="_blank" style="font-size:11px;white-space:nowrap">cspr.live ↗</a></div>`;addChainTxn({label:'anomaly · '+a.anomaly_type,hash:a.deploy_hash,url:a.explorer_url});pushAlert({kind:'onchain',key:'anchor|'+a.deploy_hash,severity:0.9,color:A,icon:'⛓',text:'Anomaly anchored on-chain · '+a.anomaly_type,meta:'Casper testnet tx',url:a.explorer_url});});}
+    else{html+=`<div style="margin-top:10px;font-size:11px;color:var(--fg3)">No critical anomaly to anchor this cycle (or rate-limited).</div>`;}
+    out.innerHTML=html;
+  }catch(e){out.innerHTML='<div style="color:'+A_DEEP+'">scan failed</div>';}
+  btn.disabled=false;btn.textContent='⚡ Run Live Anomaly Scan';
+}
+</script>
+{% endblock %}

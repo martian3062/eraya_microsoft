@@ -1,0 +1,134 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}eraya{% endblock %}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0b0a;--fg:#f3ede8;--fg2:rgba(243,237,232,.62);--fg3:rgba(243,237,232,.34);
+  --card:rgba(255,255,255,.035);--bd:rgba(255,238,230,.10);
+  --a:#f4785f;--a-soft:#ffb7a4;--a-deep:#e0503c;
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:Inter,sans-serif;font-size:14px;line-height:1.55;overflow-x:hidden}
+.brand{font-family:'Space Grotesk',sans-serif}.mono{font-family:ui-monospace,Menlo,monospace}
+a{color:var(--a);text-decoration:none}
+#bg{position:fixed;inset:0;z-index:-2;background:
+  radial-gradient(70% 55% at 22% 0%, rgba(244,120,95,.16), transparent 60%),
+  radial-gradient(60% 50% at 88% 108%, rgba(224,80,60,.10), transparent 60%),var(--bg)}
+#bg::after{content:"";position:absolute;inset:0;opacity:.03;background-image:radial-gradient(rgba(255,255,255,.7) .5px,transparent .5px);background-size:3px 3px}
+#agents-field{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.anode{position:absolute;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,238,230,.09);backdrop-filter:blur(7px);font-size:11px;color:var(--fg2);opacity:0;transform:translateY(8px);transition:opacity 1.1s,transform 1.1s;white-space:nowrap;max-width:78vw}
+.anode.show{opacity:.42}
+.anode .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--a);animation:np 2s infinite}
+@keyframes np{50%{opacity:.5}}
+.anode .role{font-weight:600;color:var(--a)}
+.wrap{max-width:1120px;margin:0 auto;padding:26px 20px 64px;position:relative;z-index:1}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:22px;backdrop-filter:blur(14px);box-shadow:0 10px 40px -16px rgba(0,0,0,.6);transition:border-color .2s,transform .2s}
+.card:hover{border-color:rgba(244,120,95,.28)}
+.card-link:hover{transform:translateY(-3px)}
+.chip{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:8px;font-size:12px;font-weight:700;color:var(--a);background:rgba(244,120,95,.10);border:1px solid rgba(244,120,95,.20)}
+.sec-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700}
+.sec-sub{color:var(--fg3);font-weight:400;font-size:12px}
+.btn{border:none;border-radius:11px;padding:10px 16px;font-weight:600;font-size:13px;cursor:pointer;transition:.15s;background:var(--a);color:#221009}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}
+.btn-ghost{background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--fg)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.badge-a{background:rgba(244,120,95,.12);color:var(--a)}
+.kpi{background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:13px;padding:14px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--a);box-shadow:0 0 0 4px rgba(244,120,95,.15);animation:pb 1.9s infinite}
+@keyframes pb{50%{box-shadow:0 0 0 8px rgba(244,120,95,.03)}}
+.row{animation:fade .3s}@keyframes fade{from{opacity:0;transform:translateY(-6px)}to{opacity:1}}
+.tl-step{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:10px;border-left:2px solid;font-size:12px;margin-top:6px;animation:fade .3s;background:rgba(255,255,255,.02)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:var(--a);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.logo-word{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;letter-spacing:-1.1px;line-height:.95;background:linear-gradient(95deg,#f4785f,#ef8a7c 34%,#a78bfa 64%,#7aa2f7);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo-tag{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;color:var(--fg2)}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:14px}
+nav.tabs a{padding:7px 13px;border-radius:10px;font-size:13px;font-weight:600;color:var(--fg2);border:1px solid transparent}
+nav.tabs a:hover{color:var(--fg);background:rgba(255,255,255,.04)}
+nav.tabs a.active{color:var(--a);background:rgba(244,120,95,.10);border-color:rgba(244,120,95,.22)}
+#alerts{position:fixed;top:16px;right:16px;width:320px;max-width:calc(100vw - 32px);z-index:60;font-size:12px}
+#alerts-head{display:flex;align-items:center;gap:8px;background:rgba(20,14,12,.86);border:1px solid var(--bd);border-radius:13px;padding:9px 12px;cursor:pointer;backdrop-filter:blur(16px);user-select:none}
+#alerts-body{margin-top:8px;background:rgba(16,11,10,.9);border:1px solid var(--bd);border-radius:13px;padding:8px;backdrop-filter:blur(16px);max-height:60vh;overflow-y:auto}
+#alerts.collapsed #alerts-body{display:none}
+.alert{border-left:2px solid;border-radius:9px;padding:7px 9px;margin-bottom:6px;background:rgba(255,255,255,.025);animation:fade .3s}
+.alert .t{color:var(--fg);font-weight:500}.alert .m{color:var(--fg3);font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alert-time{color:var(--fg3);font-size:10px;float:right}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(244,120,95,.25);border-radius:3px}
+@media(max-width:860px){#alerts{position:static;width:100%;max-width:100%;margin:0 0 16px}}
+</style>
+</head>
+<body data-page="{% block page %}home{% endblock %}">
+<div id="bg"></div>
+<div id="agents-field"></div>
+
+<div id="alerts">
+  <div id="alerts-head" onclick="document.getElementById('alerts').classList.toggle('collapsed')">
+    <span class="pulse" id="alerts-dot"></span><span style="font-weight:700;color:var(--fg)">Live Alerts</span>
+    <span id="alerts-count" class="badge badge-a">0</span>
+    <span style="margin-left:auto;color:var(--fg3);font-size:10px" id="alerts-hb">monitoring…</span><span style="color:var(--fg3);font-size:11px">▾</span>
+  </div>
+  <div id="alerts-body"><div id="alerts-feed" style="color:var(--fg3);padding:8px">Scanning global &amp; on-chain state…</div></div>
+</div>
+
+<div class="wrap">
+  <header style="margin-bottom:22px">
+    <div class="flex items-end justify-between flex-wrap gap-3">
+      <a id="logo-link" href="#"><div class="logo-word">eraya</div><div class="logo-tag">: one that moves forward</div></a>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="badge badge-a"><span class="pulse"></span> Live</span>
+        <span id="net-badge" class="badge badge-a">Casper testnet</span>
+      </div>
+    </div>
+    <nav class="tabs" id="nav">
+      <a data-p="home">Home</a><a data-p="dashboard">Dashboard</a><a data-p="anomaly">Anomaly</a>
+      <a data-p="security">Security</a><a data-p="critic">Critic</a><a data-p="x402">x402</a>
+    </nav>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  <footer style="text-align:center;color:var(--fg3);font-size:11px;margin-top:24px">
+    eraya · Casper Agentic Buildathon 2026 · <a href="https://testnet.cspr.live" target="_blank">testnet.cspr.live</a>
+  </footer>
+</div>
+
+<script>
+const API = location.pathname.includes('/eraya_api/') ? '/eraya_api' : '';
+const DEMO = API + '/demo/';
+const A='#f4785f', A_SOFT='#ffb7a4', A_DEEP='#e0503c', NEU='rgba(243,237,232,.5)';
+const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fmtUSD=n=>'$'+Number(n||0).toLocaleString();
+async function jget(p){const r=await fetch(API+p);return r.json();}
+async function jpost(p,b){const r=await fetch(API+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return {status:r.status,headers:r.headers,data:await r.json().catch(()=>({}))};}
+function sev(s){return s>=0.85?A_DEEP:s>=0.7?A:s>=0.5?A_SOFT:NEU;}
+function tlStep(color,ok,text,score){return `<div class="tl-step" style="border-color:${color}"><span style="color:${color}">${ok?'✓':'●'}</span><div style="flex:1"><span style="color:var(--fg)">${text}</span>${score!=null?` <span class="mono" style="color:${color}">${score}</span>`:''}</div></div>`;}
+
+// nav
+const PAGES={home:'',dashboard:'dashboard/',anomaly:'anomaly/',security:'security/',critic:'critic/',x402:'x402/'};
+const CUR=document.body.dataset.page;
+document.getElementById('logo-link').href=DEMO;
+document.querySelectorAll('#nav a').forEach(a=>{const p=a.dataset.p;a.href=DEMO+PAGES[p];if(p===CUR)a.classList.add('active');});
+
+// live alerts
+const _seen={}; let _alerts=[];
+function pushAlert(a){const k=a.key||(a.kind+'|'+a.text),now=Date.now();if(_seen[k]&&now-_seen[k]<90000)return;_seen[k]=now;a.time=new Date().toLocaleTimeString('en',{hour12:false});_alerts.unshift(a);if(_alerts.length>25)_alerts.pop();renderAlerts();}
+function renderAlerts(){const feed=document.getElementById('alerts-feed'),crit=_alerts.filter(a=>(a.severity||0)>=0.85).length,cnt=document.getElementById('alerts-count');cnt.textContent=_alerts.length;document.getElementById('alerts-dot').style.background=crit?A_DEEP:(_alerts.length?A:A_SOFT);if(!_alerts.length){feed.innerHTML='<div style="color:'+A_SOFT+';padding:8px">✓ All systems nominal</div>';return;}feed.innerHTML=_alerts.map(a=>{const c=a.color||sev(a.severity||0.6);return `<div class="alert" style="border-color:${c}"><span class="alert-time">${a.time}</span><div class="t">${a.icon||'●'} ${esc(a.text)}</div><div class="m">${esc(a.meta||'')}${a.url?` · <a href="${a.url}" target="_blank">cspr.live ↗</a>`:''}</div></div>`;}).join('');}
+async function pollAlerts(){try{const d=await jget('/api/domains/casper_defi/threats/');(d.threats||[]).forEach(t=>pushAlert({kind:'threat',key:'threat|'+t.type+'|'+t.target,severity:t.severity,icon:t.severity>=0.85?'🔴':'🟠',text:(t.type||'').replace(/_/g,' ')+' · '+(t.target||''),meta:t.summary}));}catch(e){}document.getElementById('alerts-hb').textContent='last check '+new Date().toLocaleTimeString('en',{hour12:false});}
+pollAlerts(); setInterval(pollAlerts,12000);
+
+// floating agent nodes
+const AGENTS=[{role:'Perceiver',acts:['reading Casper DeFi signals','TabPFN risk scoring','baseline z-score check','mempool flow analysis']},{role:'Planner',acts:['Groq → plan generated','risk-adjusted rebalance','querying Recoverer','LLM cascade active']},{role:'Recoverer',acts:['rollback path ready','re-plan on failure','SLO restored','staged swap sizing']},{role:'Guardian',acts:['KAVACHA policy check','A2A signature verified','threat blocked','anchoring on-chain']},{role:'Critic',acts:['reviewing action','verdict: REVISE','adversarial check','slippage risk flagged']}];
+const field=document.getElementById('agents-field'),POS=[[6,26],[73,17],[9,68],[77,64],[43,84],[55,36]];
+const nodes=POS.map((p,i)=>{const a=AGENTS[i%AGENTS.length];const el=document.createElement('div');el.className='anode';el.style.left=p[0]+'%';el.style.top=p[1]+'%';el.innerHTML=`<span class="dot"></span><span class="role">${a.role}</span><span class="ftxt">· ${a.acts[0]}</span>`;field.appendChild(el);return {el,a,txt:el.querySelector('.ftxt')};});
+function cycleNodes(){nodes.forEach((n,i)=>setTimeout(()=>{n.el.classList.remove('show');setTimeout(()=>{n.txt.textContent='· '+n.a.acts[Math.floor(Math.random()*n.a.acts.length)];n.el.classList.add('show');},500);},i*260));}
+nodes.forEach((n,i)=>setTimeout(()=>n.el.classList.add('show'),400+i*220));setInterval(cycleNodes,5200);
+</script>
+{% block page_js %}{% endblock %}
+</body>
+</html>

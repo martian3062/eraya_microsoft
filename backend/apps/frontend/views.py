@@ -286,9 +286,23 @@ def a2a_chat(request):
 
 
 def demo(request):
-    """Public, standalone interactive demo that drives every live system
-    (anomaly + on-chain anchoring, KAVACHA, Critic, x402, dashboard). No auth."""
-    return render(request, "frontend/demo.html")
+    """Public multi-page interactive demo — landing/intro. No auth."""
+    return render(request, "frontend/demo_home.html")
+
+def demo_dashboard(request):
+    return render(request, "frontend/demo_dashboard.html")
+
+def demo_anomaly(request):
+    return render(request, "frontend/demo_anomaly.html")
+
+def demo_security(request):
+    return render(request, "frontend/demo_security.html")
+
+def demo_critic(request):
+    return render(request, "frontend/demo_critic.html")
+
+def demo_x402(request):
+    return render(request, "frontend/demo_x402.html")
 
 import json as _json
 

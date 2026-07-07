@@ -1,0 +1,50 @@
+{% extends "frontend/demo_base.html" %}
+{% block title %}eraya — Self-Healing Agentic DeFi Swarm{% endblock %}
+{% block page %}home{% endblock %}
+{% block content %}
+
+<!-- HERO -->
+<section class="card" style="margin-bottom:18px;padding:34px">
+  <div style="max-width:720px">
+    <div class="badge badge-a" style="margin-bottom:14px">Casper Agentic Buildathon 2026 · Live</div>
+    <h1 class="brand" style="font-size:34px;font-weight:700;line-height:1.15;margin:0 0 12px">
+      A self-healing, security-first <span style="color:var(--a)">agentic DeFi treasury</span> — running on Casper.
+    </h1>
+    <p style="color:var(--fg2);font-size:15px;margin:0 0 18px">
+      Four AI agents share context, vote on high-stakes moves, and recover from their own failures.
+      KAVACHA blocks threats before damage; anomalies are anchored on-chain; agents pay each other via x402.
+      Everything below is <b style="color:var(--fg)">live</b> — click through and try it.
+    </p>
+    <div class="flex gap-2 flex-wrap">
+      <a class="btn" id="cta-anomaly">⚡ See on-chain anomaly anchoring</a>
+      <a class="btn btn-ghost" id="cta-dash">View live treasury</a>
+    </div>
+  </div>
+  <div id="home-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-3" style="margin-top:24px"></div>
+</section>
+
+<!-- SYSTEM CARDS -->
+<div class="grid md:grid-cols-3 gap-4">
+  <a class="card card-link" data-go="dashboard"><div class="flex items-center gap-2 mb-2"><span class="chip">1</span><span class="sec-title">DeFi Treasury</span></div><div style="color:var(--fg2);font-size:13px">Live portfolio, TabPFN risk score, yields, quorum &amp; reputation.</div></a>
+  <a class="card card-link" data-go="anomaly"><div class="flex items-center gap-2 mb-2"><span class="chip">2</span><span class="sec-title">Anomaly Intelligence</span></div><div style="color:var(--fg2);font-size:13px">Statistical MEV / Sybil / validator detection → <b style="color:var(--a)">anchored on Casper testnet</b>.</div></a>
+  <a class="card card-link" data-go="security"><div class="flex items-center gap-2 mb-2"><span class="chip">3</span><span class="sec-title">KAVACHA Security</span></div><div style="color:var(--fg2);font-size:13px">Prompt-injection kill-shot &amp; A2A identity defense with signed audit.</div></a>
+  <a class="card card-link" data-go="critic"><div class="flex items-center gap-2 mb-2"><span class="chip">4</span><span class="sec-title">Critic Agent</span></div><div style="color:var(--fg2);font-size:13px">Independent LLM-as-judge review before any high-stakes execution.</div></a>
+  <a class="card card-link" data-go="x402"><div class="flex items-center gap-2 mb-2"><span class="chip">5</span><span class="sec-title">x402 Payments</span></div><div style="color:var(--fg2);font-size:13px">HTTP 402 agent micropayments — pay-per-call market data.</div></a>
+  <a class="card card-link" data-go="anomaly"><div class="flex items-center gap-2 mb-2"><span class="chip">6</span><span class="sec-title">On-Chain Proof</span></div><div style="color:var(--fg2);font-size:13px">Every anomaly anchor is a real, verifiable cspr.live transaction.</div></a>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.querySelectorAll('[data-go]').forEach(a=>a.href=DEMO+PAGES[a.dataset.go]);
+document.getElementById('cta-anomaly').href=DEMO+'anomaly/';
+document.getElementById('cta-dash').href=DEMO+'dashboard/';
+(async()=>{try{
+  const d=await jget('/api/domains/casper_defi/dashboard/'),p=d.portfolio||{};
+  document.getElementById('home-kpis').innerHTML=[
+    ['Treasury TVL',fmtUSD(p.total_value_usd),A],['24h P&L',(p.pnl_24h_pct>=0?'+':'')+(p.pnl_24h_pct??0)+'%',A_SOFT],
+    ['Risk (TabPFN)',p.risk_score??'—',A_DEEP],['Active threats',(d.threats||[]).length,A],
+  ].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:22px;font-weight:700;color:${c}">${v}</div></div>`).join('');
+}catch(e){}})();
+</script>
+{% endblock %}

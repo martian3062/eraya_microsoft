@@ -1,0 +1,24 @@
+{% extends "frontend/demo_base.html" %}
+{% block title %}eraya — Critic Agent{% endblock %}
+{% block page %}critic{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="flex items-center gap-2 mb-1"><span class="chip">4</span><span class="sec-title">Critic Agent <span class="sec-sub">· LLM-as-judge</span></span></div>
+  <div style="color:var(--fg3);font-size:12px;margin-bottom:14px">An independent 5th agent adversarially reviews a proposed treasury action <b>before</b> the swarm executes it — returning APPROVE / REVISE / REJECT with specific risks, via the real Groq → Kimi → local-HF cascade.</div>
+  <button class="btn" onclick="runCritic()">🧠 Review a Rebalance Action</button>
+  <div id="critic-out" style="font-size:12px;color:var(--fg3);margin-top:14px">Click to run a real LLM review of a risky treasury rebalance.</div>
+</section>
+{% endblock %}
+{% block page_js %}
+<script>
+async function runCritic(){
+  const out=document.getElementById('critic-out');out.innerHTML='<span class="spin"></span> reviewing (real LLM cascade)…';
+  const {data:d}=await jpost('/api/v1/security/critic-review/',{});
+  const c=d.verdict==='REJECT'?A_DEEP:d.verdict==='REVISE'?A:A_SOFT;
+  out.innerHTML=`<div><span class="badge" style="background:${c}22;color:${c}">${esc(d.verdict)}</span> <span class="badge badge-a">${esc(d.provider)}</span> <span class="mono" style="color:var(--fg3);font-size:11px">risk ${d.risk_score} · confidence ${d.confidence}</span></div>
+    <div style="margin-top:10px;color:var(--fg)">${esc(d.recommendation)}</div>
+    <div class="sec-sub" style="margin-top:10px">Risks flagged</div>
+    <ul style="margin:4px 0 0;padding-left:18px;color:var(--fg2)">${(d.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+}
+</script>
+{% endblock %}
