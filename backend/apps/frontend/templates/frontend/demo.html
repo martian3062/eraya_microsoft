@@ -1,137 +1,177 @@
 {% load static %}<!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ERAYA Casper — Live Systems Demo</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{brand:['Space Grotesk','sans-serif']}}}}</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#06060e;--card:rgba(255,255,255,.04);--bd:rgba(255,255,255,.10);--fg:#e2e8f0;--fg2:rgba(255,255,255,.6);--fg3:rgba(255,255,255,.35);--teal:#2dd4bf;--violet:#a78bfa;--rose:#f87171;--amber:#fbbf24;--emerald:#34d399;--sky:#60a5fa;}
+:root{
+  --fg:#eef2f7;--fg2:rgba(238,242,247,.66);--fg3:rgba(238,242,247,.38);
+  --card:rgba(255,255,255,.045);--card-bd:rgba(255,255,255,.09);
+  --teal:#2dd4bf;--violet:#a78bfa;--rose:#f87171;--amber:#fbbf24;--emerald:#34d399;--sky:#60a5fa;--cream:#f6ecd9;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,sans-serif;font-size:14px;line-height:1.5}
+html,body{margin:0}
+body{background:#070810;color:var(--fg);font-family:Inter,sans-serif;font-size:14px;line-height:1.5;overflow-x:hidden}
 .brand{font-family:'Space Grotesk',sans-serif}
-.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px;backdrop-filter:blur(12px)}
-.btn{border:none;border-radius:12px;padding:10px 18px;font-weight:600;font-size:13px;cursor:pointer;transition:.15s;color:#fff}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+a{color:var(--teal);text-decoration:none}
+
+/* ── creamy cloudy watery background ─────────────────────────── */
+#bg{position:fixed;inset:0;z-index:-3;background:
+  radial-gradient(120% 90% at 15% 5%, #0d1226 0%, #070810 55%),
+  radial-gradient(90% 80% at 85% 100%, #0c1420 0%, #070810 60%);}
+.cloud{position:fixed;border-radius:50%;filter:blur(90px);z-index:-2;opacity:.55;mix-blend-mode:screen;will-change:transform}
+.c1{width:60vw;height:60vw;top:-14%;left:-10%;background:radial-gradient(circle at 40% 40%, rgba(45,212,191,.30), transparent 65%);animation:drift1 34s ease-in-out infinite}
+.c2{width:55vw;height:55vw;top:20%;right:-14%;background:radial-gradient(circle at 60% 40%, rgba(167,139,250,.26), transparent 65%);animation:drift2 42s ease-in-out infinite}
+.c3{width:52vw;height:52vw;bottom:-16%;left:18%;background:radial-gradient(circle at 50% 55%, rgba(246,236,217,.16), transparent 60%);animation:drift3 50s ease-in-out infinite}
+.c4{width:40vw;height:40vw;top:45%;left:35%;background:radial-gradient(circle at 50% 50%, rgba(96,165,250,.16), transparent 62%);animation:drift1 46s ease-in-out infinite reverse}
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(4vw,5vh) scale(1.08)}66%{transform:translate(-3vw,3vh) scale(.95)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}40%{transform:translate(-5vw,4vh) scale(1.06)}70%{transform:translate(3vw,-3vh) scale(.97)}}
+@keyframes drift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(3vw,-4vh) scale(1.07)}}
+#grain{position:fixed;inset:0;z-index:-1;opacity:.04;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.6) .5px,transparent .5px);background-size:3px 3px}
+
+/* ── floating transparent agent-node popups ─────────────────── */
+#agents-field{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.anode{position:absolute;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px);
+  font-size:11px;color:var(--fg2);opacity:0;transform:translateY(8px);transition:opacity 1.1s ease,transform 1.1s ease;white-space:nowrap;max-width:78vw}
+.anode.show{opacity:.5}
+.anode .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;animation:np 1.8s infinite}
+@keyframes np{0%,100%{box-shadow:0 0 0 0 currentColor;opacity:1}50%{box-shadow:0 0 0 5px transparent;opacity:.55}}
+.anode .role{font-weight:600}
+.anode .float{animation:fl 9s ease-in-out infinite}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+/* ── layout & cards ─────────────────────────────────────────── */
+.wrap{max-width:1180px;margin:0 auto;padding:26px 20px 64px;position:relative;z-index:1}
+.card{background:var(--card);border:1px solid var(--card-bd);border-radius:20px;padding:22px;backdrop-filter:blur(16px);
+  box-shadow:0 8px 40px -12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .25s,transform .25s}
+.card:hover{border-color:rgba(255,255,255,.16)}
+.chip{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9px;font-size:12px;font-weight:700;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09)}
+.sec-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;letter-spacing:.2px}
+.sec-sub{color:var(--fg3);font-weight:400;font-size:12px}
+.btn{border:none;border-radius:12px;padding:10px 16px;font-weight:600;font-size:13px;cursor:pointer;transition:.16s;color:#fff}
 .btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}
+.btn-ghost{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09)}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600}
-.kpi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px}
-.mono{font-family:ui-monospace,monospace}
-.orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:0;pointer-events:none}
-a{color:var(--teal)}
+.kpi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 0 4px rgba(52,211,153,.16);animation:pb 1.9s infinite}
+@keyframes pb{50%{box-shadow:0 0 0 8px rgba(52,211,153,.03)}}
 .row{animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(-6px)}to{opacity:1}}
-.pulse{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 0 4px rgba(52,211,153,.18);animation:pb 1.8s infinite}
-@keyframes pb{50%{box-shadow:0 0 0 8px rgba(52,211,153,.05)}}
-.tl-step{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:10px;border-left:2px solid;font-size:12px;animation:fade .3s}
-h2{font-family:'Space Grotesk',sans-serif}
+.tl-step{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:11px;border-left:2px solid;font-size:12px;margin-top:6px;animation:fade .3s}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
-/* Live alerts ticker */
-#alerts{position:fixed;top:14px;right:14px;width:330px;max-width:calc(100vw - 28px);z-index:60;font-size:12px}
-#alerts-head{display:flex;align-items:center;gap:8px;background:rgba(20,20,32,.94);border:1px solid var(--bd);border-radius:12px;padding:9px 12px;cursor:pointer;backdrop-filter:blur(12px);user-select:none}
-#alerts-body{margin-top:8px;background:rgba(10,10,18,.94);border:1px solid var(--bd);border-radius:12px;padding:8px;backdrop-filter:blur(12px);max-height:62vh;overflow-y:auto}
+
+/* ── live alerts ticker ─────────────────────────────────────── */
+#alerts{position:fixed;top:16px;right:16px;width:330px;max-width:calc(100vw - 32px);z-index:60;font-size:12px}
+#alerts-head{display:flex;align-items:center;gap:8px;background:rgba(14,16,28,.82);border:1px solid var(--card-bd);border-radius:14px;padding:9px 12px;cursor:pointer;backdrop-filter:blur(16px);user-select:none}
+#alerts-body{margin-top:8px;background:rgba(10,12,22,.82);border:1px solid var(--card-bd);border-radius:14px;padding:8px;backdrop-filter:blur(16px);max-height:60vh;overflow-y:auto}
 #alerts.collapsed #alerts-body{display:none}
-.alert{border-left:2px solid;border-radius:8px;padding:7px 9px;margin-bottom:6px;background:rgba(255,255,255,.03);animation:fade .3s}
+.alert{border-left:2px solid;border-radius:10px;padding:7px 9px;margin-bottom:6px;background:rgba(255,255,255,.03);animation:fade .3s}
 .alert .t{color:var(--fg);font-weight:500}
 .alert .m{color:var(--fg3);font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .alert-time{color:var(--fg3);font-size:10px;float:right}
-@media(max-width:820px){#alerts{position:static;width:100%;max-width:100%;margin:0 0 16px}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+@media(max-width:860px){#alerts{position:static;width:100%;max-width:100%;margin:0 0 16px}}
 </style>
 </head>
 <body>
-<div class="orb" style="width:50vw;height:50vw;top:-10%;left:-8%;background:radial-gradient(circle,rgba(45,212,191,.14),transparent 70%)"></div>
-<div class="orb" style="width:45vw;height:45vw;bottom:-10%;right:-8%;background:radial-gradient(circle,rgba(167,139,250,.13),transparent 70%)"></div>
+<div id="bg"></div>
+<div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div><div class="cloud c4"></div>
+<div id="grain"></div>
+<div id="agents-field"></div>
 
 <!-- LIVE ALERTS TICKER -->
 <div id="alerts">
   <div id="alerts-head" onclick="document.getElementById('alerts').classList.toggle('collapsed')">
     <span class="pulse" id="alerts-dot"></span>
     <span style="font-weight:700;color:var(--fg)">Live Alerts</span>
-    <span id="alerts-count" class="badge" style="background:rgba(248,113,113,.15);color:#f87171">0</span>
+    <span id="alerts-count" class="badge" style="background:rgba(52,211,153,.14);color:#34d399">0</span>
     <span style="margin-left:auto;color:var(--fg3);font-size:10px" id="alerts-hb">monitoring…</span>
     <span style="color:var(--fg3);font-size:11px">▾</span>
   </div>
   <div id="alerts-body"><div id="alerts-feed" style="color:var(--fg3);padding:8px">Scanning global &amp; on-chain state…</div></div>
 </div>
 
-<div class="wrap" style="position:relative;z-index:1;padding-top:28px;padding-bottom:60px">
-
+<div class="wrap">
   <!-- HEADER -->
-  <header class="flex items-center justify-between flex-wrap gap-3 mb-6">
+  <header class="flex items-center justify-between flex-wrap gap-3" style="margin-bottom:26px">
     <div class="flex items-center gap-3">
-      <div class="brand" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2dd4bf,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:800;color:#06060e;font-size:18px">E</div>
+      <div class="brand" style="width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#2dd4bf,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:800;color:#070810;font-size:19px;box-shadow:0 8px 30px -6px rgba(45,212,191,.5)">E</div>
       <div>
-        <div class="brand" style="font-size:20px;font-weight:700">ERAYA Casper</div>
-        <div style="color:var(--fg3);font-size:12px">Self-Healing Agentic DeFi Treasury Swarm · Live Systems Demo</div>
+        <div class="brand" style="font-size:21px;font-weight:700">ERAYA Casper</div>
+        <div style="color:var(--fg3);font-size:12px">Self-Healing Agentic DeFi Treasury Swarm · Live Systems</div>
       </div>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap">
       <span class="badge" style="background:rgba(52,211,153,.12);color:var(--emerald)"><span class="pulse"></span> Live</span>
       <span id="net-badge" class="badge" style="background:rgba(96,165,250,.12);color:var(--sky)">Casper testnet</span>
       <span class="badge" style="background:rgba(167,139,250,.12);color:var(--violet)">Groq · TabPFN · Pinecone</span>
     </div>
   </header>
 
-  <!-- CASPER DEFI DASHBOARD -->
-  <section class="card mb-5">
-    <div class="flex items-center justify-between mb-4">
-      <h2 style="font-size:15px;font-weight:700">① Casper DeFi Treasury <span style="color:var(--fg3);font-weight:400;font-size:12px">· live dashboard</span></h2>
-      <button class="btn" style="background:rgba(255,255,255,.08)" onclick="loadDashboard()">↻ Refresh</button>
+  <!-- ① DASHBOARD -->
+  <section class="card" style="margin-bottom:18px">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div class="flex items-center gap-2"><span class="chip">1</span><span class="sec-title">Casper DeFi Treasury <span class="sec-sub">· live dashboard</span></span></div>
+      <button class="btn btn-ghost" onclick="loadDashboard()">↻ Refresh</button>
     </div>
     <div id="dash-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3"></div>
     <div id="dash-health" style="color:var(--fg2);font-size:12px"></div>
   </section>
 
-  <!-- ANOMALY INTELLIGENCE + ON-CHAIN -->
-  <section class="card mb-5" style="border-color:rgba(45,212,191,.25)">
+  <!-- ② ANOMALY + ON-CHAIN -->
+  <section class="card" style="margin-bottom:18px;border-color:rgba(45,212,191,.22)">
     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-      <h2 style="font-size:15px;font-weight:700">② Network Anomaly Intelligence <span style="color:var(--fg3);font-weight:400;font-size:12px">· Tor-technique statistical detection → anchored on Casper</span></h2>
+      <div class="flex items-center gap-2"><span class="chip" style="color:var(--teal)">2</span><span class="sec-title">Network Anomaly Intelligence <span class="sec-sub">· statistical detection → anchored on Casper</span></span></div>
       <button id="scan-btn" class="btn" style="background:linear-gradient(135deg,#2dd4bf,#06b6d4)" onclick="runAnomalyScan()">⚡ Run Live Anomaly Scan</button>
     </div>
-    <div id="scan-out" style="color:var(--fg3);font-size:13px">Press "Run Live Anomaly Scan" — KAVACHA analyses mempool / governance / validator telemetry with rolling baselines, Gini &amp; Nakamoto coefficients, then <b style="color:var(--teal)">anchors high-severity anomalies as real Casper testnet transactions</b>.</div>
+    <div id="scan-out" style="color:var(--fg3);font-size:13px">Rolling baselines, Gini &amp; Nakamoto coefficients over mempool / governance / validator telemetry — then <b style="color:var(--teal)">critical anomalies are anchored as real Casper testnet transactions</b>.</div>
   </section>
 
-  <div class="grid md:grid-cols-2 gap-5 mb-5">
-    <!-- KAVACHA SECURITY -->
-    <section class="card" style="border-color:rgba(248,113,113,.22)">
-      <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">③ KAVACHA Security</h2>
+  <div class="grid md:grid-cols-2 gap-4" style="margin-bottom:18px">
+    <!-- ③ KAVACHA -->
+    <section class="card" style="border-color:rgba(248,113,113,.2)">
+      <div class="flex items-center gap-2 mb-1"><span class="chip" style="color:var(--rose)">3</span><span class="sec-title">KAVACHA Security</span></div>
       <div style="color:var(--fg3);font-size:12px;margin-bottom:12px">Prompt-injection kill-shot &amp; A2A identity defense.</div>
-      <div class="flex gap-2 mb-3">
+      <div class="flex gap-2 mb-3 flex-wrap">
         <button class="btn" style="background:linear-gradient(135deg,#ef4444,#f87171)" onclick="runAttack()">💉 Launch Injection Attack</button>
-        <button class="btn" style="background:rgba(255,255,255,.08)" onclick="runSpoof()">🎭 Forge A2A Message</button>
+        <button class="btn btn-ghost" onclick="runSpoof()">🎭 Forge A2A Message</button>
       </div>
       <div id="sec-out" style="font-size:12px;color:var(--fg3)">Simulate an attack — the Guardian blocks it and writes a signed audit entry.</div>
     </section>
 
-    <!-- CRITIC AGENT -->
-    <section class="card" style="border-color:rgba(167,139,250,.22)">
-      <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">④ Critic Agent <span style="color:var(--fg3);font-weight:400;font-size:12px">· LLM-as-judge</span></h2>
-      <div style="color:var(--fg3);font-size:12px;margin-bottom:12px">Independent adversarial review of a treasury action before execution.</div>
+    <!-- ④ CRITIC -->
+    <section class="card" style="border-color:rgba(167,139,250,.2)">
+      <div class="flex items-center gap-2 mb-1"><span class="chip" style="color:var(--violet)">4</span><span class="sec-title">Critic Agent <span class="sec-sub">· LLM-as-judge</span></span></div>
+      <div style="color:var(--fg3);font-size:12px;margin-bottom:12px">Independent adversarial review before execution.</div>
       <button class="btn" style="background:linear-gradient(135deg,#a78bfa,#8b5cf6)" onclick="runCritic()">🧠 Review a Rebalance</button>
       <div id="critic-out" style="font-size:12px;color:var(--fg3);margin-top:12px">Runs the real Groq → Kimi → local-HF cascade.</div>
     </section>
   </div>
 
-  <!-- x402 -->
-  <section class="card mb-5" style="border-color:rgba(251,191,36,.22)">
+  <!-- ⑤ x402 -->
+  <section class="card" style="margin-bottom:18px;border-color:rgba(251,191,36,.2)">
     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-      <h2 style="font-size:15px;font-weight:700">⑤ x402 Agent Payments <span style="color:var(--fg3);font-weight:400;font-size:12px">· HTTP 402 micropayments</span></h2>
+      <div class="flex items-center gap-2"><span class="chip" style="color:var(--amber)">5</span><span class="sec-title">x402 Agent Payments <span class="sec-sub">· HTTP 402 micropayments</span></span></div>
       <button id="x402-btn" class="btn" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#1a1206" onclick="runX402()">💳 Request Paid Market Data</button>
     </div>
-    <div id="x402-out" style="font-size:12px;color:var(--fg3)">An agent requests a paid endpoint → server replies <b>402 Payment Required</b> with a Casper payment challenge → agent pays &amp; retries → data is served.</div>
+    <div id="x402-out" style="font-size:12px;color:var(--fg3)">Agent requests a paid endpoint → server replies <b>402 Payment Required</b> with a Casper challenge → agent pays &amp; retries → data served.</div>
   </section>
 
-  <!-- ON-CHAIN LOG -->
-  <section class="card mb-5" style="border-color:rgba(52,211,153,.22)">
-    <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">⑥ On-Chain Proof <span style="color:var(--fg3);font-weight:400;font-size:12px">· real Casper testnet transactions from this demo</span></h2>
+  <!-- ⑥ ON-CHAIN -->
+  <section class="card" style="margin-bottom:18px;border-color:rgba(52,211,153,.2)">
+    <div class="flex items-center gap-2 mb-1"><span class="chip" style="color:var(--emerald)">6</span><span class="sec-title">On-Chain Proof <span class="sec-sub">· real Casper testnet transactions from this demo</span></span></div>
     <div id="chain-log" style="font-size:12px;color:var(--fg3);margin-top:10px">Anomaly anchors created during this session appear here with live cspr.live links.</div>
   </section>
 
-  <footer style="text-align:center;color:var(--fg3);font-size:11px;margin-top:20px">
+  <footer style="text-align:center;color:var(--fg3);font-size:11px;margin-top:18px">
     ERAYA Casper · Casper Agentic Buildathon 2026 · <a href="https://testnet.cspr.live" target="_blank">testnet.cspr.live</a>
   </footer>
 </div>
@@ -141,119 +181,81 @@ const API = location.pathname.includes('/eraya_api/') ? '/eraya_api' : '';
 const fmtUSD = n => '$' + Number(n||0).toLocaleString();
 const esc = s => (s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const chainTxns = [];
-
 async function jget(p){const r=await fetch(API+p);return r.json();}
 async function jpost(p,b){const r=await fetch(API+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return {status:r.status,headers:r.headers,data:await r.json().catch(()=>({}))};}
-
-function tlStep(color,ok,text,score){
-  return `<div class="tl-step" style="border-color:${color};background:${color}0f;margin-top:6px">
-    <span style="color:${ok?'#34d399':color}">${ok?'✓':'●'}</span>
-    <div style="flex:1"><span style="color:var(--fg)">${esc(text)}</span>${score!=null?` <span class="mono" style="color:${color}">${score}</span>`:''}</div></div>`;
-}
+function tlStep(color,ok,text,score){return `<div class="tl-step" style="border-color:${color};background:${color}0f"><span style="color:${ok?'#34d399':color}">${ok?'✓':'●'}</span><div style="flex:1"><span style="color:var(--fg)">${esc(text)}</span>${score!=null?` <span class="mono" style="color:${color}">${score}</span>`:''}</div></div>`;}
 function addChainTxn(rec){
   chainTxns.unshift(rec);
   document.getElementById('chain-log').innerHTML = chainTxns.map(t=>`
-    <div class="row" style="display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.18);margin-bottom:6px">
+    <div class="row" style="display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:11px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.16);margin-bottom:6px">
       <div><span class="badge" style="background:rgba(52,211,153,.14);color:#34d399">${esc(t.label)}</span>
         <span class="mono" style="color:var(--fg3);font-size:11px;margin-left:6px">${esc(t.hash.slice(0,20))}…</span></div>
-      <a href="${t.url}" target="_blank" style="font-size:11px;white-space:nowrap">view on cspr.live ↗</a>
-    </div>`).join('');
+      <a href="${t.url}" target="_blank" style="font-size:11px;white-space:nowrap">view on cspr.live ↗</a></div>`).join('');
 }
 
-// ① Dashboard
 async function loadDashboard(){
   try{
     const d = await jget('/api/domains/casper_defi/dashboard/');
     const p = d.portfolio||{}, n=d.network||{};
-    document.getElementById('net-badge').textContent = 'Casper '+(n.network||'testnet')+' · '+(n.mode||'');
+    document.getElementById('net-badge').textContent = 'Casper '+(n.network||'testnet')+(n.mode?' · '+n.mode:'');
     document.getElementById('dash-kpis').innerHTML = [
       ['Treasury TVL', fmtUSD(p.total_value_usd), 'var(--teal)'],
       ['24h P&L', (p.pnl_24h_pct>=0?'+':'')+(p.pnl_24h_pct??0)+'%', 'var(--emerald)'],
       ['Risk Score (TabPFN)', p.risk_score??'—', 'var(--amber)'],
       ['Wallets', (p.wallets||[]).length, 'var(--violet)'],
     ].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:22px;font-weight:700;color:${c}">${v}</div></div>`).join('');
-    const t = d.threats||[];
     document.getElementById('dash-health').innerHTML =
-      `Yields tracked: <b>${(d.yields||[]).length}</b> · Active threats: <b style="color:var(--rose)">${t.length}</b> · Quorum proposal: <b>${esc((d.consensus||{}).status||'—')}</b>`;
+      `Yields tracked: <b>${(d.yields||[]).length}</b> · Active threats: <b style="color:var(--rose)">${(d.threats||[]).length}</b> · Quorum proposal: <b>${esc((d.consensus||{}).status||'—')}</b>`;
   }catch(e){document.getElementById('dash-kpis').innerHTML='<div style="color:var(--rose)">dashboard unavailable</div>';}
 }
 
-// ② Anomaly scan + on-chain anchor
 async function runAnomalyScan(){
   const btn=document.getElementById('scan-btn'), out=document.getElementById('scan-out');
   btn.disabled=true; btn.innerHTML='<span class="spin"></span> Scanning + anchoring…';
-  out.innerHTML='<div style="color:var(--fg3)">Running statistical detectors and submitting on-chain anchors (this makes real testnet transactions — ~15s)…</div>';
+  out.innerHTML='<div style="color:var(--fg3)">Running statistical detectors and submitting on-chain anchors (real testnet transactions — ~15s)…</div>';
   try{
     const {data:d} = await jpost('/api/v1/security/anomaly-scan/',{});
     const h=d.network_health||{};
     let html = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
       ${[['Anomalies',d.anomaly_count,'var(--amber)'],['Critical',d.critical_count,'var(--rose)'],['Stake Gini',h.stake_gini,'var(--teal)'],['Nakamoto',h.nakamoto_coefficient,'var(--violet)']]
-        .map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:20px;font-weight:700;color:${c}">${v??'—'}</div></div>`).join('')}
-    </div>`;
+        .map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:20px;font-weight:700;color:${c}">${v??'—'}</div></div>`).join('')}</div>`;
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:8px">Network health: <b style="color:${h.overall==='nominal'?'#34d399':h.overall==='critical'?'#f87171':'#fbbf24'}">${esc(h.overall)}</b></div>`;
     (d.findings||[]).forEach(f=>{
       const c = f.severity>=0.85?'#f87171':f.severity>=0.7?'#fbbf24':'#60a5fa';
-      html += `<div class="tl-step" style="border-color:${c};background:${c}0d;margin-top:6px">
-        <span class="badge" style="background:${c}22;color:${c}">${esc(f.type)}</span>
-        <div style="flex:1"><span style="color:var(--fg)">${esc(f.summary)}</span></div>
-        <span class="mono" style="color:${c}">sev ${f.severity}</span></div>`;
+      html += `<div class="tl-step" style="border-color:${c};background:${c}0d"><span class="badge" style="background:${c}22;color:${c}">${esc(f.type)}</span><div style="flex:1"><span style="color:var(--fg)">${esc(f.summary)}</span></div><span class="mono" style="color:${c}">sev ${f.severity}</span></div>`;
     });
     if((d.anchors||[]).length){
       html += `<div style="margin-top:12px;font-size:12px;color:var(--emerald)"><b>⛓ Anchored on Casper testnet:</b></div>`;
       d.anchors.forEach(a=>{
-        html += `<div class="tl-step" style="border-color:#34d399;background:rgba(52,211,153,.08);margin-top:6px">
-          <span style="color:#34d399">⛓</span>
-          <div style="flex:1"><span style="color:var(--fg)">${esc(a.anomaly_type)}</span>
-            <div class="mono" style="color:var(--fg3);font-size:11px">tx ${esc(a.deploy_hash.slice(0,28))}…</div></div>
-          <a href="${a.explorer_url}" target="_blank" style="font-size:11px;white-space:nowrap">cspr.live ↗</a></div>`;
+        html += `<div class="tl-step" style="border-color:#34d399;background:rgba(52,211,153,.08)"><span style="color:#34d399">⛓</span><div style="flex:1"><span style="color:var(--fg)">${esc(a.anomaly_type)}</span><div class="mono" style="color:var(--fg3);font-size:11px">tx ${esc(a.deploy_hash.slice(0,28))}…</div></div><a href="${a.explorer_url}" target="_blank" style="font-size:11px;white-space:nowrap">cspr.live ↗</a></div>`;
         addChainTxn({label:'anomaly · '+a.anomaly_type, hash:a.deploy_hash, url:a.explorer_url});
-        pushAlert({kind:'onchain',key:'anchor|'+a.deploy_hash,severity:0.9,color:'#34d399',icon:'⛓',
-          text:'Anomaly anchored on-chain · '+a.anomaly_type, meta:'Casper testnet tx', url:a.explorer_url});
+        pushAlert({kind:'onchain',key:'anchor|'+a.deploy_hash,severity:0.9,color:'#34d399',icon:'⛓',text:'Anomaly anchored on-chain · '+a.anomaly_type,meta:'Casper testnet tx',url:a.explorer_url});
       });
-    } else {
-      html += `<div style="margin-top:10px;font-size:11px;color:var(--fg3)">No critical anomaly to anchor this cycle (or anchoring rate-limited).</div>`;
-    }
+    } else { html += `<div style="margin-top:10px;font-size:11px;color:var(--fg3)">No critical anomaly to anchor this cycle (or anchoring rate-limited).</div>`; }
     out.innerHTML = html;
   }catch(e){out.innerHTML='<div style="color:var(--rose)">scan failed</div>';}
   btn.disabled=false; btn.textContent='⚡ Run Live Anomaly Scan';
 }
 
-// ③ KAVACHA
 async function runAttack(){
-  const out=document.getElementById('sec-out');
-  out.innerHTML='<span class="spin"></span> launching…';
+  const out=document.getElementById('sec-out'); out.innerHTML='<span class="spin"></span> launching…';
   const {data:d}=await jpost('/api/v1/security/attack-sim/',{domain:'5g'});
-  pushAlert({kind:'security',key:'atk|'+d.audit_id,severity:0.9,color:'#f87171',icon:'🛡',
-    text:'Injection '+d.verdict+' · rule '+d.rule_fired, meta:'KAVACHA guardian blocked attack'});
-  let html=`<div style="margin-bottom:6px"><span class="badge" style="background:rgba(248,113,113,.15);color:#f87171">VERDICT: ${esc(d.verdict)}</span>
-    <span class="badge" style="background:rgba(255,255,255,.06);color:var(--fg2)">rule ${esc(d.rule_fired)}</span>
-    <span class="mono" style="color:var(--fg3);font-size:11px">score ${d.injection_score}</span></div>`;
-  (d.timeline||[]).forEach((s,i)=>setTimeout(()=>{document.getElementById('atk-tl').insertAdjacentHTML('beforeend',tlStep('#f87171',s.ok,s.detail,s.score));},i*300));
+  pushAlert({kind:'security',key:'atk|'+d.audit_id,severity:0.9,color:'#f87171',icon:'🛡',text:'Injection '+d.verdict+' · rule '+d.rule_fired,meta:'KAVACHA guardian blocked attack'});
+  let html=`<div style="margin-bottom:6px"><span class="badge" style="background:rgba(248,113,113,.15);color:#f87171">VERDICT: ${esc(d.verdict)}</span> <span class="badge" style="background:rgba(255,255,255,.06);color:var(--fg2)">rule ${esc(d.rule_fired)}</span> <span class="mono" style="color:var(--fg3);font-size:11px">score ${d.injection_score}</span></div>`;
   out.innerHTML=html+'<div id="atk-tl"></div>';
+  (d.timeline||[]).forEach((s,i)=>setTimeout(()=>{const el=document.getElementById('atk-tl');if(el)el.insertAdjacentHTML('beforeend',tlStep('#f87171',s.ok,s.detail,s.score));},i*300));
 }
 async function runSpoof(){
-  const out=document.getElementById('sec-out');
-  out.innerHTML='<span class="spin"></span> forging…';
+  const out=document.getElementById('sec-out'); out.innerHTML='<span class="spin"></span> forging…';
   const {data:d}=await jpost('/api/v1/security/spoof-sim/',{valid:false});
-  out.innerHTML=`<div><span class="badge" style="background:${d.accepted?'rgba(52,211,153,.15)':'rgba(248,113,113,.15)'};color:${d.accepted?'#34d399':'#f87171'}">${d.accepted?'ACCEPTED':'REJECTED'}</span>
-    <span class="mono" style="color:var(--fg3);font-size:11px">${esc(d.reason)}</span></div>
-    <div style="font-size:11px;color:var(--fg3);margin-top:6px" class="mono">expected ${esc((d.expected_signature||'').slice(0,20))} · got ${esc((d.presented_signature||'').slice(0,20))}</div>`;
+  out.innerHTML=`<div><span class="badge" style="background:${d.accepted?'rgba(52,211,153,.15)':'rgba(248,113,113,.15)'};color:${d.accepted?'#34d399':'#f87171'}">${d.accepted?'ACCEPTED':'REJECTED'}</span> <span class="mono" style="color:var(--fg3);font-size:11px">${esc(d.reason)}</span></div><div style="font-size:11px;color:var(--fg3);margin-top:6px" class="mono">expected ${esc((d.expected_signature||'').slice(0,20))} · got ${esc((d.presented_signature||'').slice(0,20))}</div>`;
 }
-
-// ④ Critic
 async function runCritic(){
-  const out=document.getElementById('critic-out');
-  out.innerHTML='<span class="spin"></span> reviewing (real LLM)…';
+  const out=document.getElementById('critic-out'); out.innerHTML='<span class="spin"></span> reviewing (real LLM)…';
   const {data:d}=await jpost('/api/v1/security/critic-review/',{});
   const c=d.verdict==='REJECT'?'#f87171':d.verdict==='REVISE'?'#fbbf24':'#34d399';
-  out.innerHTML=`<div><span class="badge" style="background:${c}22;color:${c}">${esc(d.verdict)}</span>
-    <span class="badge" style="background:rgba(167,139,250,.14);color:#a78bfa">${esc(d.provider)}</span>
-    <span class="mono" style="color:var(--fg3);font-size:11px">risk ${d.risk_score}</span></div>
-    <div style="margin-top:8px;color:var(--fg2)">${esc(d.recommendation)}</div>
-    <ul style="margin:8px 0 0;padding-left:18px;color:var(--fg3)">${(d.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+  out.innerHTML=`<div><span class="badge" style="background:${c}22;color:${c}">${esc(d.verdict)}</span> <span class="badge" style="background:rgba(167,139,250,.14);color:#a78bfa">${esc(d.provider)}</span> <span class="mono" style="color:var(--fg3);font-size:11px">risk ${d.risk_score}</span></div><div style="margin-top:8px;color:var(--fg2)">${esc(d.recommendation)}</div><ul style="margin:8px 0 0;padding-left:18px;color:var(--fg3)">${(d.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
 }
-
-// ⑤ x402
 async function runX402(){
   const btn=document.getElementById('x402-btn'), out=document.getElementById('x402-out');
   btn.disabled=true; out.innerHTML='<span class="spin"></span> requesting…';
@@ -264,59 +266,71 @@ async function runX402(){
       const addr=r1.headers.get('X-Payment-Address'), amt=r1.headers.get('X-Payment-Amount'), nonce=r1.headers.get('X-Payment-Nonce');
       html+=tlStep('#fbbf24',false,`Server → 402 Payment Required · ${amt} motes to ${(addr||'').slice(0,16)}…`);
       await new Promise(r=>setTimeout(r,700));
-      const proof=`casper:${addr}:${amt}:sig_demo`;
-      const r2=await fetch(API+'/api/domains/casper_defi/market-data/',{headers:{'X-Payment':proof,'X-Payment-Nonce':nonce||''}});
+      const r2=await fetch(API+'/api/domains/casper_defi/market-data/',{headers:{'X-Payment':`casper:${addr}:${amt}:sig_demo`,'X-Payment-Nonce':nonce||''}});
       const d2=await r2.json();
       html+=tlStep('#34d399',true,`Agent pays &amp; retries → 200 OK`);
-      html+=`<div class="tl-step" style="border-color:#60a5fa;background:rgba(96,165,250,.08);margin-top:6px"><span>📈</span><div style="flex:1" class="mono">cspr_price=${d2.cspr_price} · volume_24h=${(d2.volume_24h||0).toLocaleString()} · verified=${(d2.x402||{}).verified}</div></div>`;
-    } else {
-      const d1=await r1.json();
-      html+=tlStep('#60a5fa',true,`x402 disabled — data served free: cspr_price=${d1.cspr_price}`);
-    }
+      html+=`<div class="tl-step" style="border-color:#60a5fa;background:rgba(96,165,250,.08)"><span>📈</span><div style="flex:1" class="mono">cspr_price=${d2.cspr_price} · volume_24h=${(d2.volume_24h||0).toLocaleString()} · verified=${(d2.x402||{}).verified}</div></div>`;
+    } else { const d1=await r1.json(); html+=tlStep('#60a5fa',true,`x402 disabled — data served free: cspr_price=${d1.cspr_price}`); }
     out.innerHTML=html;
   }catch(e){out.innerHTML='<div style="color:var(--rose)">x402 failed</div>';}
   btn.disabled=false; btn.textContent='💳 Request Paid Market Data';
 }
 
-// Live Alerts ticker — polls global/on-chain state, surfaces problems + anchors
+// ── Live Alerts ticker ─────────────────────────────────────────
 const _seen={}; let _alerts=[];
 function sevColor(s){return s>=0.85?'#f87171':s>=0.7?'#fbbf24':s>=0.5?'#60a5fa':'#34d399';}
 function pushAlert(a){
   const key=a.key||(a.kind+'|'+a.text), now=Date.now();
-  if(_seen[key] && now-_seen[key]<90000) return;   // dedup within 90s
-  _seen[key]=now;
-  a.time=new Date().toLocaleTimeString('en',{hour12:false});
-  _alerts.unshift(a); if(_alerts.length>25)_alerts.pop();
-  renderAlerts();
+  if(_seen[key] && now-_seen[key]<90000) return;
+  _seen[key]=now; a.time=new Date().toLocaleTimeString('en',{hour12:false});
+  _alerts.unshift(a); if(_alerts.length>25)_alerts.pop(); renderAlerts();
 }
 function renderAlerts(){
   const feed=document.getElementById('alerts-feed');
   const crit=_alerts.filter(a=>(a.severity||0)>=0.85).length;
-  document.getElementById('alerts-count').textContent=_alerts.length;
-  const dot=document.getElementById('alerts-dot');
-  dot.style.background = crit? '#f87171' : (_alerts.length? '#fbbf24':'#34d399');
-  document.getElementById('alerts-count').style.background = crit?'rgba(248,113,113,.15)':'rgba(251,191,36,.15)';
-  document.getElementById('alerts-count').style.color = crit?'#f87171':'#fbbf24';
+  const cnt=document.getElementById('alerts-count'); cnt.textContent=_alerts.length;
+  document.getElementById('alerts-dot').style.background = crit?'#f87171':(_alerts.length?'#fbbf24':'#34d399');
+  cnt.style.background = crit?'rgba(248,113,113,.15)':(_alerts.length?'rgba(251,191,36,.15)':'rgba(52,211,153,.14)');
+  cnt.style.color = crit?'#f87171':(_alerts.length?'#fbbf24':'#34d399');
   if(!_alerts.length){feed.innerHTML='<div style="color:#34d399;padding:8px">✓ All systems nominal</div>';return;}
-  feed.innerHTML=_alerts.map(a=>{
-    const c=a.color||sevColor(a.severity||0.6);
-    return `<div class="alert" style="border-color:${c}"><span class="alert-time">${a.time}</span>
-      <div class="t">${a.icon||'●'} ${esc(a.text)}</div>
-      <div class="m">${esc(a.meta||'')}${a.url?` · <a href="${a.url}" target="_blank">cspr.live ↗</a>`:''}</div></div>`;
-  }).join('');
+  feed.innerHTML=_alerts.map(a=>{const c=a.color||sevColor(a.severity||0.6);
+    return `<div class="alert" style="border-color:${c}"><span class="alert-time">${a.time}</span><div class="t">${a.icon||'●'} ${esc(a.text)}</div><div class="m">${esc(a.meta||'')}${a.url?` · <a href="${a.url}" target="_blank">cspr.live ↗</a>`:''}</div></div>`;}).join('');
 }
 async function pollAlerts(){
-  try{
-    const d=await jget('/api/domains/casper_defi/threats/');
-    (d.threats||[]).forEach(t=>pushAlert({
-      kind:'threat', key:'threat|'+t.type+'|'+t.target, severity:t.severity,
-      icon: t.severity>=0.85?'🔴':'🟠',
-      text:(t.type||'').replace(/_/g,' ')+' · '+(t.target||''), meta:t.summary,
-    }));
+  try{const d=await jget('/api/domains/casper_defi/threats/');
+    (d.threats||[]).forEach(t=>pushAlert({kind:'threat',key:'threat|'+t.type+'|'+t.target,severity:t.severity,icon:t.severity>=0.85?'🔴':'🟠',text:(t.type||'').replace(/_/g,' ')+' · '+(t.target||''),meta:t.summary}));
   }catch(e){}
   document.getElementById('alerts-hb').textContent='last check '+new Date().toLocaleTimeString('en',{hour12:false});
 }
 pollAlerts(); setInterval(pollAlerts,12000);
+
+// ── Floating agent-node popups (ambient "swarm at work") ──────
+const AGENTS=[
+  {role:'Perceiver',c:'#2dd4bf',acts:['reading Casper DeFi signals','TabPFN risk scoring','baseline z-score check','mempool flow analysis']},
+  {role:'Planner',c:'#a78bfa',acts:['Groq → plan generated','risk-adjusted rebalance','querying Recoverer','LLM cascade active']},
+  {role:'Recoverer',c:'#34d399',acts:['rollback path ready','re-plan on failure','SLO restored','staged swap sizing']},
+  {role:'Guardian',c:'#f87171',acts:['KAVACHA policy check','A2A signature verified','threat blocked','anchoring on-chain']},
+  {role:'Critic',c:'#60a5fa',acts:['reviewing action','verdict: REVISE','adversarial check','slippage risk flagged']},
+];
+const field=document.getElementById('agents-field');
+const POS=[[6,20],[70,14],[10,64],[76,60],[40,80],[52,30]];
+const nodes=POS.map((p,i)=>{
+  const a=AGENTS[i%AGENTS.length];
+  const el=document.createElement('div'); el.className='anode';
+  el.style.left=p[0]+'%'; el.style.top=p[1]+'%';
+  el.innerHTML=`<span class="dot" style="background:${a.c};color:${a.c}"></span><span class="role" style="color:${a.c}">${a.role}</span><span class="float-txt">· ${a.acts[0]}</span>`;
+  const inner=document.createElement('div'); inner.className='float';
+  field.appendChild(el);
+  return {el,a,txt:el.querySelector('.float-txt')};
+});
+function cycleNodes(){
+  nodes.forEach((n,i)=>setTimeout(()=>{
+    n.el.classList.remove('show');
+    setTimeout(()=>{ n.txt.textContent='· '+n.a.acts[Math.floor(Math.random()*n.a.acts.length)]; n.el.classList.add('show'); }, 500);
+  }, i*260));
+}
+nodes.forEach((n,i)=>setTimeout(()=>n.el.classList.add('show'), 400+i*220));
+setInterval(cycleNodes, 5200);
 
 loadDashboard();
 </script>
