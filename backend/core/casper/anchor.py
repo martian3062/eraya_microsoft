@@ -90,10 +90,14 @@ def _submit_transfer(transfer_id: int) -> str | None:
     key_path = os.environ["CASPER_SECRET_KEY_PATH"]
     rpc = os.environ["CASPER_NODE_RPC_URL"]
     chain = os.environ.get("CASPER_CHAIN_NAME", "casper-test")
-    target = os.environ.get("CASPER_PUBLIC_KEY", _DEFAULT_PUBLIC_KEY)  # self-transfer
+    # Anchor to the treasury account (must differ from the signer — a
+    # self-transfer reverts with "Invalid purse" on Casper 2.0).
+    target = os.environ.get("CASPER_ANCHOR_RECIPIENT", _DEFAULT_PUBLIC_KEY)
     client_bin = os.environ.get("CASPER_CLIENT_BIN", "casper-client")
 
-    # Casper 2.0 native transfer transaction.
+    # Casper 2.0 native transfer transaction (casper-client 5.x).
+    # Notes learned against testnet: use --id (not --transfer-id, which panics),
+    # classic pricing needs --payment-amount + --gas-price-tolerance + --standard-payment.
     cmd = [
         client_bin, "put-transaction", "transfer",
         "--node-address", rpc,
@@ -101,9 +105,11 @@ def _submit_transfer(transfer_id: int) -> str | None:
         "--secret-key", key_path,
         "--target", target,
         "--transfer-amount", str(_ANCHOR_AMOUNT_MOTES),
-        "--transfer-id", str(transfer_id),
-        "--pricing-mode", os.environ.get("CASPER_PRICING_MODE", "fixed"),
+        "--id", str(transfer_id),
+        "--pricing-mode", os.environ.get("CASPER_PRICING_MODE", "classic"),
+        "--payment-amount", os.environ.get("CASPER_TRANSFER_PAYMENT_MOTES", "100000000"),
         "--gas-price-tolerance", os.environ.get("CASPER_GAS_PRICE_TOLERANCE", "1"),
+        "--standard-payment", "true",
     ]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
     if proc.returncode != 0:
