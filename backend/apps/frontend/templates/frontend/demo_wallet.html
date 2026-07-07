@@ -11,6 +11,19 @@
 </section>
 
 <section class="card" style="margin-bottom:16px">
+  <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+    <div class="flex items-center gap-2"><span class="chip">⇄</span><span class="sec-title">Treasury Autopay <span class="sec-sub">· real Casper testnet send by the bot</span></span></div>
+    <label class="badge badge-a" style="cursor:pointer;gap:6px"><input type="checkbox" id="autopay-tgl" style="accent-color:var(--a)"> Autopay every 45s</label>
+  </div>
+  <div style="font-size:12px;color:var(--fg2);margin-bottom:10px">Policy set by <b style="color:var(--a)">Guardian</b> (≤ 25 CSPR / tx · Swarm-ops → Treasury). Payments executed by <b style="color:var(--a)">Recoverer</b>. Every send is a <b>real</b> on-chain transaction — balances above update, and both sides appear in the live feed.</div>
+  <div class="flex gap-2 items-center flex-wrap mb-2">
+    <input id="pay-amt" type="number" min="2.5" max="25" step="0.5" value="2.5" class="mono" style="width:110px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg)"><span class="sec-sub">CSPR</span>
+    <button class="btn" id="pay-btn" onclick="botPay(false)">🤖 Bot: Send now</button>
+  </div>
+  <div id="pay-log" style="font-size:12px;color:var(--fg3)">The bot sends CSPR ops→treasury on demand — or turn on Autopay for an automatic rebalance every 45 seconds.</div>
+</section>
+
+<section class="card" style="margin-bottom:16px">
   <div class="flex items-center gap-2 mb-2"><span class="chip">💬</span><span class="sec-title">Wallet Assistant <span class="sec-sub">· type a command like “send 25 coins” — it really sends on-chain</span></span></div>
   <div id="wa-log" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
     <div class="cop-msg cop-bot">Hi 👋 I'm your wallet assistant. Try <b>“send 25 coins”</b>, <b>“send 10 cspr”</b>, or just ask me anything. Every send is a <b>real</b> Casper testnet transaction, ops → treasury.</div>
@@ -32,18 +45,6 @@
   </section>
 </div>
 
-<section class="card">
-  <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
-    <div class="flex items-center gap-2"><span class="chip">⇄</span><span class="sec-title">Treasury Autopay <span class="sec-sub">· real Casper testnet send by the bot</span></span></div>
-    <label class="badge badge-a" style="cursor:pointer;gap:6px"><input type="checkbox" id="autopay-tgl" style="accent-color:var(--a)"> Autopay every 45s</label>
-  </div>
-  <div style="font-size:12px;color:var(--fg2);margin-bottom:10px">Policy set by <b style="color:var(--a)">Guardian</b> (≤ 25 CSPR / tx · Swarm-ops → Treasury). Payments executed by <b style="color:var(--a)">Recoverer</b>. Every send is a <b>real</b> on-chain transaction — balances above update, and both sides appear in the live feed.</div>
-  <div class="flex gap-2 items-center flex-wrap mb-2">
-    <input id="pay-amt" type="number" min="2.5" max="25" step="0.5" value="2.5" class="mono" style="width:110px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg)"><span class="sec-sub">CSPR</span>
-    <button class="btn" id="pay-btn" onclick="botPay(false)">🤖 Bot: Send now</button>
-  </div>
-  <div id="pay-log" style="font-size:12px;color:var(--fg3)">The bot sends CSPR ops→treasury on demand — or turn on Autopay for an automatic rebalance every 45 seconds.</div>
-</section>
 {% endblock %}
 {% block page_js %}
 <script>
