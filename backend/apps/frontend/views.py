@@ -317,6 +317,9 @@ def demo_swarm(request):
 def demo_kavacha(request):
     return render(request, "frontend/demo_kavacha.html")
 
+def demo_wallet(request):
+    return render(request, "frontend/demo_wallet.html")
+
 @xframe_options_sameorigin
 def demo_ppt_pdf(request):
     import os

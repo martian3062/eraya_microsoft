@@ -22,6 +22,7 @@ urlpatterns = [
     path("demo/analytics/",         views.demo_analytics,      name="demo_analytics"),
     path("demo/swarm/",             views.demo_swarm,          name="demo_swarm"),
     path("demo/kavacha/",           views.demo_kavacha,        name="demo_kavacha"),
+    path("demo/wallet/",            views.demo_wallet,         name="demo_wallet"),
     path("demo/eraya-casper.pdf",   views.demo_ppt_pdf,        name="demo_ppt_pdf"),
     path("dashboard/",              views.dashboard,           name="dashboard"),
     path("map/",                    views.map_view,            name="map"),
