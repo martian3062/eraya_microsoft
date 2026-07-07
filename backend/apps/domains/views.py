@@ -210,6 +210,39 @@ def casper_transcribe(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+def casper_speak(request):
+    """Text-to-speech via Sarvam (bulbul:v2) — a natural female voice. Returns wav
+    audio; the frontend plays it. 502 on failure so the browser voice can fall back."""
+    import base64
+    from django.http import HttpResponse
+    from core.providers import config
+    key = config.get("SARVAM_API_KEY")
+    text = (request.data.get("text") or "").strip()
+    if not key or not text:
+        return HttpResponse(status=204)
+    lang = request.data.get("lang") or "en-IN"
+    speaker = request.data.get("voice") or "anushka"
+    try:
+        import httpx
+        r = httpx.post(
+            "https://api.sarvam.ai/text-to-speech",
+            headers={"api-subscription-key": key, "Content-Type": "application/json"},
+            json={"inputs": [text[:1500]], "target_language_code": lang, "speaker": speaker,
+                  "model": "bulbul:v2", "pace": 1.0, "speech_sample_rate": 22050,
+                  "enable_preprocessing": True},
+            timeout=30,
+        )
+        r.raise_for_status()
+        audios = r.json().get("audios") or []
+        if not audios:
+            return HttpResponse(status=502)
+        return HttpResponse(base64.b64decode(audios[0]), content_type="audio/wav")
+    except Exception:
+        return HttpResponse(status=502)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def casper_copilot(request):
     """Advisory Copilot — voice/text Q&A about the swarm + Casper treasury."""
     import json

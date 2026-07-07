@@ -177,12 +177,32 @@ function _pickVoice(){
   _erayaVoice=en[0]||vs[0];
 }
 if(window.speechSynthesis){_pickVoice();speechSynthesis.onvoiceschanged=_pickVoice;}
-function erayaSpeak(t){if(!t||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);if(_erayaVoice)u.voice=_erayaVoice;u.rate=0.97;u.pitch=1.18;u.volume=1;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+let _ttsAudio=null;
+function _speakFallback(t){if(!t||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);if(_erayaVoice)u.voice=_erayaVoice;u.rate=0.97;u.pitch=1.18;u.volume=1;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function erayaSpeak(t){
+  if(!t)return;
+  try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
+  if(_ttsAudio){try{_ttsAudio.pause();}catch(e){}_ttsAudio=null;}
+  fetch(API+'/api/domains/casper_defi/speak/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})})
+    .then(r=>{if(!r.ok)throw 0;return r.blob();})
+    .then(b=>{if(!b||!b.size)throw 0;_ttsAudio=new Audio(URL.createObjectURL(b));_ttsAudio.play().catch(()=>_speakFallback(t));})
+    .catch(()=>_speakFallback(t));
+}
 function copSpeak(t){if(!t||!document.getElementById('cop-voice').checked)return;erayaSpeak(t);}
-async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');document.getElementById('cop-state').textContent='thinking…';
+function copParseSend(t){const m=(t||'').match(/\b(?:send|transfer|pay|bhej[o]?)\b\s+(\d+(?:\.\d+)?)/i);if(!m)return null;let target=null;const tm=(t||'').match(/to\s+(0[12][0-9a-fA-F]{62,66})/);if(tm)target=tm[1];return{amount:parseFloat(m[1]),target};}
+async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');const st=document.getElementById('cop-state');
+  const intent=copParseSend(q);
+  if(intent){st.textContent='sending…';
+    try{const body={amount_cspr:intent.amount};if(intent.target)body.target=intent.target;
+      const {data:d}=await jpost('/api/domains/casper_defi/pay/',body);
+      if(d.ok){const msg='Done — sent '+d.amount_cspr+' CSPR to the treasury.';th.innerHTML='✅ '+esc(msg)+' <a href="'+d.explorer_url+'" target="_blank">cspr.live ↗</a>';copSpeak(msg);pushAlert({kind:'pay',key:'cop|'+d.tx,severity:0.55,color:A,icon:'🤖',text:'Sent '+d.amount_cspr+' CSPR · ops→treasury',meta:'real Casper testnet tx',url:d.explorer_url});}
+      else{th.textContent='⚠ Send failed: '+(d.error||'unknown');copSpeak('Sorry, the send failed.');}
+    }catch(e){th.textContent='I could not reach the send service.';}
+    st.textContent='voice ready';return;}
+  st.textContent='thinking…';
   try{const {data:d}=await jpost('/api/domains/casper_defi/copilot/',{question:q});th.textContent=d.answer||'—';copSpeak(d.answer||'');}
   catch(e){th.textContent='I could not reach the copilot service just now.';}
-  document.getElementById('cop-state').textContent='voice ready';}
+  st.textContent='voice ready';}
 function copSend(){const i=document.getElementById('cop-text'),q=i.value.trim();if(!q)return;i.value='';copAsk(q);}
 let _copMR=null,_copStream=null,_copChunks=[];
 async function copMic(){

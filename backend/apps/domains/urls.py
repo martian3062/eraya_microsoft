@@ -18,6 +18,7 @@ urlpatterns = [
     path("casper_defi/pay/", views.casper_pay, name="casper-pay"),
     path("casper_defi/copilot/", views.casper_copilot, name="casper-copilot"),
     path("casper_defi/transcribe/", views.casper_transcribe, name="casper-transcribe"),
+    path("casper_defi/speak/", views.casper_speak, name="casper-speak"),
     path("casper_defi/market-data/", views.casper_market_data, name="casper-market-data"),
     path("casper_defi/x402/verify/", views.x402_verify, name="casper-x402-verify"),
     path("<str:domain>/status/", views.domain_status, name="domain-status"),
