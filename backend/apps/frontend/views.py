@@ -10,6 +10,7 @@ from django.conf import settings
 import httpx
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
@@ -316,6 +317,7 @@ def demo_swarm(request):
 def demo_kavacha(request):
     return render(request, "frontend/demo_kavacha.html")
 
+@xframe_options_sameorigin
 def demo_ppt_pdf(request):
     import os
     from django.conf import settings
