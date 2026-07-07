@@ -1,0 +1,51 @@
+{% extends "frontend/demo_base.html" %}
+{% block title %}eraya — updates{% endblock %}
+{% block page %}updates{% endblock %}
+{% block content %}
+
+<section class="card" style="margin-bottom:16px">
+  <div class="flex items-center gap-2 mb-2"><span class="chip">✦</span><span class="sec-title">What we built</span></div>
+  <div style="color:var(--fg2);font-size:13px;max-width:720px">A production, live agentic DeFi treasury swarm on Casper — self-healing, security-first, and economically-aware. Everything on this site is running for real, not mocked.</div>
+  <div class="grid md:grid-cols-3 gap-3" style="margin-top:14px">
+    <div class="kpi"><b>4-archetype swarm</b><div class="sec-sub" style="margin-top:3px">Perceiver · Planner · Recoverer · Guardian, with a self-healing re-plan loop.</div></div>
+    <div class="kpi"><b>KAVACHA security</b><div class="sec-sub" style="margin-top:3px">Injection kill-shot + A2A identity defense, signed audit trail.</div></div>
+    <div class="kpi"><b>Critic (LLM-as-judge)</b><div class="sec-sub" style="margin-top:3px">Independent adversarial review before high-stakes execution.</div></div>
+    <div class="kpi"><b>Anomaly Intelligence</b><div class="sec-sub" style="margin-top:3px">Statistical MEV / Sybil / validator detection (Tor-technique lineage).</div></div>
+    <div class="kpi"><b>On-chain anchoring</b><div class="sec-sub" style="margin-top:3px">Critical anomalies written to Casper testnet — real cspr.live transactions.</div></div>
+    <div class="kpi"><b>x402 payments</b><div class="sec-sub" style="margin-top:3px">HTTP-402 agent micropayments in the swarm economy.</div></div>
+  </div>
+</section>
+
+<section class="card" style="margin-bottom:16px">
+  <div class="flex items-center gap-2 mb-3"><span class="chip">⚙</span><span class="sec-title">The stack we used</span></div>
+  <div class="grid md:grid-cols-2 gap-x-8 gap-y-2" id="stack"></div>
+</section>
+
+<section class="card">
+  <div class="flex items-center gap-2 mb-3"><span class="chip">→</span><span class="sec-title">What's coming next</span></div>
+  <div id="roadmap"></div>
+</section>
+{% endblock %}
+
+{% block page_js %}
+<script>
+const STACK=[
+  ['LLM planning','Groq llama-3.3-70b → Kimi (long-context) → local Hugging Face — a graceful cascade'],
+  ['Risk brain','TabPFN 3 — hosted tabular foundation model, zero-training risk scoring (live)'],
+  ['Memory / RAG','Pinecone vector store · Firecrawl ingestion · Sarvam (multilingual)'],
+  ['Anomaly detection','Rolling baselines / z-score, Gini + Nakamoto coefficient, flow-correlation MEV'],
+  ['Blockchain','Casper 2.0 testnet · casper-client 5.x · put-transaction anchoring · public RPC'],
+  ['Security','KAVACHA — HMAC-signed A2A, injection sentinel, policy rules, signed audit log'],
+  ['Backend','Django + Channels (daphne) · DRF · deployed on GCP with nginx + systemd'],
+  ['Observability','OpenTelemetry traces across the tier cascade'],
+];
+document.getElementById('stack').innerHTML=STACK.map(([k,v])=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><div style="color:var(--a);font-weight:600;font-size:13px">${k}</div><div style="color:var(--fg2);font-size:12px">${v}</div></div>`).join('');
+const ROAD=[
+  ['Wire live providers','CSPR.cloud, Casper MCP, CSPR.trade MCP, CSPR.click — with deterministic fallback for demos.'],
+  ['Deploy Odra contracts','Agent registry, treasury, governance & reputation contracts on Casper testnet.'],
+  ['Chain-visible outcomes','Flush x402 payments, quorum votes & KAVACHA vetoes to on-chain transactions.'],
+  ['Scale RWA adapters','Onboard a real-world-asset feed end-to-end via the 3-method domain contract.'],
+];
+document.getElementById('roadmap').innerHTML=ROAD.map((r,i)=>`<div class="tl-step" style="border-color:var(--a)"><span class="chip" style="width:22px;height:22px;font-size:11px">${i+1}</span><div style="flex:1"><b>${r[0]}</b><div class="sec-sub">${r[1]}</div></div></div>`).join('');
+</script>
+{% endblock %}

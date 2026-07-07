@@ -304,6 +304,9 @@ def demo_critic(request):
 def demo_x402(request):
     return render(request, "frontend/demo_x402.html")
 
+def demo_updates(request):
+    return render(request, "frontend/demo_updates.html")
+
 import json as _json
 
 @_require_auth
