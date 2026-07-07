@@ -12,6 +12,7 @@ urlpatterns = [
     path("auth/google/callback/",   views.google_auth_callback,name="google_auth_callback"),
     path("auth/logout/",            views.logout_view,         name="logout"),
     # Pages
+    path("demo/",                   views.demo,                name="demo"),
     path("dashboard/",              views.dashboard,           name="dashboard"),
     path("map/",                    views.map_view,            name="map"),
     path("a2a-chat/",               views.a2a_chat,            name="a2a_chat"),

@@ -284,6 +284,12 @@ def dashboard(request):
 def a2a_chat(request):
     return render(request, "frontend/a2a_chat.html", _ctx(request, "a2a-chat"))
 
+
+def demo(request):
+    """Public, standalone interactive demo that drives every live system
+    (anomaly + on-chain anchoring, KAVACHA, Critic, x402, dashboard). No auth."""
+    return render(request, "frontend/demo.html")
+
 import json as _json
 
 @_require_auth

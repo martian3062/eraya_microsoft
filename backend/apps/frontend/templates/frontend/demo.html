@@ -1,0 +1,258 @@
+{% load static %}<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ERAYA Casper — Live Systems Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{brand:['Space Grotesk','sans-serif']}}}}</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#06060e;--card:rgba(255,255,255,.04);--bd:rgba(255,255,255,.10);--fg:#e2e8f0;--fg2:rgba(255,255,255,.6);--fg3:rgba(255,255,255,.35);--teal:#2dd4bf;--violet:#a78bfa;--rose:#f87171;--amber:#fbbf24;--emerald:#34d399;--sky:#60a5fa;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Inter,sans-serif;font-size:14px;line-height:1.5}
+.brand{font-family:'Space Grotesk',sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px;backdrop-filter:blur(12px)}
+.btn{border:none;border-radius:12px;padding:10px 18px;font-weight:600;font-size:13px;cursor:pointer;transition:.15s;color:#fff}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.kpi{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px}
+.mono{font-family:ui-monospace,monospace}
+.orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:0;pointer-events:none}
+a{color:var(--teal)}
+.row{animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(-6px)}to{opacity:1}}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 0 4px rgba(52,211,153,.18);animation:pb 1.8s infinite}
+@keyframes pb{50%{box-shadow:0 0 0 8px rgba(52,211,153,.05)}}
+.tl-step{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:10px;border-left:2px solid;font-size:12px;animation:fade .3s}
+h2{font-family:'Space Grotesk',sans-serif}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="orb" style="width:50vw;height:50vw;top:-10%;left:-8%;background:radial-gradient(circle,rgba(45,212,191,.14),transparent 70%)"></div>
+<div class="orb" style="width:45vw;height:45vw;bottom:-10%;right:-8%;background:radial-gradient(circle,rgba(167,139,250,.13),transparent 70%)"></div>
+
+<div class="wrap" style="position:relative;z-index:1;padding-top:28px;padding-bottom:60px">
+
+  <!-- HEADER -->
+  <header class="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <div class="flex items-center gap-3">
+      <div class="brand" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#2dd4bf,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:800;color:#06060e;font-size:18px">E</div>
+      <div>
+        <div class="brand" style="font-size:20px;font-weight:700">ERAYA Casper</div>
+        <div style="color:var(--fg3);font-size:12px">Self-Healing Agentic DeFi Treasury Swarm · Live Systems Demo</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="badge" style="background:rgba(52,211,153,.12);color:var(--emerald)"><span class="pulse"></span> Live</span>
+      <span id="net-badge" class="badge" style="background:rgba(96,165,250,.12);color:var(--sky)">Casper testnet</span>
+      <span class="badge" style="background:rgba(167,139,250,.12);color:var(--violet)">Groq · TabPFN · Pinecone</span>
+    </div>
+  </header>
+
+  <!-- CASPER DEFI DASHBOARD -->
+  <section class="card mb-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 style="font-size:15px;font-weight:700">① Casper DeFi Treasury <span style="color:var(--fg3);font-weight:400;font-size:12px">· live dashboard</span></h2>
+      <button class="btn" style="background:rgba(255,255,255,.08)" onclick="loadDashboard()">↻ Refresh</button>
+    </div>
+    <div id="dash-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3"></div>
+    <div id="dash-health" style="color:var(--fg2);font-size:12px"></div>
+  </section>
+
+  <!-- ANOMALY INTELLIGENCE + ON-CHAIN -->
+  <section class="card mb-5" style="border-color:rgba(45,212,191,.25)">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 style="font-size:15px;font-weight:700">② Network Anomaly Intelligence <span style="color:var(--fg3);font-weight:400;font-size:12px">· Tor-technique statistical detection → anchored on Casper</span></h2>
+      <button id="scan-btn" class="btn" style="background:linear-gradient(135deg,#2dd4bf,#06b6d4)" onclick="runAnomalyScan()">⚡ Run Live Anomaly Scan</button>
+    </div>
+    <div id="scan-out" style="color:var(--fg3);font-size:13px">Press "Run Live Anomaly Scan" — KAVACHA analyses mempool / governance / validator telemetry with rolling baselines, Gini &amp; Nakamoto coefficients, then <b style="color:var(--teal)">anchors high-severity anomalies as real Casper testnet transactions</b>.</div>
+  </section>
+
+  <div class="grid md:grid-cols-2 gap-5 mb-5">
+    <!-- KAVACHA SECURITY -->
+    <section class="card" style="border-color:rgba(248,113,113,.22)">
+      <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">③ KAVACHA Security</h2>
+      <div style="color:var(--fg3);font-size:12px;margin-bottom:12px">Prompt-injection kill-shot &amp; A2A identity defense.</div>
+      <div class="flex gap-2 mb-3">
+        <button class="btn" style="background:linear-gradient(135deg,#ef4444,#f87171)" onclick="runAttack()">💉 Launch Injection Attack</button>
+        <button class="btn" style="background:rgba(255,255,255,.08)" onclick="runSpoof()">🎭 Forge A2A Message</button>
+      </div>
+      <div id="sec-out" style="font-size:12px;color:var(--fg3)">Simulate an attack — the Guardian blocks it and writes a signed audit entry.</div>
+    </section>
+
+    <!-- CRITIC AGENT -->
+    <section class="card" style="border-color:rgba(167,139,250,.22)">
+      <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">④ Critic Agent <span style="color:var(--fg3);font-weight:400;font-size:12px">· LLM-as-judge</span></h2>
+      <div style="color:var(--fg3);font-size:12px;margin-bottom:12px">Independent adversarial review of a treasury action before execution.</div>
+      <button class="btn" style="background:linear-gradient(135deg,#a78bfa,#8b5cf6)" onclick="runCritic()">🧠 Review a Rebalance</button>
+      <div id="critic-out" style="font-size:12px;color:var(--fg3);margin-top:12px">Runs the real Groq → Kimi → local-HF cascade.</div>
+    </section>
+  </div>
+
+  <!-- x402 -->
+  <section class="card mb-5" style="border-color:rgba(251,191,36,.22)">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 style="font-size:15px;font-weight:700">⑤ x402 Agent Payments <span style="color:var(--fg3);font-weight:400;font-size:12px">· HTTP 402 micropayments</span></h2>
+      <button id="x402-btn" class="btn" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#1a1206" onclick="runX402()">💳 Request Paid Market Data</button>
+    </div>
+    <div id="x402-out" style="font-size:12px;color:var(--fg3)">An agent requests a paid endpoint → server replies <b>402 Payment Required</b> with a Casper payment challenge → agent pays &amp; retries → data is served.</div>
+  </section>
+
+  <!-- ON-CHAIN LOG -->
+  <section class="card mb-5" style="border-color:rgba(52,211,153,.22)">
+    <h2 style="font-size:15px;font-weight:700;margin-bottom:4px">⑥ On-Chain Proof <span style="color:var(--fg3);font-weight:400;font-size:12px">· real Casper testnet transactions from this demo</span></h2>
+    <div id="chain-log" style="font-size:12px;color:var(--fg3);margin-top:10px">Anomaly anchors created during this session appear here with live cspr.live links.</div>
+  </section>
+
+  <footer style="text-align:center;color:var(--fg3);font-size:11px;margin-top:20px">
+    ERAYA Casper · Casper Agentic Buildathon 2026 · <a href="https://testnet.cspr.live" target="_blank">testnet.cspr.live</a>
+  </footer>
+</div>
+
+<script>
+const API = location.pathname.includes('/eraya_api/') ? '/eraya_api' : '';
+const fmtUSD = n => '$' + Number(n||0).toLocaleString();
+const esc = s => (s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const chainTxns = [];
+
+async function jget(p){const r=await fetch(API+p);return r.json();}
+async function jpost(p,b){const r=await fetch(API+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return {status:r.status,headers:r.headers,data:await r.json().catch(()=>({}))};}
+
+function tlStep(color,ok,text,score){
+  return `<div class="tl-step" style="border-color:${color};background:${color}0f;margin-top:6px">
+    <span style="color:${ok?'#34d399':color}">${ok?'✓':'●'}</span>
+    <div style="flex:1"><span style="color:var(--fg)">${esc(text)}</span>${score!=null?` <span class="mono" style="color:${color}">${score}</span>`:''}</div></div>`;
+}
+function addChainTxn(rec){
+  chainTxns.unshift(rec);
+  document.getElementById('chain-log').innerHTML = chainTxns.map(t=>`
+    <div class="row" style="display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.18);margin-bottom:6px">
+      <div><span class="badge" style="background:rgba(52,211,153,.14);color:#34d399">${esc(t.label)}</span>
+        <span class="mono" style="color:var(--fg3);font-size:11px;margin-left:6px">${esc(t.hash.slice(0,20))}…</span></div>
+      <a href="${t.url}" target="_blank" style="font-size:11px;white-space:nowrap">view on cspr.live ↗</a>
+    </div>`).join('');
+}
+
+// ① Dashboard
+async function loadDashboard(){
+  try{
+    const d = await jget('/api/domains/casper_defi/dashboard/');
+    const p = d.portfolio||{}, n=d.network||{};
+    document.getElementById('net-badge').textContent = 'Casper '+(n.network||'testnet')+' · '+(n.mode||'');
+    document.getElementById('dash-kpis').innerHTML = [
+      ['Treasury TVL', fmtUSD(p.total_value_usd), 'var(--teal)'],
+      ['24h P&L', (p.pnl_24h_pct>=0?'+':'')+(p.pnl_24h_pct??0)+'%', 'var(--emerald)'],
+      ['Risk Score (TabPFN)', p.risk_score??'—', 'var(--amber)'],
+      ['Wallets', (p.wallets||[]).length, 'var(--violet)'],
+    ].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:22px;font-weight:700;color:${c}">${v}</div></div>`).join('');
+    const t = d.threats||[];
+    document.getElementById('dash-health').innerHTML =
+      `Yields tracked: <b>${(d.yields||[]).length}</b> · Active threats: <b style="color:var(--rose)">${t.length}</b> · Quorum proposal: <b>${esc((d.consensus||{}).status||'—')}</b>`;
+  }catch(e){document.getElementById('dash-kpis').innerHTML='<div style="color:var(--rose)">dashboard unavailable</div>';}
+}
+
+// ② Anomaly scan + on-chain anchor
+async function runAnomalyScan(){
+  const btn=document.getElementById('scan-btn'), out=document.getElementById('scan-out');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Scanning + anchoring…';
+  out.innerHTML='<div style="color:var(--fg3)">Running statistical detectors and submitting on-chain anchors (this makes real testnet transactions — ~15s)…</div>';
+  try{
+    const {data:d} = await jpost('/api/v1/security/anomaly-scan/',{});
+    const h=d.network_health||{};
+    let html = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+      ${[['Anomalies',d.anomaly_count,'var(--amber)'],['Critical',d.critical_count,'var(--rose)'],['Stake Gini',h.stake_gini,'var(--teal)'],['Nakamoto',h.nakamoto_coefficient,'var(--violet)']]
+        .map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:20px;font-weight:700;color:${c}">${v??'—'}</div></div>`).join('')}
+    </div>`;
+    html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:8px">Network health: <b style="color:${h.overall==='nominal'?'#34d399':h.overall==='critical'?'#f87171':'#fbbf24'}">${esc(h.overall)}</b></div>`;
+    (d.findings||[]).forEach(f=>{
+      const c = f.severity>=0.85?'#f87171':f.severity>=0.7?'#fbbf24':'#60a5fa';
+      html += `<div class="tl-step" style="border-color:${c};background:${c}0d;margin-top:6px">
+        <span class="badge" style="background:${c}22;color:${c}">${esc(f.type)}</span>
+        <div style="flex:1"><span style="color:var(--fg)">${esc(f.summary)}</span></div>
+        <span class="mono" style="color:${c}">sev ${f.severity}</span></div>`;
+    });
+    if((d.anchors||[]).length){
+      html += `<div style="margin-top:12px;font-size:12px;color:var(--emerald)"><b>⛓ Anchored on Casper testnet:</b></div>`;
+      d.anchors.forEach(a=>{
+        html += `<div class="tl-step" style="border-color:#34d399;background:rgba(52,211,153,.08);margin-top:6px">
+          <span style="color:#34d399">⛓</span>
+          <div style="flex:1"><span style="color:var(--fg)">${esc(a.anomaly_type)}</span>
+            <div class="mono" style="color:var(--fg3);font-size:11px">tx ${esc(a.deploy_hash.slice(0,28))}…</div></div>
+          <a href="${a.explorer_url}" target="_blank" style="font-size:11px;white-space:nowrap">cspr.live ↗</a></div>`;
+        addChainTxn({label:'anomaly · '+a.anomaly_type, hash:a.deploy_hash, url:a.explorer_url});
+      });
+    } else {
+      html += `<div style="margin-top:10px;font-size:11px;color:var(--fg3)">No critical anomaly to anchor this cycle (or anchoring rate-limited).</div>`;
+    }
+    out.innerHTML = html;
+  }catch(e){out.innerHTML='<div style="color:var(--rose)">scan failed</div>';}
+  btn.disabled=false; btn.textContent='⚡ Run Live Anomaly Scan';
+}
+
+// ③ KAVACHA
+async function runAttack(){
+  const out=document.getElementById('sec-out');
+  out.innerHTML='<span class="spin"></span> launching…';
+  const {data:d}=await jpost('/api/v1/security/attack-sim/',{domain:'5g'});
+  let html=`<div style="margin-bottom:6px"><span class="badge" style="background:rgba(248,113,113,.15);color:#f87171">VERDICT: ${esc(d.verdict)}</span>
+    <span class="badge" style="background:rgba(255,255,255,.06);color:var(--fg2)">rule ${esc(d.rule_fired)}</span>
+    <span class="mono" style="color:var(--fg3);font-size:11px">score ${d.injection_score}</span></div>`;
+  (d.timeline||[]).forEach((s,i)=>setTimeout(()=>{document.getElementById('atk-tl').insertAdjacentHTML('beforeend',tlStep('#f87171',s.ok,s.detail,s.score));},i*300));
+  out.innerHTML=html+'<div id="atk-tl"></div>';
+}
+async function runSpoof(){
+  const out=document.getElementById('sec-out');
+  out.innerHTML='<span class="spin"></span> forging…';
+  const {data:d}=await jpost('/api/v1/security/spoof-sim/',{valid:false});
+  out.innerHTML=`<div><span class="badge" style="background:${d.accepted?'rgba(52,211,153,.15)':'rgba(248,113,113,.15)'};color:${d.accepted?'#34d399':'#f87171'}">${d.accepted?'ACCEPTED':'REJECTED'}</span>
+    <span class="mono" style="color:var(--fg3);font-size:11px">${esc(d.reason)}</span></div>
+    <div style="font-size:11px;color:var(--fg3);margin-top:6px" class="mono">expected ${esc((d.expected_signature||'').slice(0,20))} · got ${esc((d.presented_signature||'').slice(0,20))}</div>`;
+}
+
+// ④ Critic
+async function runCritic(){
+  const out=document.getElementById('critic-out');
+  out.innerHTML='<span class="spin"></span> reviewing (real LLM)…';
+  const {data:d}=await jpost('/api/v1/security/critic-review/',{});
+  const c=d.verdict==='REJECT'?'#f87171':d.verdict==='REVISE'?'#fbbf24':'#34d399';
+  out.innerHTML=`<div><span class="badge" style="background:${c}22;color:${c}">${esc(d.verdict)}</span>
+    <span class="badge" style="background:rgba(167,139,250,.14);color:#a78bfa">${esc(d.provider)}</span>
+    <span class="mono" style="color:var(--fg3);font-size:11px">risk ${d.risk_score}</span></div>
+    <div style="margin-top:8px;color:var(--fg2)">${esc(d.recommendation)}</div>
+    <ul style="margin:8px 0 0;padding-left:18px;color:var(--fg3)">${(d.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+}
+
+// ⑤ x402
+async function runX402(){
+  const btn=document.getElementById('x402-btn'), out=document.getElementById('x402-out');
+  btn.disabled=true; out.innerHTML='<span class="spin"></span> requesting…';
+  try{
+    const r1=await fetch(API+'/api/domains/casper_defi/market-data/');
+    let html='';
+    if(r1.status===402){
+      const addr=r1.headers.get('X-Payment-Address'), amt=r1.headers.get('X-Payment-Amount'), nonce=r1.headers.get('X-Payment-Nonce');
+      html+=tlStep('#fbbf24',false,`Server → 402 Payment Required · ${amt} motes to ${(addr||'').slice(0,16)}…`);
+      await new Promise(r=>setTimeout(r,700));
+      const proof=`casper:${addr}:${amt}:sig_demo`;
+      const r2=await fetch(API+'/api/domains/casper_defi/market-data/',{headers:{'X-Payment':proof,'X-Payment-Nonce':nonce||''}});
+      const d2=await r2.json();
+      html+=tlStep('#34d399',true,`Agent pays &amp; retries → 200 OK`);
+      html+=`<div class="tl-step" style="border-color:#60a5fa;background:rgba(96,165,250,.08);margin-top:6px"><span>📈</span><div style="flex:1" class="mono">cspr_price=${d2.cspr_price} · volume_24h=${(d2.volume_24h||0).toLocaleString()} · verified=${(d2.x402||{}).verified}</div></div>`;
+    } else {
+      const d1=await r1.json();
+      html+=tlStep('#60a5fa',true,`x402 disabled — data served free: cspr_price=${d1.cspr_price}`);
+    }
+    out.innerHTML=html;
+  }catch(e){out.innerHTML='<div style="color:var(--rose)">x402 failed</div>';}
+  btn.disabled=false; btn.textContent='💳 Request Paid Market Data';
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
