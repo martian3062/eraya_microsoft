@@ -60,7 +60,11 @@ nav.tabs a.active{color:var(--a);background:rgba(244,120,95,.10);border-color:rg
 .alert .t{color:var(--fg);font-weight:500}.alert .m{color:var(--fg3);font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .alert-time{color:var(--fg3);font-size:10px;float:right}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(244,120,95,.25);border-radius:3px}
-@media(max-width:860px){#alerts{position:static;width:100%;max-width:100%;margin:0 0 16px}}
+@media(max-width:860px){
+  #alerts{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;max-width:100%;margin:0}
+  #alerts-head{border-radius:0}
+  #alerts-body{border-radius:0;max-height:46vh}
+}
 /* ── Advisory Copilot (voice) ── */
 #copilot{position:fixed;bottom:16px;left:16px;z-index:61}
 #cop-fab{width:52px;height:52px;border-radius:50%;border:1px solid var(--bd);background:rgba(20,14,12,.92);color:var(--a);font-size:22px;cursor:pointer;backdrop-filter:blur(16px);box-shadow:0 8px 30px -8px rgba(0,0,0,.7);transition:.15s}
@@ -154,6 +158,8 @@ function pushAlert(a){const k=a.key||(a.kind+'|'+a.text),now=Date.now();if(_seen
 function renderAlerts(){const feed=document.getElementById('alerts-feed'),crit=_alerts.filter(a=>(a.severity||0)>=0.85).length,cnt=document.getElementById('alerts-count');cnt.textContent=_alerts.length;document.getElementById('alerts-dot').style.background=crit?A_DEEP:(_alerts.length?A:A_SOFT);if(!_alerts.length){feed.innerHTML='<div style="color:'+A_SOFT+';padding:8px">✓ All systems nominal</div>';return;}feed.innerHTML=_alerts.map(a=>{const c=a.color||sev(a.severity||0.6);return `<div class="alert" style="border-color:${c}"><span class="alert-time">${a.time}</span><div class="t">${a.icon||'●'} ${esc(a.text)}</div><div class="m">${esc(a.meta||'')}${a.url?` · <a href="${a.url}" target="_blank">cspr.live ↗</a>`:''}</div></div>`;}).join('');}
 async function pollAlerts(){try{const d=await jget('/api/domains/casper_defi/threats/');(d.threats||[]).forEach(t=>pushAlert({kind:'threat',key:'threat|'+t.type+'|'+t.target,severity:t.severity,icon:t.severity>=0.85?'🔴':'🟠',text:(t.type||'').replace(/_/g,' ')+' · '+(t.target||''),meta:t.summary}));}catch(e){}document.getElementById('alerts-hb').textContent='last check '+new Date().toLocaleTimeString('en',{hour12:false});}
 pollAlerts(); setInterval(pollAlerts,12000);
+// on mobile, dock alerts at the bottom collapsed by default
+if(window.matchMedia&&window.matchMedia('(max-width:860px)').matches){const _al=document.getElementById('alerts');if(_al)_al.classList.add('collapsed');}
 
 // floating agent nodes
 const AGENTS=[{role:'Perceiver',acts:['reading Casper DeFi signals','TabPFN risk scoring','baseline z-score check','mempool flow analysis']},{role:'Planner',acts:['Groq → plan generated','risk-adjusted rebalance','querying Recoverer','LLM cascade active']},{role:'Recoverer',acts:['rollback path ready','re-plan on failure','SLO restored','staged swap sizing']},{role:'Guardian',acts:['KAVACHA policy check','A2A signature verified','threat blocked','anchoring on-chain']},{role:'Critic',acts:['reviewing action','verdict: REVISE','adversarial check','slippage risk flagged']}];
