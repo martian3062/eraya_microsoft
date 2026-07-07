@@ -24,6 +24,17 @@
   </section>
 </div>
 
+<div class="grid md:grid-cols-2 gap-4" style="margin-bottom:16px">
+  <section class="card">
+    <div class="flex items-center justify-between mb-2"><span class="sec-title">Swarm Wallets <span class="sec-sub">· live balances · send / receive</span></span><span class="badge badge-a"><span class="pulse"></span> live</span></div>
+    <div id="wallets"><div style="color:var(--fg3);font-size:12px">querying chain…</div></div>
+  </section>
+  <section class="card">
+    <div class="flex items-center justify-between mb-2"><span class="sec-title">Live Transactions <span class="sec-sub">· real Casper testnet</span></span><span id="tx-live" class="badge badge-a"><span class="pulse"></span> streaming</span></div>
+    <div id="tx-feed" style="max-height:298px;overflow-y:auto"><div style="color:var(--fg3);font-size:12px;padding:6px">Waiting for transactions…</div></div>
+  </section>
+</div>
+
 <section class="card" style="margin-bottom:16px">
   <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
     <div class="flex items-center gap-2"><span class="chip">⇄</span><span class="sec-title">Treasury Autopay <span class="sec-sub">· real Casper testnet send / receive by the bot</span></span></div>
@@ -115,11 +126,49 @@ function drawBars(el,items){
 async function loadOnchain(){
   try{
     const d=await jget('/api/domains/casper_defi/onchain/');
+    renderWallets(d.accounts||[]);
     drawDonut(document.getElementById('d3-donut'),(d.accounts||[]).map(a=>({label:a.label,value:a.balance_cspr})),Math.round(d.total_cspr).toLocaleString());
     const vals=(d.validators||[]).map(v=>({label:(v.validator||'').slice(0,14),value:Math.round((v.stake||0))})).sort((a,b)=>b.value-a.value);
     if(vals.length)drawBars(document.getElementById('d3-validators'),vals);
     const an=d.recent_anchors||[];
     if(an.length)document.getElementById('anchors').innerHTML=an.map(a=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;background:rgba(244,120,95,.06);border:1px solid rgba(244,120,95,.16);margin-bottom:6px"><div><span class="badge badge-a">${esc(a.anomaly_type)}</span> <span class="mono" style="color:var(--fg3);font-size:11px">${esc(a.deploy_hash.slice(0,22))}…</span></div><a href="${a.explorer_url}" target="_blank" style="font-size:11px">cspr.live ↗</a></div>`).join('');
+  }catch(e){}
+}
+
+// ── Swarm wallets (shadowed cards, live balances) ──────────────────
+function renderWallets(accounts){
+  const el=document.getElementById('wallets');
+  if(!accounts||!accounts.length){el.innerHTML='<div style="color:var(--fg3);font-size:12px">no wallets on chain yet</div>';return;}
+  el.innerHTML=accounts.map(a=>{
+    const pk=a.public_key||'';
+    return `<div style="position:relative;padding:14px 16px;border-radius:14px;margin-bottom:10px;background:linear-gradient(135deg,rgba(244,120,95,.15),rgba(255,255,255,.03));border:1px solid rgba(244,120,95,.25);box-shadow:0 14px 34px -14px rgba(244,120,95,.45),inset 0 1px 0 rgba(255,255,255,.07)">
+      <div class="flex items-center justify-between"><span class="badge badge-a">💠 ${esc(a.label)}</span><a href="${a.explorer_url}" target="_blank" style="font-size:11px">cspr.live ↗</a></div>
+      <div class="mono" style="font-size:11px;color:var(--fg3);margin-top:8px;cursor:pointer" title="click to copy" onclick="navigator.clipboard&&navigator.clipboard.writeText('${pk}')">${esc(pk.slice(0,12))}…${esc(pk.slice(-8))} ⧉</div>
+      <div class="brand" style="font-size:24px;font-weight:700;color:var(--a);margin-top:8px;letter-spacing:-.5px">${(a.balance_cspr||0).toLocaleString()} <span style="font-size:12px;color:var(--fg3);font-weight:400">CSPR</span></div>
+      <div style="font-size:11px;color:var(--fg3)">≈ $${(a.balance_usd||0).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Live transactions feed (real send / receive) ───────────────────
+const txns=[];
+function txRow(t){
+  const inc=t.dir==='recv',c=inc?'#34d399':A;
+  return `<div class="row" style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.02);border:1px solid var(--bd);margin-bottom:6px">
+    <div style="min-width:0"><span style="color:${c};font-weight:700">${inc?'＋':'－'}</span> <span class="badge" style="background:${c}1f;color:${c}">${esc(t.type)}</span> <span class="mono" style="color:var(--fg3);font-size:11px">${esc((t.hash||'').slice(0,14))}…</span>${t.account?`<div style="font-size:10px;color:var(--fg3);margin-top:2px">${esc(t.account)}</div>`:''}</div>
+    <div style="text-align:right;white-space:nowrap"><div style="color:${c};font-size:12px;font-weight:600">${t.amount!=null?(inc?'+':'−')+t.amount+' CSPR':(t.status||'')}</div>${t.url?`<a href="${t.url}" target="_blank" style="font-size:10px">cspr.live ↗</a>`:''}</div>
+  </div>`;
+}
+function renderTx(){document.getElementById('tx-feed').innerHTML=txns.length?txns.slice(0,25).map(txRow).join(''):'<div style="color:var(--fg3);font-size:12px;padding:6px">Waiting for transactions…</div>';}
+function addTx(t){t._id=(t.hash||'')+'|'+t.dir;if(txns.find(x=>x._id===t._id))return;txns.unshift(t);if(txns.length>50)txns.pop();renderTx();}
+async function loadTx(){
+  try{
+    const [oc,tr]=await Promise.all([
+      jget('/api/domains/casper_defi/onchain/').catch(()=>({})),
+      jget('/api/domains/casper_defi/transactions/').catch(()=>({})),
+    ]);
+    (oc.recent_anchors||[]).forEach(a=>addTx({type:'anchor · '+a.anomaly_type,hash:a.deploy_hash,url:a.explorer_url,dir:'send',account:'Swarm ops'}));
+    (tr.transactions||[]).forEach(x=>addTx({type:(x.type||'tx').replace(/_/g,' '),hash:x.deploy_hash,url:x.explorer_url,amount:x.amount_motes?+(x.amount_motes/1e9).toFixed(4):null,status:x.status,dir:x.type==='x402_payment'?'recv':'send',account:x.agent_id}));
   }catch(e){}
 }
 
@@ -132,14 +181,19 @@ async function botPay(auto){
   try{
     const {data:d}=await jpost('/api/domains/casper_defi/pay/',{amount_cspr:amt});
     payLog.unshift(d);if(payLog.length>8)payLog.pop();renderPay();
-    if(d.ok){pushAlert({kind:'pay',key:'pay|'+d.tx,severity:0.55,color:A,icon:'🤖',text:'Autopay sent '+d.amount_cspr+' CSPR · ops→treasury',meta:'real Casper testnet tx',url:d.explorer_url});setTimeout(()=>{loadDashboard();loadOnchain();},2500);}
+    if(d.ok){
+      addTx({type:'autopay send',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'send',account:'Swarm ops'});
+      addTx({type:'autopay receive',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'recv',account:'Treasury'});
+      pushAlert({kind:'pay',key:'pay|'+d.tx,severity:0.55,color:A,icon:'🤖',text:'Autopay sent '+d.amount_cspr+' CSPR · ops→treasury',meta:'real Casper testnet tx',url:d.explorer_url});
+      setTimeout(()=>{loadDashboard();loadOnchain();},2500);
+    }
   }catch(e){payLog.unshift({ok:false,error:'network'});renderPay();}
   if(!auto){btn.disabled=false;btn.textContent='🤖 Bot: Send now';}
 }
 let autopayTimer=null;
 document.getElementById('autopay-tgl').addEventListener('change',e=>{if(e.target.checked){botPay(true);autopayTimer=setInterval(()=>botPay(true),45000);}else{clearInterval(autopayTimer);autopayTimer=null;}});
 
-loadDashboard();loadOnchain();
+loadDashboard();loadOnchain();loadTx();setInterval(loadTx,12000);
 window.addEventListener('resize',()=>{});
 </script>
 {% endblock %}
