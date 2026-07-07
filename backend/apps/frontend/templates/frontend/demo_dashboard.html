@@ -17,8 +17,11 @@
 async function loadDashboard(){
   try{
     const d=await jget('/api/domains/casper_defi/dashboard/'),p=d.portfolio||{},n=d.network||{};
+    const oc=await jget('/api/domains/casper_defi/onchain/').catch(()=>({}));
     document.getElementById('net-badge').textContent='Casper '+(n.network||'testnet')+(n.mode?' · '+n.mode:'');
-    document.getElementById('dash-kpis').innerHTML=[['Treasury TVL',fmtUSD(p.total_value_usd),A],['24h P&L',(p.pnl_24h_pct>=0?'+':'')+(p.pnl_24h_pct??0)+'%',A_SOFT],['Risk Score (TabPFN)',p.risk_score??'—',A_DEEP],['Wallets',(p.wallets||[]).length,A]].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:22px;font-weight:700;color:${c}">${v}</div></div>`).join('');
+    const treasury=oc.total_cspr!=null?oc.total_cspr.toLocaleString()+' CSPR':fmtUSD(p.total_value_usd);
+    const treasuryUsd=oc.total_usd!=null?'$'+oc.total_usd.toLocaleString():'—';
+    document.getElementById('dash-kpis').innerHTML=[['Treasury (on-chain)',treasury,A],['USD value',treasuryUsd,A_SOFT],['Risk Score (TabPFN)',p.risk_score??'—',A_DEEP],['Active threats',(d.threats||[]).length,A]].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:22px;font-weight:700;color:${c}">${v}</div></div>`).join('');
     document.getElementById('dash-health').innerHTML=`Active threats: <b style="color:${A}">${(d.threats||[]).length}</b> · Quorum proposal: <b>${esc((d.consensus||{}).status||'—')}</b> · Reputation agents: <b>${((d.reputation||{}).agents||[]).length||'—'}</b>`;
     document.getElementById('dash-yields').innerHTML='<div class="sec-sub" style="margin-bottom:6px">Yield opportunities</div>'+(d.yields||[]).map(y=>`<div class="tl-step" style="border-color:${A}"><div style="flex:1"><b>${esc(y.protocol)}</b> · ${esc(y.pool)}</div><span class="mono" style="color:${A}">${y.apy_current}% APY</span> <span class="badge badge-a">${esc(y.status)}</span></div>`).join('');
   }catch(e){document.getElementById('dash-kpis').innerHTML='<div style="color:'+A_DEEP+'">dashboard unavailable</div>';}

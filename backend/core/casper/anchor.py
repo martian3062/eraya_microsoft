@@ -66,7 +66,7 @@ def anchor_anomaly(finding: dict) -> dict | None:
         return None
 
     _last_anchor[kind] = now
-    return {
+    rec = {
         "anomaly_type": kind,
         "severity": finding.get("severity"),
         "evidence_hash": ev,
@@ -76,6 +76,17 @@ def anchor_anomaly(finding: dict) -> dict | None:
         "network": os.environ.get("CASPER_CHAIN_NAME", "casper-test"),
         "anchored_at": now,
     }
+    _RECENT.insert(0, rec)
+    del _RECENT[20:]
+    return rec
+
+
+_RECENT: list = []
+
+
+def recent() -> list:
+    """Recent successful on-chain anomaly anchors (most recent first)."""
+    return list(_RECENT)
 
 
 def _submit_transfer(transfer_id: int) -> str | None:

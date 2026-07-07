@@ -19,6 +19,7 @@ urlpatterns = [
     path("demo/critic/",            views.demo_critic,         name="demo_critic"),
     path("demo/x402/",              views.demo_x402,           name="demo_x402"),
     path("demo/updates/",           views.demo_updates,        name="demo_updates"),
+    path("demo/analytics/",         views.demo_analytics,      name="demo_analytics"),
     path("dashboard/",              views.dashboard,           name="dashboard"),
     path("map/",                    views.map_view,            name="map"),
     path("a2a-chat/",               views.a2a_chat,            name="a2a_chat"),

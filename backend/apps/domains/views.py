@@ -154,6 +154,14 @@ def casper_threats(request):
     return Response({"threats": env.threats()})
 
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def casper_onchain(request):
+    """Real on-chain treasury: live account balances from the Casper testnet RPC."""
+    from core.casper.onchain import snapshot
+    return Response(snapshot())
+
+
 # ─── x402 — agent-economy micropayments (HTTP 402) ────────────────────────────
 
 _MARKET_RESOURCE = "/api/v1/domains/casper_defi/market-data/"
