@@ -189,9 +189,17 @@ function erayaSpeak(t){
     .catch(()=>_speakFallback(t));
 }
 function copSpeak(t){if(!t||!document.getElementById('cop-voice').checked)return;erayaSpeak(t);}
-function copParseSend(t){const m=(t||'').match(/\b(?:send|transfer|pay|bhej[o]?)\b\s+(\d+(?:\.\d+)?)/i);if(!m)return null;let target=null;const tm=(t||'').match(/to\s+(0[12][0-9a-fA-F]{62,66})/);if(tm)target=tm[1];return{amount:parseFloat(m[1]),target};}
+// shared voice/text command parser (handles spoken number-words too)
+const _NW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+function _normNums(t){t=(t||'').replace(/[-]/g,' ');
+  t=t.replace(/\b(one|two|three|four|five|six|seven|eight|nine)\s+hundred\b/gi,(m,a)=>String(_NW[a.toLowerCase()]*100));
+  t=t.replace(/\bhundred\b/gi,'100');
+  t=t.replace(/\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\s+(one|two|three|four|five|six|seven|eight|nine)\b/gi,(m,a,b)=>String(_NW[a.toLowerCase()]+_NW[b.toLowerCase()]));
+  t=t.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b/gi,m=>String(_NW[m.toLowerCase()]));
+  return t;}
+function parseSendIntent(t){t=_normNums(t);const m=t.match(/\b(?:send|transfer|pay|sent|bhej[o]?)\b[^\d]{0,12}(\d+(?:\.\d+)?)/i);if(!m)return null;let target=null;const tm=t.match(/to\s+(0[12][0-9a-fA-F]{62,66})/);if(tm)target=tm[1];return{amount:parseFloat(m[1]),target};}
 async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');const st=document.getElementById('cop-state');
-  const intent=copParseSend(q);
+  const intent=parseSendIntent(q);
   if(intent){st.textContent='sending…';
     try{const body={amount_cspr:intent.amount};if(intent.target)body.target=intent.target;
       const {data:d}=await jpost('/api/domains/casper_defi/pay/',body);

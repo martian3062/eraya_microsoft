@@ -151,10 +151,9 @@ async function waMic(){
   setTimeout(()=>{if(_waMR&&_waMR.state==='recording')_waMR.stop();},8000);
 }
 function parseSend(t){
-  const m=t.match(/(?:send|transfer|pay|bhej[o]?|de[o]?)\s+(\d+(?:\.\d+)?)/i);
-  if(!m)return null;
-  let target=null;const tm=t.match(/to\s+(0[12][0-9a-fA-F]{62,66})/);if(tm)target=tm[1];
-  return {amount:parseFloat(m[1]),target};
+  if(window.parseSendIntent)return parseSendIntent(t);
+  const m=(t||'').match(/(?:send|transfer|pay)\s+(\d+(?:\.\d+)?)/i);
+  return m?{amount:parseFloat(m[1]),target:null}:null;
 }
 async function waSend(){
   const inp=document.getElementById('wa-in'),btn=document.getElementById('wa-btn'),q=inp.value.trim();

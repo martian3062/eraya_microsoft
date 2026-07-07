@@ -197,7 +197,13 @@ def casper_transcribe(request):
         import httpx
         files = {"file": (getattr(audio, "name", None) or "audio.webm", audio.read(),
                           getattr(audio, "content_type", None) or "audio/webm")}
-        data = {"model": "whisper-large-v3-turbo", "response_format": "json", "language": "en"}
+        data = {
+            "model": "whisper-large-v3-turbo", "response_format": "json", "language": "en",
+            "temperature": "0",
+            "prompt": "Voice commands for a Casper crypto wallet: send 25 coins, transfer 10 CSPR, "
+                      "send 50 coins to treasury, pay 100. Keywords: send, transfer, pay, coins, "
+                      "CSPR, tokens, treasury, balance, threats.",
+        }
         r = httpx.post(
             "https://api.groq.com/openai/v1/audio/transcriptions",
             headers={"Authorization": f"Bearer {key}"}, data=data, files=files, timeout=45,
