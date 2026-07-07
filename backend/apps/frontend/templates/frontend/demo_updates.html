@@ -1,7 +1,20 @@
 {% extends "frontend/demo_base.html" %}
-{% block title %}eraya — updates{% endblock %}
+{% block title %}eraya — View PPT{% endblock %}
 {% block page %}updates{% endblock %}
 {% block content %}
+
+<section class="card" style="margin-bottom:16px">
+  <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+    <div class="flex items-center gap-2"><span class="chip">📑</span><span class="sec-title">View PPT <span class="sec-sub">· ERAYA Casper deck (15 slides)</span></span></div>
+    <div class="flex gap-2">
+      <a class="btn btn-ghost" id="ppt-open" target="_blank" style="text-decoration:none">⤢ Fullscreen</a>
+      <a class="btn" id="ppt-dl" download style="text-decoration:none">⬇ Download</a>
+    </div>
+  </div>
+  <div style="border-radius:12px;overflow:hidden;border:1px solid var(--bd);background:#111">
+    <iframe id="ppt-frame" title="ERAYA Casper deck" style="width:100%;height:min(78vh,820px);border:0" allowfullscreen></iframe>
+  </div>
+</section>
 
 <section class="card" style="margin-bottom:16px">
   <div class="flex items-center gap-2 mb-2"><span class="chip">✦</span><span class="sec-title">What we built</span></div>
@@ -29,6 +42,10 @@
 
 {% block page_js %}
 <script>
+const PPT=DEMO+'eraya-casper.pdf';
+document.getElementById('ppt-frame').src=PPT+'#toolbar=1&view=FitH';
+document.getElementById('ppt-open').href=PPT;
+document.getElementById('ppt-dl').href=PPT;
 const STACK=[
   ['LLM planning','Groq llama-3.3-70b → Kimi (long-context) → local Hugging Face — a graceful cascade'],
   ['Risk brain','TabPFN 3 — hosted tabular foundation model, zero-training risk scoring (live)'],

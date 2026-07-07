@@ -21,6 +21,7 @@ urlpatterns = [
     path("demo/updates/",           views.demo_updates,        name="demo_updates"),
     path("demo/analytics/",         views.demo_analytics,      name="demo_analytics"),
     path("demo/swarm/",             views.demo_swarm,          name="demo_swarm"),
+    path("demo/eraya-casper.pdf",   views.demo_ppt_pdf,        name="demo_ppt_pdf"),
     path("dashboard/",              views.dashboard,           name="dashboard"),
     path("map/",                    views.map_view,            name="map"),
     path("a2a-chat/",               views.a2a_chat,            name="a2a_chat"),

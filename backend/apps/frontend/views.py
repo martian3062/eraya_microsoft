@@ -313,6 +313,15 @@ def demo_analytics(request):
 def demo_swarm(request):
     return render(request, "frontend/demo_swarm.html")
 
+def demo_ppt_pdf(request):
+    import os
+    from django.conf import settings
+    from django.http import FileResponse, Http404
+    path = os.path.join(settings.BASE_DIR, "eraya-casper.pdf")
+    if not os.path.exists(path):
+        raise Http404("deck not found")
+    return FileResponse(open(path, "rb"), content_type="application/pdf")
+
 import json as _json
 
 @_require_auth
