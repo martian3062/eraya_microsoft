@@ -11,6 +11,10 @@
 [![CUDA](https://img.shields.io/badge/CUDA-12.8-76B900)](https://developer.nvidia.com/cuda-toolkit)
 [![MCP](https://img.shields.io/badge/MCP-enabled-purple)](https://modelcontextprotocol.io)
 [![OTel](https://img.shields.io/badge/OpenTelemetry-traced-orange)](https://opentelemetry.io)
+[![Casper](https://img.shields.io/badge/Casper-testnet%20live-red)](https://testnet.cspr.live)
+
+> 🟢 **LIVE (`caspr` branch):** interactive systems demo → **http://35.255.196.78/eraya_api/demo/**
+> Detected anomalies are anchored as **real Casper testnet transactions** — verifiable on [testnet.cspr.live](https://testnet.cspr.live). Four agents coordinate live over A2A, each on its own reasoning model.
 
 ---
 
@@ -25,6 +29,15 @@ The `caspr` branch extends ERAYA from a general self-healing swarm into a Casper
 - KAVACHA DeFi policy rules R004-R008 and a proactive threat scanner for mempool, liquidity, and governance risk.
 - Next.js DeFi console routes: `/defi/portfolio`, `/defi/yield-monitor`, `/defi/swarm-consensus`, `/defi/reputation`, `/defi/transactions`, `/defi/threat-radar`.
 
+**Now live on testnet (beyond the facades above):**
+
+- **Real on-chain anchoring** — `core/casper/anchor.py` writes critical anomalies to Casper 2.0 testnet via `casper-client put-transaction` (evidence hash in the transfer id); real balances read from the RPC in `core/casper/onchain.py`.
+- **Network Anomaly Intelligence** (`core/casper/anomaly.py`) — rolling z-score baselines, MEV flow-correlation, governance Sybil (Gini/entropy), validator decentralization (Nakamoto). Endpoint `POST /api/v1/security/anomaly-scan/`.
+- **Critic agent** (LLM-as-judge) — `POST /api/v1/security/critic-review/`.
+- **Live A2A reasoning chat** — `core/casper/swarm_chat.py`, 4 distinct Groq models; `POST /api/domains/casper_defi/swarm-chat/`.
+- **x402 payments** — `core/casper/x402.py` + `GET /api/domains/casper_defi/market-data/`.
+- **Interactive multi-page demo** — `/demo/` (enter) → `/demo/{dashboard,anomaly,security,critic,swarm,x402,analytics,updates}` with D3 + Recharts analytics and a live alerts ticker.
+
 API smoke checks:
 
 ```bash
@@ -38,6 +51,81 @@ Frontend check:
 ```bash
 cd frontend
 npm run build
+```
+
+---
+
+## System Flows
+
+The architecture is best understood as a set of flows. These render on GitHub.
+
+### 1 · Self-healing swarm loop
+
+The core loop: perceive → plan → act → **verify**, and re-plan on failure instead of failing closed.
+
+```mermaid
+flowchart LR
+    S[Casper DeFi signals] --> P["👁 Perceiver<br/>TabPFN risk + z-score anomaly"]
+    P -->|"A2A: anomaly"| PL["🧠 Planner<br/>LLM cascade: Groq → Kimi → local HF"]
+    PL -->|"A2A: action plan"| R["🔧 Recoverer<br/>execute · rollback staged"]
+    R --> V{SLO restored?}
+    V -->|no · re-plan| PL
+    V -->|yes| G["🛡 Guardian / KAVACHA<br/>policy + HMAC audit"]
+    G -->|approve / veto| OUT[Action + signed audit]
+```
+
+### 2 · Anomaly intelligence → on-chain anchoring
+
+Statistical detection (Tor-technique lineage) writes critical findings to Casper testnet.
+
+```mermaid
+flowchart LR
+    T[Mempool · governance · validator telemetry] --> E["AnomalyEngine<br/>z-score · MEV flow · Sybil Gini · Nakamoto"]
+    E -->|"severity ≥ 0.85"| A["anchor.py<br/>casper-client put-transaction"]
+    A --> C[("Casper testnet")]
+    C --> X["testnet.cspr.live/transaction/…"]
+    E -->|all findings| UI["KAVACHA console + Live Alerts"]
+```
+
+### 3 · x402 agent payment
+
+How agents pay each other for priced work (HTTP 402).
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Server
+    Agent->>Server: GET /market-data
+    Server-->>Agent: 402 Payment Required (addr · amount · nonce)
+    Agent->>Agent: sign Casper payment proof
+    Agent->>Server: GET /market-data (X-Payment: proof)
+    Server-->>Agent: 200 OK + data
+```
+
+### 4 · Live A2A reasoning chat
+
+Four archetypes, four distinct reasoning models, coordinating continuously over the A2A bus.
+
+```mermaid
+flowchart LR
+    P["👁 Perceiver<br/>Llama-4-Scout"] -->|A2A| PL["🧠 Planner<br/>Llama-3.1-8B"]
+    PL -->|A2A| R["🔧 Recoverer<br/>Llama-3.3-70B"]
+    R -->|A2A| G["🛡 Guardian<br/>Qwen3-32B"]
+    G -->|A2A| P
+```
+
+### 5 · 3-tier graceful-fallback cascade
+
+Every capability degrades tier-by-tier and never fails silently.
+
+```mermaid
+flowchart TD
+    IN[perceive / plan / recover] --> T1{"Tier 1 — GPU / LLM"}
+    T1 -->|ok| DONE[result]
+    T1 -->|unavailable| T2{"Tier 2 — CPU (TabPFN · XGBoost · Kalman)"}
+    T2 -->|ok| DONE
+    T2 -->|unavailable| T3["Tier 3 — deterministic rules / CVXPY"]
+    T3 --> DONE
 ```
 
 ---
