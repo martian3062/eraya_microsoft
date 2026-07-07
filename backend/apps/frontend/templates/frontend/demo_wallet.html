@@ -10,6 +10,17 @@
   <div id="wal-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
 </section>
 
+<section class="card" style="margin-bottom:16px">
+  <div class="flex items-center gap-2 mb-2"><span class="chip">💬</span><span class="sec-title">Wallet Assistant <span class="sec-sub">· type a command like “send 25 coins” — it really sends on-chain</span></span></div>
+  <div id="wa-log" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+    <div class="cop-msg cop-bot">Hi 👋 I'm your wallet assistant. Try <b>“send 25 coins”</b>, <b>“send 10 cspr”</b>, or just ask me anything. Every send is a <b>real</b> Casper testnet transaction, ops → treasury.</div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <input id="wa-in" placeholder='e.g. send 25 coins' style="flex:1;min-width:0;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg)" onkeydown="if(event.key==='Enter')waSend()">
+    <button class="btn" id="wa-btn" onclick="waSend()">Send ➤</button>
+  </div>
+</section>
+
 <div class="grid md:grid-cols-2 gap-4" style="margin-bottom:16px">
   <section class="card">
     <div class="flex items-center justify-between mb-2"><span class="sec-title">Wallets <span class="sec-sub">· live balances</span></span><span class="badge badge-a"><span class="pulse"></span> live</span></div>
@@ -104,6 +115,40 @@ async function botPay(auto){
 }
 let autopayTimer=null;
 document.getElementById('autopay-tgl').addEventListener('change',e=>{if(e.target.checked){botPay(true);autopayTimer=setInterval(()=>botPay(true),45000);}else{clearInterval(autopayTimer);autopayTimer=null;}});
+
+// ── Wallet Assistant (chat → real send) ────────────────────────────
+function waAdd(cls,html){const log=document.getElementById('wa-log'),d=document.createElement('div');d.className='cop-msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
+function parseSend(t){
+  const m=t.match(/(?:send|transfer|pay|bhej[o]?|de[o]?)\s+(\d+(?:\.\d+)?)/i);
+  if(!m)return null;
+  let target=null;const tm=t.match(/to\s+(0[12][0-9a-fA-F]{62,66})/);if(tm)target=tm[1];
+  return {amount:parseFloat(m[1]),target};
+}
+async function waSend(){
+  const inp=document.getElementById('wa-in'),btn=document.getElementById('wa-btn'),q=inp.value.trim();
+  if(!q)return;inp.value='';waAdd('cop-user',esc(q));
+  const intent=parseSend(q);
+  if(intent){
+    btn.disabled=true;const th=waAdd('cop-bot','🤖 Recoverer signing &amp; submitting a real transaction…');
+    try{
+      const body={amount_cspr:intent.amount};if(intent.target)body.target=intent.target;
+      const {data:d}=await jpost('/api/domains/casper_defi/pay/',body);
+      if(d.ok){
+        th.innerHTML=`✅ Sent <b>${d.amount_cspr} CSPR</b> ops → treasury · <a href="${d.explorer_url}" target="_blank">cspr.live ↗</a><div class="mono" style="font-size:10px;color:var(--fg3);margin-top:3px">${esc((d.tx||'').slice(0,30))}…</div>`;
+        if(intent.amount>25)th.innerHTML+=`<div style="font-size:11px;color:var(--a-soft);margin-top:4px">(Capped to 25 CSPR/tx by the Guardian policy.)</div>`;
+        addTx({type:'assistant send',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'send',account:'Swarm ops'});
+        addTx({type:'assistant receive',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'recv',account:'Treasury'});
+        pushAlert({kind:'pay',key:'wa|'+d.tx,severity:0.55,color:A,icon:'🤖',text:'Assistant sent '+d.amount_cspr+' CSPR · ops→treasury',meta:'real Casper testnet tx',url:d.explorer_url});
+        setTimeout(loadWallet,2500);
+      }else{th.innerHTML='⚠ Send failed: <span class="mono">'+esc(d.error||'unknown')+'</span>';}
+    }catch(e){th.innerHTML='⚠ Could not reach the send service.';}
+    btn.disabled=false;
+  }else{
+    const th=waAdd('cop-bot','…');
+    try{const {data:d}=await jpost('/api/domains/casper_defi/copilot/',{question:q});th.textContent=d.answer||'—';}
+    catch(e){th.textContent='I could not reach the assistant service just now.';}
+  }
+}
 
 loadWallet();setInterval(loadWallet,12000);
 </script>
