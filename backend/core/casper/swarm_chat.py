@@ -20,13 +20,13 @@ from core.providers import llm
 # Each agent → its own reasoning model (with graceful fallback in llm.groq_chat).
 AGENTS = [
     {"role": "Perceiver", "color": "#2dd4bf", "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-     "persona": "You detect anomalies in Casper DeFi telemetry — mempool, liquidity, governance, validators. Terse and metric-driven."},
+     "persona": "You're the swarm's eyes — sharp and a little wired, like a trader glued to the tape. You call out what the data is doing, sometimes with a heads-up or a hunch."},
     {"role": "Planner", "color": "#a78bfa", "model": "llama-3.1-8b-instant",
-     "persona": "You reason step-by-step about remediation: risk-adjusted rebalances and failover plans. Decisive."},
+     "persona": "You're the calm strategist who thinks out loud and commits to a move. Dry, confident, gets to the point — occasionally a bit cocky when the plan is good."},
     {"role": "Recoverer", "color": "#34d399", "model": "llama-3.3-70b-versatile",
-     "persona": "You execute recovery and keep rollback / retry paths ready. Action-oriented and concrete."},
+     "persona": "You're the hands-on fixer — practical and upbeat. You reassure the team you've got the recovery handled and give quick status like a mechanic under the hood."},
     {"role": "Guardian", "color": "#f87171", "model": "qwen/qwen3-32b",
-     "persona": "You enforce KAVACHA security: block unsafe actions, verify A2A identity, demand quorum. Cautious and firm."},
+     "persona": "You're the skeptical security lead with dry wit. You double-check everything and aren't shy about pushing back or asking for quorum before you greenlight anything."},
 ]
 
 _FALLBACK = {
@@ -58,9 +58,11 @@ def converse(trigger: dict | None = None, prior: list | None = None) -> list[dic
         to = AGENTS[(i + 1) % len(AGENTS)]["role"]
         recent = "\n".join(f"{m['from']}→{m['to']}: {m['text']}" for m in (transcript + out))
         system = (
-            f"You are the {ag['role']} agent in the ERAYA self-healing DeFi swarm on Casper. "
-            f"{ag['persona']} Reply with ONE short A2A message (max 22 words) to the {to} agent, "
-            "coordinating on the situation. No preamble, no quotes, no name prefix."
+            f"You are {ag['role']}, an AI agent in the ERAYA DeFi swarm on Casper, chatting live "
+            f"with your teammates in a group chat. {ag['persona']} "
+            f"Write ONE short, natural chat message aimed at {to} — like a real person in a WhatsApp "
+            "group: casual, human, a little personality, and react to what was just said. Keep it under "
+            "~20 words. No name prefix, no quotes, no stage directions. The odd emoji is fine if it feels natural."
         )
         user = (
             f"Situation: {situation}\n"

@@ -27,7 +27,7 @@ _CHAIN = [
 ]
 
 
-def _call(base_url, api_key, model, system, user, json_mode, max_tokens, timeout=30):
+def _call(base_url, api_key, model, system, user, json_mode, max_tokens, timeout=30, temperature=0.2):
     import httpx
     # OpenAI/Groq require the literal word "json" somewhere in the prompt when
     # response_format is json_object - inject a hint if the caller omitted it.
@@ -39,7 +39,7 @@ def _call(base_url, api_key, model, system, user, json_mode, max_tokens, timeout
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        "temperature": 0.2,
+        "temperature": temperature,
         "max_tokens": max_tokens,
     }
     if json_mode:
@@ -86,7 +86,7 @@ def complete_json(system: str, user: str, max_tokens: int = 512):
         return None
 
 
-def groq_chat(model: str, system: str, user: str, max_tokens: int = 100):
+def groq_chat(model: str, system: str, user: str, max_tokens: int = 100, temperature: float = 1.2):
     """Plain-text chat with a SPECIFIC Groq model (for per-agent reasoning).
     Strips reasoning <think>…</think> tags. Falls back to the default Groq model
     if the requested one errors (bad id / unavailable). Returns {'text','model'}
@@ -98,14 +98,14 @@ def groq_chat(model: str, system: str, user: str, max_tokens: int = 100):
     default = config.get("GROQ_MODEL", "llama-3.3-70b-versatile")
     for m in [model, default] if model != default else [default]:
         try:
-            raw = _call("https://api.groq.com/openai/v1", key, m, system, user, False, max_tokens) or ""
+            raw = _call("https://api.groq.com/openai/v1", key, m, system, user, False, max_tokens, temperature=temperature) or ""
             # Reasoning models (qwen3, gpt-oss) emit <think>…</think>; keep only the
             # answer after </think>. If reasoning was truncated (no close tag),
             # fall through to the default model.
             if "<think>" in raw and "</think>" not in raw:
                 raise ValueError("reasoning truncated")
             text = raw.split("</think>")[-1] if "</think>" in raw else raw
-            text = re.sub(r"</?think>", "", text).strip()
+            text = re.sub(r"</?think>", "", text).strip().strip('"“”').strip()
             if text:
                 return {"text": text, "model": m}
         except Exception as exc:
