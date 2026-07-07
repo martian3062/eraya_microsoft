@@ -33,6 +33,33 @@ def _rpc(method: str, params: dict):
         return None
 
 
+_price_cache = {"ts": 0.0, "usd": None}
+
+
+def cspr_price_usd() -> float:
+    """Live CSPR/USD price (CoinGecko), cached ~5 min. Falls back to env/default."""
+    import time
+    default = float(os.environ.get("CSPR_PRICE_USD", CSPR_PRICE_USD))
+    now = time.time()
+    if _price_cache["usd"] is not None and now - _price_cache["ts"] < 300:
+        return _price_cache["usd"]
+    try:
+        import httpx
+        resp = httpx.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={"ids": "casper-network", "vs_currencies": "usd"},
+            timeout=8,
+        )
+        resp.raise_for_status()
+        price = float(resp.json()["casper-network"]["usd"])
+        if price > 0:
+            _price_cache.update(ts=now, usd=price)
+            return price
+    except Exception as exc:
+        logger.warning("CSPR price fetch failed: %s", exc)
+    return _price_cache["usd"] or default
+
+
 def balance_motes(public_key: str):
     res = _rpc("query_balance", {"purse_identifier": {"main_purse_under_public_key": public_key}})
     if not res:
@@ -82,7 +109,7 @@ def snapshot() -> dict:
     """Real treasury snapshot: live balances of the swarm's Casper accounts."""
     treasury_pk = os.environ.get("CASPER_ANCHOR_RECIPIENT", _TREASURY_PK)
     ops_pk = os.environ.get("CASPER_PUBLIC_KEY", _OPS_PK)
-    price = float(os.environ.get("CSPR_PRICE_USD", CSPR_PRICE_USD))
+    price = cspr_price_usd()
 
     accounts, total_cspr = [], 0.0
     for label, pk in (("Treasury", treasury_pk), ("Swarm ops", ops_pk)):
