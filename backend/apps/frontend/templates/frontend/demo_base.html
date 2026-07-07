@@ -173,17 +173,31 @@ async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');d
   catch(e){th.textContent='I could not reach the copilot service just now.';}
   document.getElementById('cop-state').textContent='voice ready';}
 function copSend(){const i=document.getElementById('cop-text'),q=i.value.trim();if(!q)return;i.value='';copAsk(q);}
-function copMic(){
-  if(!window.isSecureContext){document.getElementById('cop-state').textContent='needs HTTPS';copAdd('cop-bot','🔒 Voice needs a secure (HTTPS) connection — this site is on HTTP, so the browser blocks the mic. Please type instead.');return;}
-  if(!_SR){document.getElementById('cop-state').textContent='voice unsupported';copAdd('cop-bot','Voice input is not supported in this browser — try Chrome/Edge, or type instead.');return;}
-  const mic=document.getElementById('cop-mic');
-  if(_copRec){_copRec.stop();return;}
-  _copRec=new _SR();_copRec.lang='en-US';_copRec.interimResults=false;_copRec.maxAlternatives=1;
-  mic.classList.add('rec');document.getElementById('cop-state').textContent='listening…';
-  _copRec.onresult=e=>{const t=e.results[0][0].transcript;document.getElementById('cop-text').value=t;copAsk(t);};
-  _copRec.onerror=()=>{document.getElementById('cop-state').textContent='mic error';};
-  _copRec.onend=()=>{mic.classList.remove('rec');_copRec=null;const st=document.getElementById('cop-state');if(st.textContent==='listening…')st.textContent='voice ready';};
-  _copRec.start();
+let _copMR=null,_copStream=null,_copChunks=[];
+async function copMic(){
+  const mic=document.getElementById('cop-mic'),st=document.getElementById('cop-state');
+  if(!window.isSecureContext){st.textContent='needs HTTPS';copAdd('cop-bot','🔒 Voice needs a secure (HTTPS) connection — open the site via https://35.255.196.78.nip.io. You can type for now.');return;}
+  if(_copMR&&_copMR.state==='recording'){_copMR.stop();return;}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}
+  catch(e){st.textContent='mic blocked';copAdd('cop-bot','🎤 Mic permission denied — allow it, or type instead.');return;}
+  _copStream=stream;_copChunks=[];
+  try{_copMR=new MediaRecorder(stream);}catch(e){stream.getTracks().forEach(t=>t.stop());copAdd('cop-bot','Recording isn\'t supported here — please type.');return;}
+  _copMR.ondataavailable=e=>{if(e.data&&e.data.size)_copChunks.push(e.data);};
+  _copMR.onstop=async()=>{
+    mic.classList.remove('rec');_copStream.getTracks().forEach(t=>t.stop());st.textContent='transcribing…';
+    try{
+      const fd=new FormData();fd.append('audio',new Blob(_copChunks,{type:'audio/webm'}),'cmd.webm');
+      const r=await fetch(API+'/api/domains/casper_defi/transcribe/',{method:'POST',body:fd});
+      const d=await r.json();
+      if(d.ok&&d.text){document.getElementById('cop-text').value=d.text;copAsk(d.text);}
+      else{copAdd('cop-bot','Could not catch that — please type.');}
+    }catch(e){copAdd('cop-bot','Transcription failed — please type.');}
+    st.textContent='voice ready';
+  };
+  mic.classList.add('rec');st.textContent='listening… tap to stop';
+  _copMR.start();
+  setTimeout(()=>{if(_copMR&&_copMR.state==='recording')_copMR.stop();},8000);
 }
 </script>
 {% block page_js %}{% endblock %}

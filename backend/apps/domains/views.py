@@ -183,6 +183,33 @@ def casper_pay(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+def casper_transcribe(request):
+    """Speech-to-text via Groq Whisper — cross-browser voice (no reliance on the
+    browser's built-in Google speech service, which throws 'network' on many browsers)."""
+    from core.providers import config
+    key = config.get("GROQ_API_KEY")
+    audio = request.FILES.get("audio")
+    if not key:
+        return Response({"ok": False, "error": "speech-to-text not configured"}, status=400)
+    if not audio:
+        return Response({"ok": False, "error": "no audio"}, status=400)
+    try:
+        import httpx
+        files = {"file": (getattr(audio, "name", None) or "audio.webm", audio.read(),
+                          getattr(audio, "content_type", None) or "audio/webm")}
+        data = {"model": "whisper-large-v3-turbo", "response_format": "json", "language": "en"}
+        r = httpx.post(
+            "https://api.groq.com/openai/v1/audio/transcriptions",
+            headers={"Authorization": f"Bearer {key}"}, data=data, files=files, timeout=45,
+        )
+        r.raise_for_status()
+        return Response({"ok": True, "text": (r.json().get("text") or "").strip()})
+    except Exception as exc:
+        return Response({"ok": False, "error": str(exc)[:200]}, status=500)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def casper_copilot(request):
     """Advisory Copilot — voice/text Q&A about the swarm + Casper treasury."""
     import json
