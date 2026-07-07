@@ -173,10 +173,10 @@ def casper_pay(request):
         amount = float(request.data.get("amount_cspr", 2.5))
     except (TypeError, ValueError):
         amount = 2.5
-    amount = max(2.5, min(amount, 25.0))  # Guardian policy cap
+    amount = max(2.5, min(amount, 100.0))  # Guardian policy cap
     target = request.data.get("target") or os.environ.get("CASPER_ANCHOR_RECIPIENT", _TREASURY_PK)
     res = send_transfer(target, int(amount * 1_000_000_000)) or {"ok": False, "error": "signing not configured"}
-    res["policy"] = {"cap_cspr": 25.0, "route": "Swarm-ops → Treasury",
+    res["policy"] = {"cap_cspr": 100.0, "route": "Swarm-ops → Treasury",
                      "set_by": "Guardian", "executed_by": "Recoverer"}
     return Response(res, status=200 if res.get("ok") else 400)
 

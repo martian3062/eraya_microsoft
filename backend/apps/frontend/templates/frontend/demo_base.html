@@ -167,7 +167,18 @@ const _SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 let _copRec=null;
 function toggleCopilot(){document.getElementById('copilot').classList.toggle('collapsed');}
 function copAdd(cls,txt){const log=document.getElementById('cop-log'),d=document.createElement('div');d.className='cop-msg '+cls;d.textContent=txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
-function copSpeak(t){if(!document.getElementById('cop-voice').checked||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);u.rate=1.03;u.pitch=1;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+// warm, female voice selection (voices load async → refresh on voiceschanged)
+let _erayaVoice=null;
+function _pickVoice(){
+  const vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[];if(!vs.length)return;
+  const pref=['google uk english female','microsoft aria','microsoft jenny','samantha','google us english','microsoft zira','karen','serena','tessa','fiona','moira','victoria','allison','ava','female','woman'];
+  const en=vs.filter(v=>/^en/i.test(v.lang||''));
+  for(const p of pref){const v=en.find(v=>(v.name||'').toLowerCase().includes(p));if(v){_erayaVoice=v;return;}}
+  _erayaVoice=en[0]||vs[0];
+}
+if(window.speechSynthesis){_pickVoice();speechSynthesis.onvoiceschanged=_pickVoice;}
+function erayaSpeak(t){if(!t||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);if(_erayaVoice)u.voice=_erayaVoice;u.rate=0.97;u.pitch=1.18;u.volume=1;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function copSpeak(t){if(!t||!document.getElementById('cop-voice').checked)return;erayaSpeak(t);}
 async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');document.getElementById('cop-state').textContent='thinking…';
   try{const {data:d}=await jpost('/api/domains/casper_defi/copilot/',{question:q});th.textContent=d.answer||'—';copSpeak(d.answer||'');}
   catch(e){th.textContent='I could not reach the copilot service just now.';}

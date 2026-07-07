@@ -15,9 +15,9 @@
     <div class="flex items-center gap-2"><span class="chip">⇄</span><span class="sec-title">Treasury Autopay <span class="sec-sub">· real Casper testnet send by the bot</span></span></div>
     <label class="badge badge-a" style="cursor:pointer;gap:6px"><input type="checkbox" id="autopay-tgl" style="accent-color:var(--a)"> Autopay every 45s</label>
   </div>
-  <div style="font-size:12px;color:var(--fg2);margin-bottom:10px">Policy set by <b style="color:var(--a)">Guardian</b> (≤ 25 CSPR / tx · Swarm-ops → Treasury). Payments executed by <b style="color:var(--a)">Recoverer</b>. Every send is a <b>real</b> on-chain transaction — balances above update, and both sides appear in the live feed.</div>
+  <div style="font-size:12px;color:var(--fg2);margin-bottom:10px">Policy set by <b style="color:var(--a)">Guardian</b> (≤ 100 CSPR / tx · Swarm-ops → Treasury). Payments executed by <b style="color:var(--a)">Recoverer</b>. Every send is a <b>real</b> on-chain transaction — balances above update, and both sides appear in the live feed.</div>
   <div class="flex gap-2 items-center flex-wrap mb-2">
-    <input id="pay-amt" type="number" min="2.5" max="25" step="0.5" value="2.5" class="mono" style="width:110px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg)"><span class="sec-sub">CSPR</span>
+    <input id="pay-amt" type="number" min="2.5" max="100" step="0.5" value="2.5" class="mono" style="width:110px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg)"><span class="sec-sub">CSPR</span>
     <button class="btn" id="pay-btn" onclick="botPay(false)">🤖 Bot: Send now</button>
   </div>
   <div id="pay-log" style="font-size:12px;color:var(--fg3)">The bot sends CSPR ops→treasury on demand — or turn on Autopay for an automatic rebalance every 45 seconds.</div>
@@ -26,7 +26,7 @@
 <section class="card" style="margin-bottom:16px">
   <div class="flex items-center gap-2 mb-2"><span class="chip">💬</span><span class="sec-title">Wallet Assistant <span class="sec-sub">· type a command like “send 25 coins” — it really sends on-chain</span></span></div>
   <div id="wa-log" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-    <div class="cop-msg cop-bot">Hi 👋 I'm your wallet assistant. Try <b>“send 25 coins”</b>, <b>“send 10 cspr”</b>, or just ask me anything. Every send is a <b>real</b> Casper testnet transaction, ops → treasury.</div>
+    <div class="cop-msg cop-bot">Hi 👋 I'm your wallet assistant. Try <b>“send 25 coins”</b>, <b>“send 100 cspr”</b>, or just ask me anything. Every send is a <b>real</b> Casper testnet transaction, ops → treasury (up to 100 per tx).</div>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
     <button class="btn btn-ghost" id="wa-mic" title="Talk — say ‘send 25 coins’" onclick="waMic()" style="padding:0 13px;font-size:16px">🎤</button>
@@ -121,7 +121,7 @@ document.getElementById('autopay-tgl').addEventListener('change',e=>{if(e.target
 
 // ── Wallet Assistant (chat → real send) ────────────────────────────
 function waAdd(cls,html){const log=document.getElementById('wa-log'),d=document.createElement('div');d.className='cop-msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
-function waSpeak(t){if(!t||!document.getElementById('wa-voice').checked||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);u.rate=1.03;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function waSpeak(t){if(!t||!document.getElementById('wa-voice').checked)return;(window.erayaSpeak?erayaSpeak:function(x){try{const u=new SpeechSynthesisUtterance(x);u.pitch=1.18;u.rate=0.97;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}})(t);}
 let _waMR=null,_waStream=null,_waChunks=[];
 async function waMic(){
   const mic=document.getElementById('wa-mic');
@@ -167,7 +167,7 @@ async function waSend(){
       const {data:d}=await jpost('/api/domains/casper_defi/pay/',body);
       if(d.ok){
         th.innerHTML=`✅ Sent <b>${d.amount_cspr} CSPR</b> ops → treasury · <a href="${d.explorer_url}" target="_blank">cspr.live ↗</a><div class="mono" style="font-size:10px;color:var(--fg3);margin-top:3px">${esc((d.tx||'').slice(0,30))}…</div>`;
-        if(intent.amount>25)th.innerHTML+=`<div style="font-size:11px;color:var(--a-soft);margin-top:4px">(Capped to 25 CSPR/tx by the Guardian policy.)</div>`;
+        if(intent.amount>100)th.innerHTML+=`<div style="font-size:11px;color:var(--a-soft);margin-top:4px">(Capped to 100 CSPR/tx by the Guardian policy.)</div>`;
         addTx({type:'assistant send',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'send',account:'Swarm ops'});
         addTx({type:'assistant receive',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'recv',account:'Treasury'});
         pushAlert({kind:'pay',key:'wa|'+d.tx,severity:0.55,color:A,icon:'🤖',text:'Assistant sent '+d.amount_cspr+' CSPR · ops→treasury',meta:'real Casper testnet tx',url:d.explorer_url});
