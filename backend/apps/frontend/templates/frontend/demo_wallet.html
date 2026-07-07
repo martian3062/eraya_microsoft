@@ -28,9 +28,11 @@
   <div id="wa-log" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
     <div class="cop-msg cop-bot">Hi 👋 I'm your wallet assistant. Try <b>“send 25 coins”</b>, <b>“send 10 cspr”</b>, or just ask me anything. Every send is a <b>real</b> Casper testnet transaction, ops → treasury.</div>
   </div>
-  <div style="display:flex;gap:6px">
-    <input id="wa-in" placeholder='e.g. send 25 coins' style="flex:1;min-width:0;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg)" onkeydown="if(event.key==='Enter')waSend()">
+  <div style="display:flex;gap:6px;align-items:center">
+    <button class="btn btn-ghost" id="wa-mic" title="Talk — say ‘send 25 coins’" onclick="waMic()" style="padding:0 13px;font-size:16px">🎤</button>
+    <input id="wa-in" placeholder='say or type “send 25 coins”' style="flex:1;min-width:0;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg)" onkeydown="if(event.key==='Enter')waSend()">
     <button class="btn" id="wa-btn" onclick="waSend()">Send ➤</button>
+    <label class="sec-sub" style="display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="wa-voice" checked style="accent-color:var(--a)"> 🔊</label>
   </div>
 </section>
 
@@ -119,6 +121,19 @@ document.getElementById('autopay-tgl').addEventListener('change',e=>{if(e.target
 
 // ── Wallet Assistant (chat → real send) ────────────────────────────
 function waAdd(cls,html){const log=document.getElementById('wa-log'),d=document.createElement('div');d.className='cop-msg '+cls;d.innerHTML=html;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
+function waSpeak(t){if(!t||!document.getElementById('wa-voice').checked||!window.speechSynthesis)return;try{const u=new SpeechSynthesisUtterance(t);u.rate=1.03;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+let _waRec=null;
+function waMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition,mic=document.getElementById('wa-mic');
+  if(!SR){waAdd('cop-bot','Voice input isn\'t supported in this browser — please type your command.');return;}
+  if(_waRec){_waRec.stop();return;}
+  _waRec=new SR();_waRec.lang='en-US';_waRec.interimResults=false;_waRec.maxAlternatives=1;
+  mic.style.background='var(--a-deep)';mic.style.color='#fff';mic.textContent='●';
+  _waRec.onresult=e=>{const t=e.results[0][0].transcript;document.getElementById('wa-in').value=t;waSend();};
+  _waRec.onerror=()=>{};
+  _waRec.onend=()=>{mic.style.background='';mic.style.color='';mic.textContent='🎤';_waRec=null;};
+  _waRec.start();
+}
 function parseSend(t){
   const m=t.match(/(?:send|transfer|pay|bhej[o]?|de[o]?)\s+(\d+(?:\.\d+)?)/i);
   if(!m)return null;
@@ -140,13 +155,14 @@ async function waSend(){
         addTx({type:'assistant send',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'send',account:'Swarm ops'});
         addTx({type:'assistant receive',hash:d.tx,url:d.explorer_url,amount:d.amount_cspr,dir:'recv',account:'Treasury'});
         pushAlert({kind:'pay',key:'wa|'+d.tx,severity:0.55,color:A,icon:'🤖',text:'Assistant sent '+d.amount_cspr+' CSPR · ops→treasury',meta:'real Casper testnet tx',url:d.explorer_url});
+        waSpeak('Done — sent '+d.amount_cspr+' CSPR to the treasury.');
         setTimeout(loadWallet,2500);
-      }else{th.innerHTML='⚠ Send failed: <span class="mono">'+esc(d.error||'unknown')+'</span>';}
-    }catch(e){th.innerHTML='⚠ Could not reach the send service.';}
+      }else{th.innerHTML='⚠ Send failed: <span class="mono">'+esc(d.error||'unknown')+'</span>';waSpeak('Sorry, the send failed.');}
+    }catch(e){th.innerHTML='⚠ Could not reach the send service.';waSpeak('I could not reach the send service.');}
     btn.disabled=false;
   }else{
     const th=waAdd('cop-bot','…');
-    try{const {data:d}=await jpost('/api/domains/casper_defi/copilot/',{question:q});th.textContent=d.answer||'—';}
+    try{const {data:d}=await jpost('/api/domains/casper_defi/copilot/',{question:q});th.textContent=d.answer||'—';waSpeak(d.answer||'');}
     catch(e){th.textContent='I could not reach the assistant service just now.';}
   }
 }
