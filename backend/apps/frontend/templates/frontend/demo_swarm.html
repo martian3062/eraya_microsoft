@@ -1,0 +1,73 @@
+{% extends "frontend/demo_base.html" %}
+{% block title %}eraya — Swarm A2A Chat{% endblock %}
+{% block page %}swarm{% endblock %}
+{% block content %}
+<section class="card" style="margin-bottom:16px">
+  <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+    <div class="flex items-center gap-2"><span class="chip">🗣</span><span class="sec-title">Swarm A2A Reasoning Chat <span class="sec-sub">· four models coordinating live over the A2A bus</span></span></div>
+    <div class="flex items-center gap-2">
+      <label style="font-size:12px;color:var(--fg2);display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="live-toggle" checked style="accent-color:var(--a)"> Live</label>
+      <button class="btn" id="round-btn" onclick="runRound(true)">↻ New Round</button>
+    </div>
+  </div>
+  <div id="roster" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+</section>
+
+<section class="card">
+  <div class="flex items-center justify-between mb-2">
+    <div class="sec-title">A2A Traffic <span class="sec-sub" id="chat-mode">· routine monitoring</span></div>
+    <span class="badge badge-a" id="chat-status"><span class="pulse"></span> streaming</span>
+  </div>
+  <div id="chat" style="max-height:60vh;overflow-y:auto;padding-right:4px">
+    <div style="color:var(--fg3);padding:14px">Agents are connecting to the A2A bus…</div>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_js %}
+<script>
+let history=[], busy=false;
+const AICON={Perceiver:'👁',Planner:'🧠',Recoverer:'🔧',Guardian:'🛡'};
+
+(async()=>{ // roster
+  try{const r=await jget('/api/domains/casper_defi/swarm-chat/');
+    document.getElementById('roster').innerHTML=(r.agents||[]).map(a=>`<div class="kpi" style="border-color:${a.color}44"><div style="color:${a.color};font-weight:700;font-size:13px">${AICON[a.role]||'●'} ${a.role}</div><div class="mono" style="color:var(--fg3);font-size:10px;margin-top:2px">${esc(a.model)}</div></div>`).join('');
+  }catch(e){}
+})();
+
+async function currentTrigger(){
+  try{const d=await jget('/api/domains/casper_defi/threats/');
+    const crit=(d.threats||[]).filter(t=>t.severity>=0.85).sort((a,b)=>b.severity-a.severity)[0];
+    return crit?{type:crit.type,target:crit.target,severity:crit.severity,summary:crit.summary}:null;
+  }catch(e){return null;}
+}
+function bubble(m){
+  const c=m.color||'#f4785f';
+  return `<div class="row" style="margin-bottom:8px;padding:10px 12px;border-radius:12px;border-left:2px solid ${c};background:${c}0d">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+      <span style="font-weight:600;color:${c};font-size:12px">${AICON[m.from]||'●'} ${esc(m.from)} <span style="color:var(--fg3)">→</span> ${esc(m.to)}</span>
+      <span class="badge" style="background:rgba(255,255,255,.05);color:var(--fg3);font-size:9px" class="mono">${esc((m.model||'').split('/').pop())}</span>
+      <span style="margin-left:auto;color:var(--fg3);font-size:10px">${new Date((m.ts||Date.now()/1000)*1000).toLocaleTimeString('en',{hour12:false})}</span>
+    </div>
+    <div style="color:var(--fg);font-size:13px">${esc(m.text)}</div></div>`;
+}
+async function runRound(manual){
+  if(busy)return; busy=true;
+  const btn=document.getElementById('round-btn'); if(manual)btn.innerHTML='<span class="spin"></span> reasoning…';
+  document.getElementById('chat-status').innerHTML='<span class="spin"></span> agents reasoning…';
+  const trig=await currentTrigger();
+  document.getElementById('chat-mode').textContent = trig? '· coordinating on '+trig.type.replace(/_/g,' ') : '· routine monitoring';
+  try{
+    const {data:d}=await jpost('/api/domains/casper_defi/swarm-chat/',{trigger:trig,prior:history.slice(-6)});
+    const chat=document.getElementById('chat');
+    if(history.length===0)chat.innerHTML='';
+    if(trig){chat.insertAdjacentHTML('beforeend',`<div class="row" style="text-align:center;margin:6px 0;color:${A_DEEP};font-size:11px">⚠ anomaly detected — swarm coordinating on ${esc(trig.type)}</div>`);}
+    (d.messages||[]).forEach((m,i)=>setTimeout(()=>{chat.insertAdjacentHTML('beforeend',bubble(m));chat.scrollTop=chat.scrollHeight;},i*700));
+    history=history.concat(d.messages||[]).slice(-30);
+  }catch(e){}
+  setTimeout(()=>{document.getElementById('chat-status').innerHTML='<span class="pulse"></span> streaming';if(manual)btn.textContent='↻ New Round';busy=false;},3200);
+}
+runRound(false);
+setInterval(()=>{if(document.getElementById('live-toggle').checked)runRound(false);},20000);
+</script>
+{% endblock %}

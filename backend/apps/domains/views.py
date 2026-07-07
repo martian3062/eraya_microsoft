@@ -162,6 +162,19 @@ def casper_onchain(request):
     return Response(snapshot())
 
 
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+def casper_swarm_chat(request):
+    """Live A2A reasoning chat — one coordination round (4 agent messages).
+    GET returns the agent roster; POST {trigger, prior} runs a round."""
+    from core.casper.swarm_chat import agent_roster, converse
+    if request.method == "GET":
+        return Response({"agents": agent_roster()})
+    trigger = request.data.get("trigger")
+    prior = request.data.get("prior") or []
+    return Response({"messages": converse(trigger, prior)})
+
+
 # ─── x402 — agent-economy micropayments (HTTP 402) ────────────────────────────
 
 _MARKET_RESOURCE = "/api/v1/domains/casper_defi/market-data/"

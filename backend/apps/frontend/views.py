@@ -310,6 +310,9 @@ def demo_updates(request):
 def demo_analytics(request):
     return render(request, "frontend/demo_analytics.html")
 
+def demo_swarm(request):
+    return render(request, "frontend/demo_swarm.html")
+
 import json as _json
 
 @_require_auth

@@ -14,6 +14,7 @@ urlpatterns = [
     path("casper_defi/transactions/", views.casper_transactions, name="casper-transactions"),
     path("casper_defi/threats/", views.casper_threats, name="casper-threats"),
     path("casper_defi/onchain/", views.casper_onchain, name="casper-onchain"),
+    path("casper_defi/swarm-chat/", views.casper_swarm_chat, name="casper-swarm-chat"),
     path("casper_defi/market-data/", views.casper_market_data, name="casper-market-data"),
     path("casper_defi/x402/verify/", views.x402_verify, name="casper-x402-verify"),
     path("<str:domain>/status/", views.domain_status, name="domain-status"),
