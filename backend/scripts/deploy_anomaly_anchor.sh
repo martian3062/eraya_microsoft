@@ -11,25 +11,29 @@ set -euo pipefail
 : "${CASPER_NODE_RPC_URL:?set CASPER_NODE_RPC_URL}"
 : "${CASPER_SECRET_KEY_PATH:?set CASPER_SECRET_KEY_PATH}"
 CHAIN="${CASPER_CHAIN_NAME:-casper-test}"
-PAYMENT="${CONTRACT_PAYMENT_MOTES:-150000000000}"   # 150 CSPR for contract install
 CLIENT="${CASPER_CLIENT_BIN:-casper-client}"
+GAS_TOL="${CASPER_GAS_PRICE_TOLERANCE:-1}"
+PRICING="${CASPER_PRICING_MODE:-fixed}"
 
 WASM="${1:-$(cd "$(dirname "$0")/../contracts/anomaly_anchor" && pwd)/target/wasm32-unknown-unknown/release/anomaly_anchor.wasm}"
 [ -f "$WASM" ] || { echo "WASM not found: $WASM  (run build_contract.sh first)"; exit 1; }
 
-echo "Deploying $WASM to $CHAIN via $CASPER_NODE_RPC_URL…"
-OUT=$("$CLIENT" put-deploy \
+echo "Deploying $WASM to $CHAIN via $CASPER_NODE_RPC_URL (Casper 2.0 put-transaction)…"
+OUT=$("$CLIENT" put-transaction session \
   --node-address "$CASPER_NODE_RPC_URL" \
   --chain-name "$CHAIN" \
   --secret-key "$CASPER_SECRET_KEY_PATH" \
-  --payment-amount "$PAYMENT" \
-  --session-path "$WASM")
+  --wasm-path "$WASM" \
+  --install-upgrade \
+  --pricing-mode "$PRICING" \
+  --gas-price-tolerance "$GAS_TOL")
 echo "$OUT"
-HASH=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin)['result']['deploy_hash'])" 2>/dev/null || true)
+HASH=$(echo "$OUT" | python3 -c "import sys,json;d=json.load(sys.stdin)['result'];h=d.get('transaction_hash') or d.get('deploy_hash');print(list(h.values())[0] if isinstance(h,dict) else h)" 2>/dev/null || true)
 if [ -n "$HASH" ]; then
-  echo "deploy_hash=$HASH"
-  echo "explorer: https://testnet.cspr.live/deploy/$HASH"
-  echo "Poll:  $CLIENT get-deploy $HASH --node-address $CASPER_NODE_RPC_URL"
-  echo "After success, read the contract hash from the account's named keys and set"
-  echo "CASPER_ANOMALY_CONTRACT in /etc/eraya-backend.env."
+  echo "transaction_hash=$HASH"
+  echo "explorer: https://testnet.cspr.live/transaction/$HASH"
+  echo "Poll:  $CLIENT get-transaction $HASH --node-address $CASPER_NODE_RPC_URL"
+  echo "After success, read the contract hash from the account's named keys:"
+  echo "  $CLIENT get-account --account-identifier $CASPER_PUBLIC_KEY --node-address $CASPER_NODE_RPC_URL"
+  echo "then set CASPER_ANOMALY_CONTRACT in /etc/eraya-backend.env."
 fi

@@ -72,7 +72,7 @@ def anchor_anomaly(finding: dict) -> dict | None:
         "evidence_hash": ev,
         "transfer_id": transfer_id,
         "deploy_hash": deploy_hash,
-        "explorer_url": f"https://testnet.cspr.live/deploy/{deploy_hash}",
+        "explorer_url": f"https://testnet.cspr.live/transaction/{deploy_hash}",
         "network": os.environ.get("CASPER_CHAIN_NAME", "casper-test"),
         "anchored_at": now,
     }
@@ -93,22 +93,28 @@ def _submit_transfer(transfer_id: int) -> str | None:
     target = os.environ.get("CASPER_PUBLIC_KEY", _DEFAULT_PUBLIC_KEY)  # self-transfer
     client_bin = os.environ.get("CASPER_CLIENT_BIN", "casper-client")
 
+    # Casper 2.0 native transfer transaction.
     cmd = [
-        client_bin, "transfer",
+        client_bin, "put-transaction", "transfer",
         "--node-address", rpc,
         "--chain-name", chain,
         "--secret-key", key_path,
-        "--amount", str(_ANCHOR_AMOUNT_MOTES),
-        "--target-account", target,
+        "--target", target,
+        "--transfer-amount", str(_ANCHOR_AMOUNT_MOTES),
         "--transfer-id", str(transfer_id),
-        "--payment-amount", os.environ.get("CASPER_TRANSFER_PAYMENT_MOTES", "100000000"),
+        "--pricing-mode", os.environ.get("CASPER_PRICING_MODE", "fixed"),
+        "--gas-price-tolerance", os.environ.get("CASPER_GAS_PRICE_TOLERANCE", "1"),
     ]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
     if proc.returncode != 0:
-        logger.warning("casper-client transfer failed: %s", (proc.stderr or "")[:200])
+        logger.warning("casper-client put-transaction failed: %s", (proc.stderr or "")[:200])
         return None
     try:
-        return json.loads(proc.stdout).get("result", {}).get("deploy_hash")
+        res = json.loads(proc.stdout).get("result", {})
+        th = res.get("transaction_hash") or res.get("deploy_hash")
+        if isinstance(th, dict):          # 2.0: {"Version1": "<hex>"}
+            th = next(iter(th.values()), None)
+        return th
     except Exception:
         return None
 
