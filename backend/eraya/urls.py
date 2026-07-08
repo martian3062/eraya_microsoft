@@ -11,6 +11,8 @@ urlpatterns = [
     path('api/domains/', include('apps.domains.urls')),
     # KAVACHA security simulation endpoints (additive)
     path('api/v1/security/', include('apps.security.urls')),
+    # CAP (CROO agent-commerce) gateway
+    path('api/commerce/', include('apps.commerce.urls')),
     # Credential auth
     path('api/eraya-auth/', include('apps.eraya_auth.urls')),
     # Vanilla HTML frontend (catch-all — must be last)

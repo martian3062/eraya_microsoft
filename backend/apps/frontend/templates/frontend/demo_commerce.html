@@ -1,0 +1,124 @@
+{% extends "frontend/demo_base.html" %}
+{% block title %}eraya — Commerce (CAP){% endblock %}
+{% block page %}commerce{% endblock %}
+{% block content %}
+
+<section class="card" style="margin-bottom:16px">
+  <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+    <div class="flex items-center gap-2"><span class="chip">🛒</span><span class="sec-title">ERAYA × CAP <span class="sec-sub">· agent commerce on CROO (Base · USDC) · KAVACHA as a paid, callable trust service</span></span></div>
+    <span id="cap-badge" class="badge badge-a">connecting…</span>
+  </div>
+  <div id="cap-status" style="font-size:12px;color:var(--fg2)"></div>
+  <div id="cap-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-3" style="margin-top:12px"></div>
+</section>
+
+<div class="grid md:grid-cols-2 gap-4" style="margin-bottom:16px">
+  <!-- SELL -->
+  <section class="card">
+    <div class="flex items-center gap-2 mb-1"><span class="chip">↑</span><span class="sec-title">SELL <span class="sec-sub">· external agent hires KAVACHA Scan</span></span></div>
+    <div style="font-size:12px;color:var(--fg3);margin-bottom:10px">An inbound CAP order routes into ERAYA's attack-sim pipeline. CAP only settles on <b>verified delivery</b> — ERAYA's Guardian <i>is</i> the verification, and its HMAC audit record is the proof.</div>
+    <button class="btn" id="sell-btn" onclick="runSell()">▶ Simulate inbound order (injection payload)</button>
+    <div id="sell-out" style="font-size:12px;color:var(--fg3);margin-top:12px">Runs Negotiate → Lock → Deliver → Clear. A prompt-injection payload should be <b style="color:var(--a)">BLOCKED</b> and still settle (verified delivery = the block).</div>
+  </section>
+
+  <!-- BUY -->
+  <section class="card">
+    <div class="flex items-center gap-2 mb-1"><span class="chip">↓</span><span class="sec-title">BUY + DOGFOOD <span class="sec-sub">· ERAYA hires an external agent</span></span></div>
+    <div style="font-size:12px;color:var(--fg3);margin-bottom:10px">The Planner hires an external CAP agent; its delivery is vetted by ERAYA's <b>own</b> KAVACHA before the swarm trusts it. <i>The product we sell is the product we use on ourselves.</i></div>
+    <div class="flex gap-2 flex-wrap">
+      <button class="btn" id="buy-btn" onclick="runBuy(false)">🤝 Hire (clean delivery)</button>
+      <button class="btn btn-ghost" id="buyp-btn" onclick="runBuy(true)">☣ Hire (poisoned delivery)</button>
+    </div>
+    <div id="buy-out" style="font-size:12px;color:var(--fg3);margin-top:12px">A poisoned external delivery gets <b style="color:var(--a-deep)">BLOCKED</b> — the swarm refuses to act.</div>
+  </section>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+  <section class="card">
+    <div class="flex items-center gap-2 mb-2"><span class="chip">⛓</span><span class="sec-title">Delivery Proof <span class="sec-sub">· CAP DeliverOrder attestation</span></span></div>
+    <div id="proof-box" style="font-size:12px;color:var(--fg3)">Run a service — the <span class="mono">{result_hash, execution_log, HMAC attestation}</span> proof appears here. This is exactly what CAP demands before it settles.</div>
+  </section>
+  <section class="card">
+    <div class="flex items-center justify-between mb-2"><span class="sec-title">Order Ledger <span class="sec-sub">· Negotiate→Lock→Deliver→Clear</span></span><span class="badge badge-a"><span class="pulse"></span> live</span></div>
+    <div id="orders-feed" style="max-height:320px;overflow-y:auto;font-size:12px;color:var(--fg3)">No orders yet.</div>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+const CAP=API+'/api/commerce/cap';
+
+async function loadStatus(){
+  try{
+    const s=await jget('/api/commerce/cap/status/');
+    document.getElementById('cap-badge').textContent=(s.demo_mode?'demo · ':'● live · ')+(s.network||'base');
+    document.getElementById('cap-status').innerHTML=`Agent <b style="color:var(--fg)">${esc(s.agent)}</b> · DID <span class="mono">${esc(s.did)}</span> · wallet <span class="mono">${esc((s.wallet||'').slice(0,16))}…</span> · `+
+      (s.services||[]).map(sv=>`<span class="badge badge-a">${esc(sv.name)} · $${sv.price_usdc} USDC</span>`).join(' ');
+  }catch(e){document.getElementById('cap-badge').textContent='offline';}
+}
+async function loadEarnings(){
+  try{
+    const e=await jget('/api/commerce/cap/earnings/');
+    document.getElementById('cap-kpis').innerHTML=[
+      ['Earned (USDC)','$'+(e.earned_usdc||0),A],
+      ['PTS / Merit',e.pts||0,A_SOFT],
+      ['Spent (USDC)','$'+(e.spent_usdc||0),A_DEEP],
+      ['Mode',e.demo_mode?'demo':'live',A],
+    ].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:20px;font-weight:700;color:${c}">${v}</div></div>`).join('');
+  }catch(e){}
+}
+async function loadOrders(){
+  try{
+    const d=await jget('/api/commerce/cap/orders/');
+    const rows=d.orders||[];
+    document.getElementById('orders-feed').innerHTML=rows.length?rows.map(o=>{
+      const c=o.direction==='sell'?A:'#34d399',arrow=o.direction==='sell'?'↑ sell':'↓ buy';
+      const vc=/BLOCK|QUAR|disput/i.test(o.verdict+o.status)?A_DEEP:A_SOFT;
+      return `<div class="row" style="display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.02);border:1px solid var(--bd);margin-bottom:6px">
+        <div style="min-width:0"><span style="color:${c};font-weight:700">${arrow}</span> <span class="badge" style="background:rgba(255,255,255,.06);color:var(--fg2)">${esc(o.service)}</span> <span class="badge" style="background:${vc}22;color:${vc}">${esc(o.verdict||o.status)}</span></div>
+        <div style="text-align:right;white-space:nowrap;color:${c}">${o.usdc?('$'+o.usdc+(o.pts_delta?' · +'+o.pts_delta+'pts':'')):esc(o.status)}</div>
+      </div>`;}).join(''):'No orders yet.';
+  }catch(e){}
+}
+function showProof(p){
+  if(!p)return;
+  document.getElementById('proof-box').innerHTML=`
+    <div style="margin-bottom:6px"><span class="sec-sub">result_hash</span><div class="mono" style="color:var(--a);word-break:break-all">${esc(p.result_hash)}</div></div>
+    <div style="margin-bottom:6px"><span class="sec-sub">attestation · HMAC-SHA256 (ERAYA_AUDIT_KEY)</span><div class="mono" style="color:var(--fg2);word-break:break-all">${esc((p.attestation||'').slice(0,64))}…</div></div>
+    <div><span class="sec-sub">audit_key_id</span> <span class="mono">${esc(p.audit_key_id)}</span> · <span class="sec-sub">record</span> <span class="mono">${esc((p.record_id||'').slice(0,12))}</span></div>`;
+}
+function tl(steps){return (steps||[]).map(s=>tlStep(s.ok?A_SOFT:A_DEEP,s.ok,esc(s.detail),s.score)).join('');}
+
+async function runSell(){
+  const b=document.getElementById('sell-btn'),o=document.getElementById('sell-out');
+  b.disabled=true;b.innerHTML='<span class="spin"></span> Negotiate → Lock → Deliver → Clear…';
+  try{
+    const {data:d}=await jpost('/api/commerce/cap/order/',{});
+    const dv=d.deliverable||{},c=/BLOCK|QUAR/i.test(dv.verdict)?A_DEEP:A_SOFT;
+    o.innerHTML=`<div><span class="badge" style="background:${c}22;color:${c}">${esc(dv.verdict)}</span> <span class="mono" style="color:var(--fg3)">rule ${esc(dv.rule_fired||'—')} · score ${dv.injection_score}</span> <span class="badge badge-a">settled $${d.settlement.usdc} · +${d.settlement.pts} PTS</span></div>${tl(dv.timeline)}`;
+    showProof(dv.proof);
+    pushAlert({kind:'cap',key:'sell|'+d.order_id,severity:0.6,color:A,icon:'🛒',text:'CAP sale cleared · '+dv.verdict,meta:'KAVACHA Scan · +$'+d.settlement.usdc+' USDC'});
+    loadEarnings();loadOrders();
+  }catch(e){o.innerHTML='<span style="color:'+A_DEEP+'">order failed</span>';}
+  b.disabled=false;b.textContent='▶ Simulate inbound order (injection payload)';
+}
+async function runBuy(poison){
+  const o=document.getElementById('buy-out');
+  o.innerHTML='<span class="spin"></span> discover → Negotiate → Pay (escrow) → GetDelivery → KAVACHA dogfood…';
+  try{
+    const {data:d}=await jpost('/api/commerce/cap/hire/',{poison:poison});
+    const sc=d.scan||{},ap=d.approved,c=ap?A_SOFT:A_DEEP;
+    o.innerHTML=`<div style="margin-bottom:4px" class="mono" style="color:var(--fg3)">hired ${esc(d.order.provider_did)} · $${d.order.price_usdc} USDC escrow</div>
+      <div style="font-size:11px;color:var(--fg3);margin-bottom:6px">delivery: “${esc(d.delivery_preview.slice(0,110))}…”</div>
+      <div><span class="badge" style="background:${c}22;color:${c}">dogfood: ${esc(sc.verdict)}</span> <span class="badge" style="background:${ap?A_SOFT:A_DEEP}22;color:${ap?A_SOFT:A_DEEP}">swarm ${ap?'executed ✓':'vetoed ✕'}</span></div>${tl(sc.timeline)}`;
+    showProof(sc.proof);
+    pushAlert({kind:'cap',key:'buy|'+d.order.order_id,severity:ap?0.5:0.9,color:ap?A:A_DEEP,icon:ap?'🤝':'🛡',text:'External hire '+(ap?'approved':'BLOCKED by KAVACHA'),meta:'dogfood verdict '+sc.verdict});
+    loadEarnings();loadOrders();
+  }catch(e){o.innerHTML='<span style="color:'+A_DEEP+'">hire failed</span>';}
+}
+
+loadStatus();loadEarnings();loadOrders();
+setInterval(()=>{loadEarnings();loadOrders();},10000);
+</script>
+{% endblock %}

@@ -123,7 +123,7 @@ nav.tabs a.active{color:var(--a);background:rgba(244,120,95,.10);border-color:rg
       </div>
     </div>
     <nav class="tabs" id="nav">
-      <a data-p="home">Home</a><a data-p="dashboard">Dashboard</a><a data-p="wallet">Wallet</a><a data-p="kavacha">KAVACHA</a><a data-p="swarm">agentic chatbook(a2a)</a><a data-p="x402">x402</a><a data-p="updates">View PPT</a>
+      <a data-p="home">Home</a><a data-p="dashboard">Dashboard</a><a data-p="wallet">Wallet</a><a data-p="kavacha">KAVACHA</a><a data-p="commerce">Commerce (CAP)</a><a data-p="swarm">agentic chatbook(a2a)</a><a data-p="x402">x402</a><a data-p="updates">View PPT</a>
     </nav>
   </header>
   {% endblock %}
@@ -136,7 +136,8 @@ nav.tabs a.active{color:var(--a);background:rgba(244,120,95,.10);border-color:rg
 </div>
 
 <script>
-const API = location.pathname.includes('/eraya_api/') ? '/eraya_api' : '';
+const _apiPfx = location.pathname.match(/^\/(eraya_api|croo_api)\//);
+const API = _apiPfx ? '/' + _apiPfx[1] : '';
 const DEMO = API + '/demo/';
 const A='#f4785f', A_SOFT='#ffb7a4', A_DEEP='#e0503c', NEU='rgba(243,237,232,.5)';
 const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -147,7 +148,7 @@ function sev(s){return s>=0.85?A_DEEP:s>=0.7?A:s>=0.5?A_SOFT:NEU;}
 function tlStep(color,ok,text,score){return `<div class="tl-step" style="border-color:${color}"><span style="color:${color}">${ok?'✓':'●'}</span><div style="flex:1"><span style="color:var(--fg)">${text}</span>${score!=null?` <span class="mono" style="color:${color}">${score}</span>`:''}</div></div>`;}
 
 // nav
-const PAGES={home:'',dashboard:'dashboard/',wallet:'wallet/',kavacha:'kavacha/',anomaly:'kavacha/',security:'kavacha/',critic:'kavacha/',swarm:'swarm/',x402:'x402/',analytics:'dashboard/',updates:'updates/'};
+const PAGES={home:'',dashboard:'dashboard/',wallet:'wallet/',kavacha:'kavacha/',commerce:'commerce/',anomaly:'kavacha/',security:'kavacha/',critic:'kavacha/',swarm:'swarm/',x402:'x402/',analytics:'dashboard/',updates:'updates/'};
 const CUR=document.body.dataset.page;
 const _ll=document.getElementById('logo-link'); if(_ll)_ll.href=DEMO;
 document.querySelectorAll('#nav a').forEach(a=>{const p=a.dataset.p;a.href=DEMO+PAGES[p];if(p===CUR)a.classList.add('active');});
