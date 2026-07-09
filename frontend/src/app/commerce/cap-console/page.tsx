@@ -67,7 +67,7 @@ export default function CapConsolePage() {
     <div className="max-w-6xl mx-auto space-y-5">
       <div>
         <h1 className="text-base font-semibold flex items-center gap-2 text-slate-800 dark:text-slate-100">
-          <ShoppingCart size={15} className="text-orange-500" /> ERAYA × CAP — Commerce Console
+          <ShoppingCart size={15} className="text-orange-500" /> ERAYA × CROO — Commerce Console
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           KAVACHA as a paid, CAP-callable trust service on CROO (Base · USDC). ERAYA sells verification —
