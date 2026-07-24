@@ -131,6 +131,83 @@ flowchart TD
     T3 --> DONE
 ```
 
+### 6 · Quant Desk — autonomous trading loop
+
+The swarm trades on **live exchange prices**; the user's single risk dial derives the whole policy, and every fill settles on-chain. One tick, every 30 s:
+
+```mermaid
+flowchart LR
+    DIAL(["🎚 user risk dial 1-10<br/>(the ONLY user input)"]) -->|derives| POL["policy envelope<br/>position cap · SL/TP · trade budget<br/>cooldown · drawdown halt"]
+    F["live candles<br/>Gate.io → KuCoin → CoinGecko"] --> P["👁 Perceiver<br/>price · RSI · vol"]
+    P --> PL["🧠 Planner — quant ensemble<br/>SMA9/26 · RSI-14 · Bollinger · momentum<br/>score ∈ [-1,+1] · vol-targeted sizing"]
+    PL -->|"BUY / SELL intent"| G{"🛡 Guardian<br/>enforces envelope"}
+    POL --> G
+    G -->|REJECTED + reason| LOG["trade log + Live Alerts"]
+    G -->|APPROVED| R["🔧 Recoverer<br/>fill at real price (5bps slip · 10bps fee)"]
+    R --> SETTLE["casper-client transfer<br/>transfer-id = trade id"]
+    SETTLE --> C[("Casper testnet<br/>cspr.live proof")]
+    R --> LOG
+    LOG --> EQ["equity curve · P&L · win rate"]
+```
+
+### 7 · Swarm-for-hire — external agents pay for the quant signal
+
+The swarm is an economic actor: its live signal is a **paid x402 resource** (`scripts/external_agent_hire.py` runs this end-to-end).
+
+```mermaid
+sequenceDiagram
+    participant Ext as External agent<br/>(elizaOS · LangChain · MCP · curl)
+    participant ERAYA as ERAYA swarm
+    Ext->>ERAYA: GET /quant-signal/
+    ERAYA-->>Ext: 402 Payment Required (addr · 0.005 CSPR · nonce)
+    Ext->>Ext: pay + sign X-Payment proof
+    Ext->>ERAYA: GET /quant-signal/ (X-Payment · nonce)
+    ERAYA-->>Ext: 200 OK — score · verdict · ensemble · risk policy
+    Note over Ext,ERAYA: facilitator verifies on-chain when CSPR.cloud is configured
+```
+
+### 8 · Odra contracts — the risk envelope lives on-chain
+
+`contracts/` (Rust → wasm, MockVM-tested). The dial is written on-chain and the policy is **recomputed inside the contract** with the same integer math as the engine — chain and backend can never disagree.
+
+```mermaid
+flowchart LR
+    UI["🎚 risk dial / voice command"] --> BE["backend engine<br/>risk_profile(r)"]
+    BE -->|set_risk r| TP["📜 TradePolicy contract<br/>policy() derived on-chain<br/>record_trade() → TradeExecuted event"]
+    BE -->|"register · bump_reputation"| AR["📜 AgentRegistry contract<br/>identity · reputation · events"]
+    TP --> EXP["testnet.cspr.live<br/>public audit trail"]
+    AR --> EXP
+```
+
+---
+
+## Quant Desk — how it works
+
+One knob in, a full trading policy out. `risk_profile(r)` in `backend/core/quant/engine.py` (mirrored on-chain by `TradePolicy::policy()`):
+
+| Risk dial | Label | Max position | Stop-loss | Take-profit | Trades/day | Cooldown | Drawdown halt |
+|---|---|---|---|---|---|---|---|
+| 1 | Conservative | 5% | 1.2% | 2.0% | 4 | 600 s | 2% |
+| 3 (default) | Conservative | 17% | 2.3% | 3.8% | 12 | 477 s | 4.2% |
+| 5 | Balanced | 29% | 3.3% | 5.6% | 20 | 353 s | 6.4% |
+| 8 | Aggressive | 48% | 4.9% | 8.2% | 32 | 168 s | 9.8% |
+| 10 | Degen | 60% | 6.0% | 10.0% | 40 | 45 s | 12% |
+
+**Tick lifecycle** (autopilot thread, every 30 s, or "⚡ Evaluate now"): fetch live candles (25 s cache, source cascade) → compute the ensemble (weights: crossover 0.30, RSI 0.25, Bollinger 0.20, momentum 0.25) → decide (BUY when score ≥ threshold and flat; SELL on exit signal, stop-loss, or take-profit) → Guardian checks (trade budget, cooldown, daily drawdown) each recorded with the trade → execute in the paper ledger at the real price → settle on Casper testnet in a background thread. State survives restarts (`apps.trading` models).
+
+**Endpoints**
+
+| Endpoint | What |
+|---|---|
+| `GET /api/domains/casper_defi/trading/status/` | full desk state: signal, account, candles, equity curve, trades, activity, contracts |
+| `POST …/trading/risk/` `{"risk": 1-10}` | set the dial (policy returned) |
+| `POST …/trading/autopilot/` `{"enabled": bool}` | start/stop the trading thread |
+| `POST …/trading/tick/` | evaluate once, now |
+| `POST …/trading/reset/` | reset the paper account |
+| `GET …/quant-signal/` | **paid (x402)** — the signal, sold to external agents |
+
+**Voice** (any page, via the copilot): *"set risk to seven"* · *"go aggressive on trading"* · *"start the autopilot"* · *"stop trading now"* · *"evaluate the market now"* · *"how is the trading going"*.
+
 ---
 
 ## Agentic AI Provider Integrations
