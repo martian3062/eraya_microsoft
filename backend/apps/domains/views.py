@@ -365,3 +365,98 @@ def x402_verify(request):
     resource = request.data.get("resource", _MARKET_RESOURCE)
     nonce = request.data.get("nonce")
     return Response(x402.verify(header, resource, nonce=nonce))
+
+
+# ── Quant Desk: autonomous trading (user sets risk, swarm executes) ──────
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def trading_status(request):
+    from core.casper import contracts
+    from core.quant import get_engine
+    return Response({**get_engine().status(), "contracts": contracts.status()})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def trading_risk(request):
+    from core.quant import get_engine
+    try:
+        risk = int(request.data.get("risk"))
+    except (TypeError, ValueError):
+        return Response({"error": "risk must be an integer 1-10"}, status=400)
+    return Response({"ok": True, "policy": get_engine().set_risk(risk)})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def trading_autopilot(request):
+    from core.quant import get_engine
+    enabled = bool(request.data.get("enabled"))
+    return Response({"ok": True, "autopilot": get_engine().set_autopilot(enabled)})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def trading_tick(request):
+    from core.quant import get_engine
+    return Response({"ok": True, "tick": get_engine().tick(manual=True)})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def trading_reset(request):
+    from core.quant import get_engine
+    get_engine().reset()
+    return Response({"ok": True})
+
+
+_QUANT_RESOURCE = "/api/domains/casper_defi/quant-signal/"
+_QUANT_PRICE_MOTES = 5_000_000  # 0.005 CSPR — premium over raw market data
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def casper_quant_signal(request):
+    """Paid resource: the swarm's live quant signal, sold to external agents
+    over x402. Same 402 -> pay -> retry contract as market-data."""
+    from core.casper import x402
+    from core.quant import get_engine
+
+    def _payload() -> dict:
+        s = get_engine().status()
+        sig = s.get("signal", {})
+        return {
+            "pair": "CSPR/USDT",
+            "price": sig.get("price"),
+            "score": sig.get("score"),
+            "verdict": sig.get("verdict"),
+            "threshold": sig.get("threshold"),
+            "components": sig.get("components"),
+            "rsi14": sig.get("rsi14"),
+            "vol_annual_pct": sig.get("vol_annual_pct"),
+            "feed": s.get("engine", {}).get("feed"),
+            "risk_policy": s.get("risk"),
+        }
+
+    if not x402.enabled():
+        return Response(_payload())
+
+    xpay = request.headers.get("X-Payment", "")
+    nonce = request.headers.get("X-Payment-Nonce")
+    if xpay:
+        result = x402.verify(xpay, _QUANT_RESOURCE,
+                             required_motes=_QUANT_PRICE_MOTES, nonce=nonce)
+        if result["ok"]:
+            payload = _payload()
+            payload["x402"] = {"paid": True, "verified": result["verified"],
+                               "payer": result["payer"], "mode": result["mode"]}
+            return Response(payload)
+        ch = x402.challenge(_QUANT_RESOURCE, amount_motes=_QUANT_PRICE_MOTES)
+        resp = Response({**ch, "error": result["reason"]}, status=402)
+    else:
+        ch = x402.challenge(_QUANT_RESOURCE, amount_motes=_QUANT_PRICE_MOTES)
+        resp = Response(ch, status=402)
+    for k, v in ch["headers"].items():
+        resp[k] = v
+    return resp

@@ -320,6 +320,9 @@ def demo_kavacha(request):
 def demo_wallet(request):
     return render(request, "frontend/demo_wallet.html")
 
+def demo_trading(request):
+    return render(request, "frontend/demo_trading.html")
+
 @xframe_options_sameorigin
 def demo_ppt_pdf(request):
     import os

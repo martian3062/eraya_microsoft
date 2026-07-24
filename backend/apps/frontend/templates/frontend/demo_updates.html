@@ -25,7 +25,9 @@
     <div class="kpi"><b>Critic (LLM-as-judge)</b><div class="sec-sub" style="margin-top:3px">Independent adversarial review before high-stakes execution.</div></div>
     <div class="kpi"><b>Anomaly Intelligence</b><div class="sec-sub" style="margin-top:3px">Statistical MEV / Sybil / validator detection (Tor-technique lineage).</div></div>
     <div class="kpi"><b>On-chain anchoring</b><div class="sec-sub" style="margin-top:3px">Critical anomalies written to Casper testnet — real cspr.live transactions.</div></div>
-    <div class="kpi"><b>x402 payments</b><div class="sec-sub" style="margin-top:3px">HTTP-402 agent micropayments in the swarm economy.</div></div>
+    <div class="kpi"><b>x402 payments</b><div class="sec-sub" style="margin-top:3px">HTTP-402 agent micropayments in the swarm economy — external agents can hire the swarm's quant signal as a paid x402 resource.</div></div>
+    <div class="kpi"><b>Quant Desk — autonomous trading</b><div class="sec-sub" style="margin-top:3px">The swarm trades CSPR on LIVE exchange prices with its own quant ensemble (SMA crossover · RSI · Bollinger · momentum · vol targeting). You set one risk dial; Guardian enforces the derived envelope; every fill settles as a real Casper testnet transfer. Voice-controlled: "set risk to seven", "start autopilot".</div></div>
+    <div class="kpi"><b>Odra smart contracts</b><div class="sec-sub" style="margin-top:3px">AgentRegistry (on-chain agent identity + reputation) and TradePolicy (risk envelope + trade record computed on-chain) — authored with MockVM test suites, deploying to testnet.</div></div>
   </div>
 </section>
 
@@ -52,6 +54,8 @@ const STACK=[
   ['Memory / RAG','Pinecone vector store · Firecrawl ingestion · Sarvam (multilingual)'],
   ['Anomaly detection','Rolling baselines / z-score, Gini + Nakamoto coefficient, flow-correlation MEV'],
   ['Blockchain','Casper 2.0 testnet · casper-client 5.x · put-transaction anchoring · public RPC'],
+  ['Quant trading','Live Gate.io/KuCoin/CoinGecko candle cascade · SMA/RSI/Bollinger/momentum ensemble · vol-targeted sizing · on-chain trade settlement'],
+  ['Smart contracts','Odra framework (Rust → wasm) · AgentRegistry + TradePolicy with MockVM test suites'],
   ['Security','KAVACHA — HMAC-signed A2A, injection sentinel, policy rules, signed audit log'],
   ['Backend','Django + Channels (daphne) · DRF · deployed on GCP with nginx + systemd'],
   ['Observability','OpenTelemetry traces across the tier cascade'],

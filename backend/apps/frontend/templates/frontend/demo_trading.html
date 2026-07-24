@@ -1,0 +1,288 @@
+{% extends "frontend/demo_base.html" %}
+{% block title %}eraya — Quant Desk{% endblock %}
+{% block page %}trading{% endblock %}
+{% block content %}
+
+<!-- header -->
+<section class="card">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <div>
+      <div class="sec-title">Autonomous Quant Desk <span class="sec-sub">· the swarm trades, you only set the risk</span></div>
+      <div style="color:var(--fg3);font-size:12px;margin-top:4px">
+        Live CSPR/USDT prices · quant ensemble (SMA crossover · RSI · Bollinger · momentum · vol targeting) ·
+        every fill settles as a real Casper testnet transfer with a cspr.live proof.
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <span id="qd-feed" class="chip">feed: …</span>
+      <span id="qd-settle" class="chip">settlement: …</span>
+      <span id="qd-contracts" class="chip">contracts: …</span>
+      <button id="qd-tick" class="btn" onclick="qdTick()">⚡ Evaluate now</button>
+      <button id="qd-auto" class="btn" onclick="qdAutopilot()">▶ Start autopilot</button>
+    </div>
+  </div>
+</section>
+
+<!-- risk dial + policy -->
+<section class="card" style="margin-top:14px">
+  <div class="flex items-center justify-between flex-wrap gap-2" style="margin-bottom:8px">
+    <div class="sec-title" style="font-size:14px">Risk Factor <span class="sec-sub">· the only knob you get</span></div>
+    <span id="qd-risk-label" class="chip">…</span>
+  </div>
+  <input id="qd-risk" type="range" min="1" max="10" step="1" value="3" style="width:100%;accent-color:var(--a)" oninput="qdRiskPreview(this.value)" onchange="qdRiskCommit(this.value)">
+  <div style="display:flex;justify-content:space-between;color:var(--fg3);font-size:11px;margin-top:2px">
+    <span>1 · Conservative</span><span>5 · Balanced</span><span>10 · Degen</span>
+  </div>
+  <div id="qd-policy" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px" class="md:grid-cols-4"></div>
+  <div style="color:var(--fg3);font-size:11px;margin-top:8px">
+    Everything above derives from the dial. The Planner proposes, the <b>Guardian</b> enforces this envelope, the Recoverer executes &amp; settles on-chain.
+  </div>
+</section>
+
+<!-- KPIs -->
+<div id="qd-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px" class="md:grid-cols-6"></div>
+
+<!-- price chart + signal -->
+<div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px" class="lg:grid-cols-3">
+  <section class="card" style="grid-column:span 2;min-width:0">
+    <div class="sec-title" style="margin-bottom:2px;font-size:14px">CSPR / USDT <span class="sec-sub" id="qd-price-sub">· live 1-minute closes</span></div>
+    <div id="qd-price-chart" style="height:260px"></div>
+  </section>
+  <section class="card" style="min-width:0">
+    <div class="sec-title" style="font-size:14px;margin-bottom:8px">Quant Signal <span class="sec-sub">· ensemble score</span></div>
+    <div id="qd-score-num" style="font-size:30px;font-weight:700;letter-spacing:-1px">–</div>
+    <div style="position:relative;height:10px;border-radius:6px;background:var(--bg3,rgba(255,255,255,.07));margin:10px 0 4px">
+      <div id="qd-th-lo" style="position:absolute;top:-3px;width:2px;height:16px;background:var(--fg3);opacity:.6"></div>
+      <div id="qd-th-hi" style="position:absolute;top:-3px;width:2px;height:16px;background:var(--fg3);opacity:.6"></div>
+      <div id="qd-score-dot" style="position:absolute;top:-3px;width:14px;height:16px;border-radius:4px;background:var(--a);left:50%;transition:left .6s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;color:var(--fg3);font-size:10px"><span>-1 sell</span><span>0</span><span>+1 buy</span></div>
+    <div id="qd-verdict" class="chip" style="margin-top:10px">–</div>
+    <div id="qd-inds" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;font-size:11px"></div>
+  </section>
+</div>
+
+<!-- equity + activity -->
+<div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px" class="lg:grid-cols-3">
+  <section class="card" style="grid-column:span 2;min-width:0">
+    <div class="flex items-center justify-between">
+      <div class="sec-title" style="font-size:14px">Equity Curve <span class="sec-sub">· paper account, real prices</span></div>
+      <button class="btn" style="font-size:11px;padding:4px 10px" onclick="qdReset()">reset account</button>
+    </div>
+    <div id="qd-eq-chart" style="height:150px;margin-top:6px"></div>
+  </section>
+  <section class="card" style="min-width:0">
+    <div class="sec-title" style="font-size:14px;margin-bottom:6px">Swarm Activity <span class="sec-sub">· per tick</span></div>
+    <div id="qd-activity" style="max-height:170px;overflow-y:auto;font-size:11px;display:flex;flex-direction:column;gap:6px"></div>
+  </section>
+</div>
+
+<!-- trade log -->
+<section class="card" style="margin-top:14px">
+  <div class="sec-title" style="font-size:14px;margin-bottom:8px">Trade Log <span class="sec-sub">· every fill + on-chain settlement proof</span></div>
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:11.5px;min-width:760px">
+      <thead><tr style="color:var(--fg3);text-align:left">
+        <th style="padding:6px 8px">time</th><th style="padding:6px 8px">side</th>
+        <th style="padding:6px 8px">qty CSPR</th><th style="padding:6px 8px">price $</th>
+        <th style="padding:6px 8px">notional $</th><th style="padding:6px 8px">P&amp;L $</th>
+        <th style="padding:6px 8px">signal</th><th style="padding:6px 8px">guardian</th>
+        <th style="padding:6px 8px">settlement</th>
+      </tr></thead>
+      <tbody id="qd-trades"><tr><td colspan="9" style="padding:14px;color:var(--fg3)">no trades yet — set your risk and start the autopilot</td></tr></tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_js %}
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+<script>
+let QD=null, qdLastTradeId=0, qdRiskTimer=null;
+const fmt=(n,d=2)=>n==null?'–':Number(n).toLocaleString('en',{minimumFractionDigits:d,maximumFractionDigits:d});
+const ts2t=s=>new Date(s*1000).toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit'});
+
+function roleColor(r){return {Perceiver:NEU,Planner:A,Guardian:A_DEEP,Recoverer:A_SOFT}[r]||NEU;}
+
+async function qdPoll(){
+  try{
+    const d=await jget('/api/domains/casper_defi/trading/status/');
+    QD=d; qdRender(d);
+  }catch(e){/* keep last render */}
+}
+
+function qdRender(d){
+  // header badges + autopilot button
+  document.getElementById('qd-feed').textContent='feed: '+d.engine.feed.source+(d.engine.feed.live?' · live':' · sim');
+  const st=d.engine.settlement;
+  document.getElementById('qd-settle').textContent='settlement: '+(st.enabled?('on-chain · '+st.amount_cspr+' CSPR/trade'):'demo (no key)');
+  const ct=d.contracts||{};
+  const ctEl=document.getElementById('qd-contracts');
+  if(ct.deployed){ctEl.innerHTML='contracts: <a href="'+(ct.trade_policy||{}).explorer_url+'" target="_blank" style="color:'+A_SOFT+'">Odra on-chain ↗</a>';}
+  else{ctEl.textContent='contracts: Odra (deploy pending)';}
+  const ab=document.getElementById('qd-auto');
+  ab.textContent=d.engine.autopilot?'⏸ Stop autopilot':'▶ Start autopilot';
+  ab.style.borderColor=d.engine.autopilot?A:'';
+
+  // risk + policy
+  const p=d.risk;
+  const slider=document.getElementById('qd-risk');
+  if(document.activeElement!==slider) slider.value=p.risk;
+  document.getElementById('qd-risk-label').textContent=p.risk+'/10 · '+p.label;
+  qdPolicy(p);
+
+  // KPIs
+  const a=d.account;
+  const pnlC=v=>v>0?A_SOFT:v<0?A_DEEP:'var(--fg)';
+  document.getElementById('qd-kpis').innerHTML=[
+    ['Equity','$'+fmt(a.equity_usd),'start $'+fmt(a.start_cash_usd,0)],
+    ['Cash','$'+fmt(a.cash_usd),'available'],
+    ['Position',fmt(a.pos_units,0)+' CSPR',a.avg_entry?'entry $'+fmt(a.avg_entry,6):'flat'],
+    ['Unrealized','$'+fmt(a.unrealized_usd),'',pnlC(a.unrealized_usd)],
+    ['Realized','$'+fmt(a.realized_usd),a.closed_trades+' closed · '+(a.win_rate_pct==null?'–':a.win_rate_pct+'% wins'),pnlC(a.realized_usd)],
+    ['Drawdown',fmt(a.drawdown_pct)+'%','trades today: '+a.trades_today],
+  ].map(([l,v,s,c])=>`<div class="card" style="padding:10px 12px"><div style="color:var(--fg3);font-size:10.5px">${l}</div><div style="font-size:17px;font-weight:700;color:${c||'var(--fg)'}">${v}</div><div style="color:var(--fg3);font-size:10px">${s||''}</div></div>`).join('');
+
+  // signal
+  const sig=d.signal||{};
+  const score=sig.score??0, th=sig.threshold??0.4;
+  document.getElementById('qd-score-num').textContent=(score>0?'+':'')+fmt(score,3);
+  document.getElementById('qd-score-num').style.color=score>=th?A_SOFT:score<=-th?A_DEEP:'var(--fg)';
+  document.getElementById('qd-score-dot').style.left='calc('+((score+1)/2*100)+'% - 7px)';
+  document.getElementById('qd-th-lo').style.left=((1-th)/2*100)+'%';
+  document.getElementById('qd-th-hi').style.left=((1+th)/2*100)+'%';
+  const vd=document.getElementById('qd-verdict');
+  vd.textContent=sig.verdict||'–';
+  vd.style.borderColor=(sig.verdict==='BUY zone')?A_SOFT:(sig.verdict==='SELL zone')?A_DEEP:'';
+  const comp=(sig.components||{});
+  document.getElementById('qd-inds').innerHTML=[
+    ['RSI-14',sig.rsi14],['Boll z',sig.boll_z],['ROC-10',sig.roc10_pct==null?null:sig.roc10_pct+'%'],
+    ['vol (ann.)',sig.vol_annual_pct==null?null:sig.vol_annual_pct+'%'],
+    ['crossover',comp.crossover],['momentum',comp.momentum],
+  ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;border:1px solid var(--line,rgba(255,255,255,.08));border-radius:8px;padding:5px 8px"><span style="color:var(--fg3)">${l}</span><span class="mono">${v==null?'–':v}</span></div>`).join('');
+  document.getElementById('qd-price-sub').textContent='· $'+fmt(sig.price??0,6)+' · 1m closes ('+d.engine.feed.source+')';
+
+  qdCharts(d);
+  qdActivity(d.activity||[]);
+  qdTrades(d.trades||[]);
+}
+
+function qdPolicy(p){
+  document.getElementById('qd-policy').innerHTML=[
+    ['max position',(p.max_position_pct*100).toFixed(0)+'% of equity'],
+    ['stop-loss',(p.stop_loss_pct*100).toFixed(1)+'%'],
+    ['take-profit',(p.take_profit_pct*100).toFixed(1)+'%'],
+    ['signal threshold','±'+p.signal_threshold],
+    ['trade budget',p.max_trades_day+'/day'],
+    ['cooldown',p.cooldown_s+'s'],
+    ['drawdown halt',(p.drawdown_halt_pct*100).toFixed(1)+'%/day'],
+    ['vol target',p.vol_target+'× ann.'],
+  ].map(([l,v])=>`<div style="border:1px solid var(--line,rgba(255,255,255,.08));border-radius:10px;padding:8px 10px"><div style="color:var(--fg3);font-size:10px">${l}</div><div style="font-size:13px;font-weight:600">${v}</div></div>`).join('');
+}
+
+function qdCharts(d){
+  if(!window.Recharts){document.getElementById('qd-price-chart').innerHTML='<div style="color:var(--fg3);padding:20px">chart lib blocked</div>';return;}
+  const {ComposedChart,Area,AreaChart,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,Scatter}=Recharts,h=React.createElement;
+  const candles=(d.candles||[]).map((c,i)=>({i,t:c.t,p:c.c}));
+  if(candles.length){
+    const t0=candles[0].t;
+    const dots=(d.trades||[]).filter(t=>t.ts>=t0).map(t=>{
+      let best=0,bd=1e18;candles.forEach((c,i)=>{const dd=Math.abs(c.t-t.ts);if(dd<bd){bd=dd;best=i;}});
+      return {i:best,p:t.price,side:t.side};
+    });
+    ReactDOM.render(h(ResponsiveContainer,{width:'100%',height:'100%'},
+      h(ComposedChart,{data:candles,margin:{top:6,right:8,left:0,bottom:0}},
+        h(CartesianGrid,{strokeDasharray:'3 3',stroke:'rgba(255,255,255,.06)'}),
+        h(XAxis,{dataKey:'i',type:'number',domain:['dataMin','dataMax'],tickFormatter:i=>ts2t((candles[Math.round(i)]||{}).t||0),tick:{fontSize:10,fill:'#8a8f98'},tickCount:6}),
+        h(YAxis,{domain:['auto','auto'],tick:{fontSize:10,fill:'#8a8f98'},tickFormatter:v=>Number(v).toFixed(6),width:62}),
+        h(Tooltip,{contentStyle:{background:'#17181c',border:'1px solid rgba(255,255,255,.1)',fontSize:11},labelFormatter:i=>ts2t((candles[Math.round(i)]||{}).t||0),formatter:v=>Number(v).toFixed(6)}),
+        h(Area,{dataKey:'p',stroke:A,fill:A,fillOpacity:.12,strokeWidth:1.6,isAnimationActive:false,dot:false}),
+        h(Scatter,{data:dots.filter(x=>x.side==='BUY'),dataKey:'p',fill:A_SOFT,shape:'triangle',isAnimationActive:false}),
+        h(Scatter,{data:dots.filter(x=>x.side==='SELL'),dataKey:'p',fill:A_DEEP,shape:'diamond',isAnimationActive:false})
+      )),document.getElementById('qd-price-chart'));
+  }
+  const eq=(d.equity_curve||[]).map(e=>({t:e.t,eq:e.eq}));
+  const eqEl=document.getElementById('qd-eq-chart');
+  if(eq.length>1){
+    ReactDOM.render(h(ResponsiveContainer,{width:'100%',height:'100%'},
+      h(AreaChart,{data:eq,margin:{top:6,right:8,left:0,bottom:0}},
+        h(XAxis,{dataKey:'t',tickFormatter:ts2t,tick:{fontSize:10,fill:'#8a8f98'},tickCount:5}),
+        h(YAxis,{domain:['auto','auto'],tick:{fontSize:10,fill:'#8a8f98'},width:56,tickFormatter:v=>'$'+Number(v).toFixed(0)}),
+        h(Tooltip,{contentStyle:{background:'#17181c',border:'1px solid rgba(255,255,255,.1)',fontSize:11},labelFormatter:ts2t,formatter:v=>'$'+fmt(v)}),
+        h(Area,{dataKey:'eq',stroke:A_SOFT,fill:A_SOFT,fillOpacity:.12,strokeWidth:1.6,isAnimationActive:false,dot:false})
+      )),eqEl);
+  }else{
+    eqEl.innerHTML='<div style="color:var(--fg3);font-size:11px;padding:24px 8px">equity points appear as the engine ticks…</div>';
+  }
+}
+
+function qdActivity(items){
+  document.getElementById('qd-activity').innerHTML=items.length?items.map(a=>
+    `<div style="border-left:2px solid ${roleColor(a.role)};padding:2px 8px"><span style="color:${roleColor(a.role)};font-weight:600">${a.role}</span> <span style="color:var(--fg3)">${new Date(a.ts*1000).toLocaleTimeString('en',{hour12:false})}</span><div>${esc(a.text)}</div></div>`
+  ).join(''):'<div style="color:var(--fg3)">no activity yet</div>';
+}
+
+function qdTrades(trades){
+  const tb=document.getElementById('qd-trades');
+  if(!trades.length){tb.innerHTML='<tr><td colspan="9" style="padding:14px;color:var(--fg3)">no trades yet — set your risk and start the autopilot</td></tr>';return;}
+  // alert on new trades
+  const newest=trades[0];
+  if(newest&&newest.id>qdLastTradeId){
+    if(qdLastTradeId>0)pushAlert({kind:'trade',key:'trade|'+newest.id,severity:0.6,icon:newest.side==='BUY'?'🟢':'🔻',
+      text:`Quant Desk ${newest.side} ${fmt(newest.qty,0)} CSPR @ $${fmt(newest.price,6)}`,
+      meta:(newest.pnl_usd!=null?`realized ${newest.pnl_usd>=0?'+':''}$${fmt(newest.pnl_usd)}`:`$${fmt(newest.notional_usd)} notional`),url:newest.explorer_url||''});
+    qdLastTradeId=newest.id;
+  }
+  const stChip=t=>{
+    if(t.settle_status==='settled')return `<a href="${t.explorer_url}" target="_blank" style="color:${A_SOFT}">✓ cspr.live ↗</a>`;
+    if(t.settle_status==='pending')return `<span style="color:var(--fg3)"><span class="spin"></span> anchoring…</span>`;
+    if(t.settle_status==='failed')return `<span style="color:${A_DEEP}">✗ failed</span>`;
+    return `<span style="color:var(--fg3)">demo</span>`;
+  };
+  tb.innerHTML=trades.map(t=>{
+    const g=(t.guardian||{}).verdict||'–';
+    return `<tr style="border-top:1px solid rgba(255,255,255,.06)">
+      <td style="padding:6px 8px" class="mono">${new Date(t.ts*1000).toLocaleTimeString('en',{hour12:false})}</td>
+      <td style="padding:6px 8px;color:${t.side==='BUY'?A_SOFT:A_DEEP};font-weight:700">${t.side}</td>
+      <td style="padding:6px 8px" class="mono">${fmt(t.qty,0)}</td>
+      <td style="padding:6px 8px" class="mono">${fmt(t.price,6)}</td>
+      <td style="padding:6px 8px" class="mono">${fmt(t.notional_usd)}</td>
+      <td style="padding:6px 8px" class="mono" style2="">${t.pnl_usd==null?'–':`<span style="color:${t.pnl_usd>=0?A_SOFT:A_DEEP}">${t.pnl_usd>=0?'+':''}${fmt(t.pnl_usd)}</span>`}</td>
+      <td style="padding:6px 8px" class="mono">${(t.score>0?'+':'')+fmt(t.score,2)}</td>
+      <td style="padding:6px 8px">${g==='APPROVED'?`<span style="color:${A_SOFT}">✓</span>`:g}</td>
+      <td style="padding:6px 8px">${stChip(t)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── controls ──────────────────────────────────────────────────────────
+function qdRiskPreview(v){
+  document.getElementById('qd-risk-label').textContent=v+'/10';
+  clearTimeout(qdRiskTimer);qdRiskTimer=setTimeout(()=>qdRiskCommit(v),400);
+}
+async function qdRiskCommit(v){
+  clearTimeout(qdRiskTimer);
+  try{const r=await jpost('/api/domains/casper_defi/trading/risk/',{risk:Number(v)});
+    if(r.data&&r.data.policy){qdPolicy(r.data.policy);document.getElementById('qd-risk-label').textContent=r.data.policy.risk+'/10 · '+r.data.policy.label;}
+  }catch(e){}
+}
+async function qdAutopilot(){
+  const on=QD&&QD.engine.autopilot;
+  const b=document.getElementById('qd-auto');b.disabled=true;
+  try{await jpost('/api/domains/casper_defi/trading/autopilot/',{enabled:!on});await qdPoll();}finally{b.disabled=false;}
+}
+async function qdTick(){
+  const b=document.getElementById('qd-tick');b.disabled=true;b.innerHTML='<span class="spin"></span> evaluating…';
+  try{await jpost('/api/domains/casper_defi/trading/tick/',{});await qdPoll();}
+  finally{b.disabled=false;b.textContent='⚡ Evaluate now';}
+}
+async function qdReset(){
+  if(!confirm('Reset the paper account and clear all trades?'))return;
+  await jpost('/api/domains/casper_defi/trading/reset/',{});await qdPoll();
+}
+
+qdPoll(); setInterval(qdPoll,10000);
+</script>
+{% endblock %}

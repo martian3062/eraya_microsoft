@@ -123,7 +123,7 @@ nav.tabs a.active{color:var(--a);background:rgba(244,120,95,.10);border-color:rg
       </div>
     </div>
     <nav class="tabs" id="nav">
-      <a data-p="home">Home</a><a data-p="dashboard">Dashboard</a><a data-p="wallet">Wallet</a><a data-p="kavacha">KAVACHA</a><a data-p="swarm">agentic chatbook(a2a)</a><a data-p="x402">x402</a><a data-p="updates">View PPT</a>
+      <a data-p="home">Home</a><a data-p="dashboard">Dashboard</a><a data-p="wallet">Wallet</a><a data-p="trading">Quant Desk</a><a data-p="kavacha">KAVACHA</a><a data-p="swarm">agentic chatbook(a2a)</a><a data-p="x402">x402</a><a data-p="updates">View PPT</a>
     </nav>
   </header>
   {% endblock %}
@@ -147,7 +147,7 @@ function sev(s){return s>=0.85?A_DEEP:s>=0.7?A:s>=0.5?A_SOFT:NEU;}
 function tlStep(color,ok,text,score){return `<div class="tl-step" style="border-color:${color}"><span style="color:${color}">${ok?'✓':'●'}</span><div style="flex:1"><span style="color:var(--fg)">${text}</span>${score!=null?` <span class="mono" style="color:${color}">${score}</span>`:''}</div></div>`;}
 
 // nav
-const PAGES={home:'',dashboard:'dashboard/',wallet:'wallet/',kavacha:'kavacha/',anomaly:'kavacha/',security:'kavacha/',critic:'kavacha/',swarm:'swarm/',x402:'x402/',analytics:'dashboard/',updates:'updates/'};
+const PAGES={home:'',dashboard:'dashboard/',wallet:'wallet/',trading:'trading/',kavacha:'kavacha/',anomaly:'kavacha/',security:'kavacha/',critic:'kavacha/',swarm:'swarm/',x402:'x402/',analytics:'dashboard/',updates:'updates/'};
 const CUR=document.body.dataset.page;
 const _ll=document.getElementById('logo-link'); if(_ll)_ll.href=DEMO;
 document.querySelectorAll('#nav a').forEach(a=>{const p=a.dataset.p;a.href=DEMO+PAGES[p];if(p===CUR)a.classList.add('active');});
@@ -204,6 +204,19 @@ function _normNums(t){t=(t||'').replace(/[-]/g,' ');
   t=t.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b/gi,m=>String(_NW[m.toLowerCase()]));
   return t;}
 function parseSendIntent(t){t=_normNums(t);const m=t.match(/\b(?:send|transfer|pay|sent|bhej[o]?)\b[^\d]{0,12}(\d+(?:\.\d+)?)/i);if(!m)return null;let target=null;const tm=t.match(/to\s+(0[12][0-9a-fA-F]{62,66})/);if(tm)target=tm[1];return{amount:parseFloat(m[1]),target};}
+// Quant Desk voice commands: "set risk to 7", "start autopilot", "evaluate now", "how's trading going"
+function parseTradingIntent(t){
+  t=_normNums(t).toLowerCase();
+  let m=t.match(/\brisk(?:\s*(?:factor|level|dial))?\s*(?:to|at|of|=)?\s*(\d{1,2})\b/);
+  if(m)return{kind:'risk',value:Math.max(1,Math.min(10,parseInt(m[1])))};
+  m=t.match(/\b(conservative|balanced|aggressive|degen)\b/);
+  if(m&&/\b(risk|trade|trading|profile|mode|go)\b/.test(t))return{kind:'risk',value:{conservative:2,balanced:5,aggressive:8,degen:10}[m[1]]};
+  if(/\b(start|enable|begin|resume|turn on)\b[^.]*\b(autopilot|trading|quant)\b/.test(t)||/\bautopilot\s*on\b/.test(t))return{kind:'auto',value:true};
+  if(/\b(stop|disable|pause|halt|turn off)\b[^.]*\b(autopilot|trading|quant)\b/.test(t)||/\bautopilot\s*off\b/.test(t))return{kind:'auto',value:false};
+  if(/\b(evaluate|tick|scan|check)\b[^.]*\b(market|signal|trade|now)\b/.test(t))return{kind:'tick'};
+  if(/\b(trading|portfolio|quant|pnl|profit)\b[^.]*\b(status|doing|going|performance|update)\b/.test(t)||/\bhow('s| is| are)\b[^.]*\b(trading|portfolio|trades|quant)\b/.test(t))return{kind:'status'};
+  return null;
+}
 async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');const st=document.getElementById('cop-state');
   const intent=parseSendIntent(q);
   if(intent){st.textContent='sending…';
@@ -212,6 +225,30 @@ async function copAsk(q){copAdd('cop-user',q);const th=copAdd('cop-bot','…');c
       if(d.ok){const msg='Done — sent '+d.amount_cspr+' CSPR to the treasury.';th.innerHTML='✅ '+esc(msg)+' <a href="'+d.explorer_url+'" target="_blank">cspr.live ↗</a>';copSpeak(msg);pushAlert({kind:'pay',key:'cop|'+d.tx,severity:0.55,color:A,icon:'🤖',text:'Sent '+d.amount_cspr+' CSPR · ops→treasury',meta:'real Casper testnet tx',url:d.explorer_url});}
       else{th.textContent='⚠ Send failed: '+(d.error||'unknown');copSpeak('Sorry, the send failed.');}
     }catch(e){th.textContent='I could not reach the send service.';}
+    st.textContent='voice ready';return;}
+  const tr=parseTradingIntent(q);
+  if(tr){st.textContent='quant desk…';
+    try{
+      if(tr.kind==='risk'){
+        const {data:d}=await jpost('/api/domains/casper_defi/trading/risk/',{risk:tr.value});const p=d.policy||{};
+        const msg='Risk set to '+p.risk+' of 10 — '+(p.label||'')+' profile. Max position '+Math.round((p.max_position_pct||0)*100)+' percent, stop loss '+((p.stop_loss_pct||0)*100).toFixed(1)+' percent.';
+        th.textContent='🎚 '+msg;copSpeak(msg);
+      }else if(tr.kind==='auto'){
+        const {data:d}=await jpost('/api/domains/casper_defi/trading/autopilot/',{enabled:tr.value});
+        const msg=d.autopilot?'Autopilot engaged. The swarm is now trading on live market data within your risk envelope.':'Autopilot stopped. No new trades will be opened.';
+        th.textContent=(d.autopilot?'▶ ':'⏸ ')+msg;copSpeak(msg);
+        pushAlert({kind:'trade',key:'cop-auto|'+Date.now(),severity:0.5,color:A,icon:'🤖',text:'Quant autopilot '+(d.autopilot?'ON':'OFF')+' (voice command)',meta:'Quant Desk'});
+      }else if(tr.kind==='tick'){
+        const {data:d}=await jpost('/api/domains/casper_defi/trading/tick/',{});const tk=d.tick||{},dec=tk.decision||{};
+        const msg='Evaluated. Signal score '+(tk.score>=0?'plus ':'minus ')+Math.abs(tk.score||0).toFixed(2)+'. Decision: '+(dec.intent||'hold')+(dec.approved?' — approved and executed.':'.');
+        th.textContent='⚡ '+msg;copSpeak(msg);
+      }else{
+        const d=await jget('/api/domains/casper_defi/trading/status/');const a=d.account||{};
+        const pos=a.pos_units>0?Math.round(a.pos_units).toLocaleString()+' CSPR long':'flat';
+        const msg='Equity '+Math.round(a.equity_usd||0).toLocaleString()+' dollars. Realized P and L '+(a.realized_usd>=0?'plus ':'minus ')+Math.abs(a.realized_usd||0).toFixed(0)+' dollars. Position '+pos+'. '+(a.trades_today||0)+' trades today.';
+        th.textContent='📊 '+msg;copSpeak(msg);
+      }
+    }catch(e){th.textContent='Quant Desk is unreachable right now.';}
     st.textContent='voice ready';return;}
   st.textContent='thinking…';
   try{const {data:d}=await jpost('/api/domains/casper_defi/copilot/',{question:q});th.textContent=d.answer||'—';copSpeak(d.answer||'');}

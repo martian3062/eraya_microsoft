@@ -1,0 +1,7 @@
+name = "eraya-contracts"
+
+[[contracts]]
+fqn = "eraya_contracts::agent_registry::AgentRegistry"
+
+[[contracts]]
+fqn = "eraya_contracts::trade_policy::TradePolicy"
