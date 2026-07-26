@@ -67,6 +67,7 @@ opa-python-client==1.3.5
 
 # ─── MCP server ───────────────────────────────────────────────────────────────
 mcp>=1.0
+pycspr>=0.12.4          # Casper Python SDK — account-hash derivation + signing
 
 # ─── OpenTelemetry instrumentation ───────────────────────────────────────────
 opentelemetry-instrumentation-django>=0.48b0

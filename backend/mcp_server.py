@@ -24,12 +24,27 @@ from __future__ import annotations
 import json
 import os
 import sys
+from pathlib import Path
 from typing import Any
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-BASE = os.environ.get("ERAYA_API_BASE", "http://localhost:8000")
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))  # so `core.casper` resolves when run standalone
+
+# The Casper tools read node/key configuration from the backend .env. Django
+# isn't loaded here, so pull it in ourselves (without clobbering the real env).
+_ENV_FILE = _HERE.parent / ".env"
+if _ENV_FILE.exists():
+    for _line in _ENV_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip())
+
+BASE = os.environ.get("ERAYA_API_BASE", "http://localhost:8022")
 
 mcp = FastMCP(
     "eraya-swarm",
@@ -175,6 +190,128 @@ def get_a2a_message_log(limit: int = 20) -> dict:
     Useful for understanding how Perceiver → Planner → Recoverer → Guardian communicate.
     """
     return _get(f"/api/agents/messages/?page_size={min(limit, 50)}")
+
+
+# ─── Casper chain tools ───────────────────────────────────────────────────────
+#
+# These read the Casper network directly rather than going through the Eraya
+# REST API, so an MCP client can verify the swarm's on-chain claims for itself:
+# the contracts really are installed, the treasury really holds CSPR, and an
+# x402 payment proof really settles. Backed by core.casper.sdk (pycspr for
+# crypto, Casper 2.0 JSON-RPC for reads).
+
+@mcp.tool()
+def casper_chain_status() -> dict:
+    """
+    Health of the Casper node Eraya is bound to: chain name, API version,
+    latest block height, peer count.
+
+    Use this first to confirm the swarm is talking to a real, synced network
+    rather than a simulator.
+    """
+    from core.casper import sdk
+    return sdk.chain_status()
+
+
+@mcp.tool()
+def casper_balance(public_key: str = "") -> dict:
+    """
+    Main-purse balance of a Casper account, in motes and CSPR.
+
+    public_key: hex account key (e.g. '0202f47d…'). Defaults to the Eraya
+    treasury account when omitted.
+    """
+    from core.casper import sdk
+    return sdk.balance(public_key or None)
+
+
+@mcp.tool()
+def casper_transaction(tx_hash: str) -> dict:
+    """
+    Look up a Casper transaction by hash: whether it succeeded, which block it
+    landed in, gas cost, and every transfer it moved.
+
+    Works for both Casper 2.0 transactions and legacy deploys.
+    """
+    from core.casper import sdk
+    return sdk.transaction(tx_hash)
+
+
+@mcp.tool()
+def casper_deployed_contracts() -> dict:
+    """
+    The Odra contracts Eraya has installed on Casper — AgentRegistry (on-chain
+    agent identity and reputation) and TradePolicy (the risk envelope and trade
+    record that governs the Quant Desk).
+
+    Returns package hashes and cspr.live explorer links, plus the account's
+    on-chain named keys as independent confirmation.
+    """
+    from core.casper import contracts, sdk
+    out = contracts.status()
+    keys = sdk.account_named_keys()
+    if keys.get("ok"):
+        out["onchain_named_keys"] = keys["named_keys"]
+        out["deployer_account_hash"] = keys["account_hash"]
+    return out
+
+
+@mcp.tool()
+def casper_account_hash(public_key: str) -> dict:
+    """
+    Derive the Casper account hash for a public key (pycspr).
+
+    public_key: hex account key, '01…' for ed25519 or '02…' for secp256k1.
+    """
+    from core.casper import sdk
+    return {
+        "public_key": public_key,
+        "account_hash": sdk.account_hash(public_key),
+        "derived_by": "pycspr" if sdk.sdk_available() else "blake2b fallback",
+    }
+
+
+@mcp.tool()
+def casper_signing_key_status() -> dict:
+    """
+    Describe the signing key the swarm transacts with — algorithm, public key,
+    account hash, and whether the key file is present. Never returns private
+    material.
+    """
+    from core.casper import sdk
+    return sdk.key_status()
+
+
+@mcp.tool()
+def casper_x402_challenge(resource: str = "/api/v1/domains/casper_defi/market-data/") -> dict:
+    """
+    Mint an x402 payment challenge for one of Eraya's paid agent-to-agent
+    resources (HTTP 402 Payment Required).
+
+    Returns the payment address, price in motes, a single-use nonce, and the
+    proof format to pay with. This is the 'agents buying from agents' flow.
+    """
+    from core.casper import x402
+    return x402.challenge(resource)
+
+
+@mcp.tool()
+def casper_x402_verify(
+    x_payment: str,
+    resource: str = "/api/v1/domains/casper_defi/market-data/",
+) -> dict:
+    """
+    Settle an x402 payment proof against the Casper chain.
+
+    x_payment: 'casper:<payer_pubkey>:<amount_motes>:<transaction_hash>'
+
+    The facilitator pulls the transaction from the node and confirms it executed
+    without error and genuinely moved at least the asking price to the receiver.
+    Forged hashes, failed transactions, wrong recipients, short payments and
+    replays are all rejected — verified=true means the chain said so.
+    """
+    from core.casper import x402
+    return x402.verify(x_payment, resource)
 
 
 # ─── Resources ────────────────────────────────────────────────────────────────

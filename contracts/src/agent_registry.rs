@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn register_list_and_reputation() {
         let env = odra_test::env();
-        let mut registry = AgentRegistryHostRef::deploy(&env, NoArgs);
+        let mut registry = AgentRegistry::deploy(&env, NoArgs);
 
         for (id, arch) in [
             ("perceiver-casper-001", "perceiver"),
@@ -139,7 +139,7 @@ mod tests {
     #[test]
     fn duplicate_registration_reverts() {
         let env = odra_test::env();
-        let mut registry = AgentRegistryHostRef::deploy(&env, NoArgs);
+        let mut registry = AgentRegistry::deploy(&env, NoArgs);
         registry.register_agent("a".into(), "perceiver".into(), "01aa".into());
         let err = registry.try_register_agent("a".into(), "perceiver".into(), "01aa".into());
         assert!(err.is_err());
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn non_owner_cannot_register() {
         let env = odra_test::env();
-        let mut registry = AgentRegistryHostRef::deploy(&env, NoArgs);
+        let mut registry = AgentRegistry::deploy(&env, NoArgs);
         env.set_caller(env.get_account(1));
         let err = registry.try_register_agent("x".into(), "planner".into(), "01bb".into());
         assert!(err.is_err());

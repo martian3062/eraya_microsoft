@@ -2,8 +2,16 @@
 .env
 .env.local
 .env.*.local
+.env*.bak
 *.pem
 *.key
+*.bak
+
+# ─── Local tooling / build output ─────────────────────────────────────────────
+# ngrok, cloudflared and friends — large vendored binaries
+tools/
+# `cargo odra build` output — reproducible from source
+contracts/wasm/
 
 # ─── Python ───────────────────────────────────────────────────────────────────
 __pycache__/

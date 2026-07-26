@@ -1,7 +1,5 @@
-name = "eraya-contracts"
+[[contracts]]
+fqn = "agent_registry::AgentRegistry"
 
 [[contracts]]
-fqn = "eraya_contracts::agent_registry::AgentRegistry"
-
-[[contracts]]
-fqn = "eraya_contracts::trade_policy::TradePolicy"
+fqn = "trade_policy::TradePolicy"

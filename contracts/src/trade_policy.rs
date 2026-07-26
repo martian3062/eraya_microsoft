@@ -152,7 +152,7 @@ mod tests {
     #[test]
     fn default_policy_matches_engine_math() {
         let env = odra_test::env();
-        let policy = TradePolicyHostRef::deploy(&env, NoArgs);
+        let policy = TradePolicy::deploy(&env, NoArgs);
         let p = policy.policy();
         // risk 3 -> t = 2/9; matches backend risk_profile(3)
         assert_eq!(p.risk, 3);
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn set_risk_bounds_and_update() {
         let env = odra_test::env();
-        let mut policy = TradePolicyHostRef::deploy(&env, NoArgs);
+        let mut policy = TradePolicy::deploy(&env, NoArgs);
         policy.set_risk(10);
         assert_eq!(policy.risk(), 10);
         assert_eq!(policy.policy().max_position_bps, 6000);
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn record_and_read_trades() {
         let env = odra_test::env();
-        let mut policy = TradePolicyHostRef::deploy(&env, NoArgs);
+        let mut policy = TradePolicy::deploy(&env, NoArgs);
         policy.set_risk(8);
         let id = policy.record_trade("BUY".into(), 3_131_833, 1525, 620);
         assert_eq!(id, 1);
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn non_owner_rejected() {
         let env = odra_test::env();
-        let mut policy = TradePolicyHostRef::deploy(&env, NoArgs);
+        let mut policy = TradePolicy::deploy(&env, NoArgs);
         env.set_caller(env.get_account(1));
         assert!(policy.try_set_risk(5).is_err());
         assert!(policy.try_record_trade("BUY".into(), 1, 1, 1).is_err());

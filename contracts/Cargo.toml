@@ -4,13 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-odra = { version = "1.4.0", default-features = false }
+odra = { version = "2.9.0", features = [], default-features = false }
 
 [dev-dependencies]
-odra-test = "1.4.0"
+odra-test = { version = "2.9.0", features = [], default-features = false }
 
 [build-dependencies]
-odra-build = "1.4.0"
+odra-build = { version = "2.9.0", features = [], default-features = false }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+odra-build = { version = "2.9.0", features = [], default-features = false }
+odra-cli = { version = "2.9.0", features = [], default-features = false }
 
 [[bin]]
 name = "eraya_contracts_build_contract"
@@ -22,9 +26,14 @@ name = "eraya_contracts_build_schema"
 path = "bin/build_schema.rs"
 test = false
 
+[[bin]]
+name = "eraya_contracts_cli"
+path = "bin/cli.rs"
+test = false
+
 [profile.release]
 codegen-units = 1
 lto = true
 
-[lib]
-name = "eraya_contracts"
+[profile.dev.package."*"]
+opt-level = 3
