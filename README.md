@@ -13,8 +13,8 @@
 [![OTel](https://img.shields.io/badge/OpenTelemetry-traced-orange)](https://opentelemetry.io)
 [![Casper](https://img.shields.io/badge/Casper-testnet%20live-red)](https://testnet.cspr.live)
 
-> 🟢 **LIVE (`caspr` branch):** interactive systems demo → **http://35.255.196.78/eraya_api/demo/**
-> Detected anomalies are anchored as **real Casper testnet transactions** — verifiable on [testnet.cspr.live](https://testnet.cspr.live). Four agents coordinate live over A2A, each on its own reasoning model.
+> 🟢 **LIVE (`caspr` branch):** production app → **https://eraya.34.126.112.227.nip.io** (HTTPS · sign in as Guest, member account, or admin)
+> Detected anomalies are anchored as **real Casper testnet transactions** — verifiable on [testnet.cspr.live](https://testnet.cspr.live). Four agents coordinate live over A2A, each on its own reasoning model, with full voice control (Whisper STT in, ElevenLabs neural TTS out).
 
 ---
 
@@ -36,10 +36,12 @@ The `caspr` branch extends ERAYA from a general self-healing swarm into a Casper
 - **Critic agent** (LLM-as-judge) — `POST /api/v1/security/critic-review/`.
 - **Live A2A reasoning chat** — `core/casper/swarm_chat.py`, 4 distinct Groq models; `POST /api/domains/casper_defi/swarm-chat/`.
 - **x402 payments** — `core/casper/x402.py` + `GET /api/domains/casper_defi/market-data/`.
-- **Quant Desk — autonomous trading** (`/demo/trading/`) — the swarm trades CSPR/USDT on **live exchange prices** (Gate.io → KuCoin → CoinGecko cascade, `core/quant/feed.py`) with its own quant ensemble (SMA-9/26 crossover, RSI-14, Bollinger, momentum, volatility-targeted sizing — `core/quant/engine.py`). The user sets exactly one input, the **risk dial (1–10)**; every policy limit (position cap, stop-loss, take-profit, trade budget, cooldown, drawdown kill-switch) derives from it and is enforced by the Guardian per trade. Fills are paper-settled at real prices (testnet has no liquid DEX) and **every executed trade settles as a real Casper testnet transfer whose transfer-id encodes the trade id** (cspr.live proof per trade). Autopilot ticks every 30 s in a background thread; state persists in `apps.trading` models. Voice-controlled from any page: *"set risk to seven"*, *"start autopilot"*, *"evaluate now"*, *"how's trading going"*.
+- **Quant Desk — autonomous trading** (`/app/trading/`) — the swarm trades CSPR/USDT on **live exchange prices** (Gate.io → KuCoin → CoinGecko cascade, `core/quant/feed.py`) with its own quant ensemble (SMA-9/26 crossover, RSI-14, Bollinger, momentum, volatility-targeted sizing — `core/quant/engine.py`). The user sets exactly one input, the **risk dial (1–10)**; every policy limit (position cap, stop-loss, take-profit, trade budget, cooldown, drawdown kill-switch) derives from it and is enforced by the Guardian per trade. Fills are paper-settled at real prices (testnet has no liquid DEX) and **every executed trade settles as a real Casper testnet transfer whose transfer-id encodes the trade id** (cspr.live proof per trade). Autopilot ticks every 30 s in a background thread; state persists in `apps.trading` models. Voice-controlled from any page: *"set risk to seven"*, *"start autopilot"*, *"evaluate now"*, *"how's trading going"*.
+  **Public emotions in the ensemble** — `core/quant/sentiment.py` pulls the live crypto **Fear & Greed index** and blends it in as a 5th, contrarian component (10% weight; extreme fear = buy bias). **Fund your own stake** — `POST /trading/stake/` capitalises the desk with any CSPR amount, priced at the live rate. **Session metrics** — every evaluation is tracked (duration, tick count, session-only P&L) and surfaced next to a live P&L strip; each manual evaluation also pops a result bubble (verdict · score · crowd emotion · strongest algo vote · Guardian checks · reason).
 - **Swarm-for-hire over x402** — `GET /api/domains/casper_defi/quant-signal/` sells the swarm's live quant signal to external agents behind an HTTP-402 paywall. `scripts/external_agent_hire.py` demos the full flow (402 challenge → pay → signed retry → signal delivered): any agent that speaks HTTP — elizaOS, LangChain, MCP, curl — can hire the ERAYA swarm.
-- **Odra smart contracts** (`contracts/`) — `AgentRegistry` (on-chain agent identity + reputation, event-emitting) and `TradePolicy` (the risk envelope **computed on-chain** with the same integer math as the engine, plus an auditable trade record). MockVM test suites included; build/test/deploy via `scripts/build_deploy_contracts.sh`; backend picks up deployed hashes from `CASPER_AGENT_REGISTRY_HASH` / `CASPER_TRADE_POLICY_HASH` (`core/casper/contracts.py`).
-- **Interactive multi-page demo** — `/demo/` (enter) → `/demo/{dashboard,wallet,trading,kavacha,swarm,x402,updates}` with D3 + Recharts analytics and a live alerts ticker.
+- **Odra smart contracts — DEPLOYED on Casper testnet** (`contracts/`, Odra 2.9) — [`AgentRegistry`](https://testnet.cspr.live/contract-package/0f31a5ec54c504117991517728e1a5214369234913245f808414accfec63ef8a) (on-chain agent identity + reputation; all four archetypes are registered on-chain) and [`TradePolicy`](https://testnet.cspr.live/contract-package/6b252f67abf1574e762b56071abf58365cf198af83cd55fd1d9d137f81daf968) (the risk envelope **computed on-chain** with the same integer math as the engine, plus an auditable trade record). 7 MockVM tests; build/test/deploy via `scripts/build_deploy_contracts.sh` (odra-cli livenet); backend picks up hashes from `CASPER_AGENT_REGISTRY_HASH` / `CASPER_TRADE_POLICY_HASH` (`core/casper/contracts.py`).
+- **Production app** — logo loader → themed sign-in (`/`) → `/app/{dashboard,wallet,trading,kavacha,swarm,x402,updates}` with D3 + Recharts analytics and a live alerts ticker. Session auth with **role-based treasury allowances** (Guest 30 CSPR/tx · member 100 · admin unlimited) enforced server-side on every transfer; the legacy operator console routes all 302 to `/app/`.
+- **Voice everywhere** — mic capture → **Groq Whisper** STT (dual-key failover, wallet-domain prompt, spoken number-words) → intent parsing (send / risk / autopilot / status) → real action → spoken reply via **ElevenLabs → Sarvam → browser** TTS cascade.
 
 API smoke checks:
 
@@ -138,8 +140,10 @@ The swarm trades on **live exchange prices**; the user's single risk dial derive
 ```mermaid
 flowchart LR
     DIAL(["🎚 user risk dial 1-10<br/>(the ONLY user input)"]) -->|derives| POL["policy envelope<br/>position cap · SL/TP · trade budget<br/>cooldown · drawdown halt"]
+    STAKE(["💰 user stake in CSPR<br/>priced at the live rate"]) --> ACC["paper account<br/>equity · session P&L"]
     F["live candles<br/>Gate.io → KuCoin → CoinGecko"] --> P["👁 Perceiver<br/>price · RSI · vol"]
-    P --> PL["🧠 Planner — quant ensemble<br/>SMA9/26 · RSI-14 · Bollinger · momentum<br/>score ∈ [-1,+1] · vol-targeted sizing"]
+    EMO["🌍 crowd emotions<br/>Fear &amp; Greed index"] --> P
+    P --> PL["🧠 Planner — quant ensemble<br/>SMA9/26 · RSI-14 · Bollinger · momentum<br/>+ emotions (contrarian)<br/>score ∈ [-1,+1] · vol-targeted sizing"]
     PL -->|"BUY / SELL intent"| G{"🛡 Guardian<br/>enforces envelope"}
     POL --> G
     G -->|REJECTED + reason| LOG["trade log + Live Alerts"]
@@ -147,7 +151,8 @@ flowchart LR
     R --> SETTLE["casper-client transfer<br/>transfer-id = trade id"]
     SETTLE --> C[("Casper testnet<br/>cspr.live proof")]
     R --> LOG
-    LOG --> EQ["equity curve · P&L · win rate"]
+    ACC --> EQ
+    LOG --> EQ["equity curve · live P&L · win rate<br/>session: duration · ticks · session P&L"]
 ```
 
 ### 7 · Swarm-for-hire — external agents pay for the quant signal
@@ -179,6 +184,53 @@ flowchart LR
     AR --> EXP
 ```
 
+### 9 · Voice pipeline — speak to the treasury, it speaks back
+
+Every page has the Copilot mic; the Wallet has its own assistant. One shared pipeline: capture → transcribe → parse intent → act → reply out loud.
+
+```mermaid
+flowchart LR
+    MIC["🎤 MediaRecorder<br/>(8s capture, HTTPS only)"] --> STT["Groq Whisper large-v3-turbo<br/>/transcribe/ · dual-key failover<br/>wallet-domain prompt · temp 0"]
+    STT --> NORM["number-word normalizer<br/>'twenty-five' → 25"]
+    NORM --> INT{intent?}
+    INT -->|"send 25 coins"| PAY["/pay/ → real Casper transfer<br/>(role allowance enforced)"]
+    INT -->|"set risk to 7 · start autopilot<br/>evaluate now · how's trading"| QD["Quant Desk APIs<br/>risk / autopilot / tick / status"]
+    INT -->|anything else| COP["Advisory Copilot LLM<br/>(live treasury + threat context)"]
+    PAY & QD & COP --> TTS["/speak/ TTS cascade<br/>ElevenLabs → Sarvam → browser voice"]
+    TTS --> OUT["🔊 spoken reply + on-screen card<br/>cspr.live link when on-chain"]
+```
+
+### 10 · Auth & role-based treasury allowances
+
+Session auth (no cookies-for-APIs friction); the CSPR cap is attached to the session at login and enforced server-side on every transfer.
+
+```mermaid
+flowchart LR
+    L["🔐 sign-in page<br/>logo loader → themed card"] -->|Continue as Guest| G["role: guest<br/>cap 30 CSPR/tx"]
+    L -->|email / register| M["role: member<br/>cap 100 CSPR/tx"]
+    L -->|admin credentials| AD["role: admin<br/>unlimited"]
+    G & M & AD --> S["Django session<br/>{role, cap_cspr}"]
+    S --> ME["GET /auth/me/<br/>app pages gate on authed"]
+    S --> PAYV["POST /pay/<br/>amount = min(requested, session cap)<br/>Guardian policy in response"]
+    PAYV --> TX["real Casper testnet transfer"]
+    LEG["legacy console routes<br/>/dashboard/ /agents/ …"] -->|302| APP["/app/*"]
+```
+
+### 11 · Production deployment topology
+
+Dedicated HTTPS host on its own origin — isolated from every other app on the box.
+
+```mermaid
+flowchart LR
+    U["🌐 browser<br/>https://eraya.34.126.112.227.nip.io"] --> NG["nginx vhost (443)<br/>Let's Encrypt · nip.io DNS<br/>ws upgrade · no-store"]
+    NG --> DA["daphne :8022 (systemd<br/>eraya-backend, auto-restart)"]
+    DA --> DJ["Django 5.2 + DRF + Channels<br/>app pages · APIs · auth"]
+    DJ --> RPC["Casper testnet RPC<br/>balances · transfers · anchors"]
+    DJ --> GQ["Groq (LLM + Whisper)<br/>dual-key failover"]
+    DJ --> EL["ElevenLabs / Sarvam TTS"]
+    DJ --> DB[("sqlite<br/>users · trades · audit")]
+```
+
 ---
 
 ## Quant Desk — how it works
@@ -192,6 +244,10 @@ One knob in, a full trading policy out. `risk_profile(r)` in `backend/core/quant
 | 5 | Balanced | 29% | 3.3% | 5.6% | 20 | 353 s | 6.4% |
 | 8 | Aggressive | 48% | 4.9% | 8.2% | 32 | 168 s | 9.8% |
 | 10 | Degen | 60% | 6.0% | 10.0% | 40 | 45 s | 12% |
+
+**Signal ensemble (score ∈ [−1, +1]):** SMA-9/26 crossover **27%** · RSI-14 **22%** · Bollinger z **18%** · momentum (ROC-10) **23%** · **crowd emotions 10%** (Fear & Greed, contrarian). A trade only fires when `|score| ≥ signal_threshold`, and only after the Guardian clears every policy check.
+
+**Dashboard — you watch the swarm work:** a D3 fear→greed gauge, a signed bar chart of each algo's vote, and an *Agents at Work* pipeline (Perceiver reads → Planner proposes → Guardian vets each check ✓/✕ → Recoverer executes & settles on-chain), plus equity curve, live P&L, and a trade log with a cspr.live proof per fill.
 
 **Tick lifecycle** (autopilot thread, every 30 s, or "⚡ Evaluate now"): fetch live candles (25 s cache, source cascade) → compute the ensemble (weights: crossover 0.30, RSI 0.25, Bollinger 0.20, momentum 0.25) → decide (BUY when score ≥ threshold and flat; SELL on exit signal, stop-loss, or take-profit) → Guardian checks (trade budget, cooldown, daily drawdown) each recorded with the trade → execute in the paper ledger at the real price → settle on Casper testnet in a background thread. State survives restarts (`apps.trading` models).
 

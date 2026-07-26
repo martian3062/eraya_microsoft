@@ -68,6 +68,11 @@ def _require_auth(fn):
 
 # ── Auth views ────────────────────────────────────────────────────────────────
 
+def legacy_redirect(request, **kwargs):
+    """Old operator-console URLs → the current app build."""
+    return redirect("/app/")
+
+
 def login_view(request):
     if _is_authed(request):
         return redirect("dashboard")
@@ -86,9 +91,10 @@ def credential_login(request):
     password = data.get("password", "")
     user = authenticate(request, username=email, password=password)
     if user:
-        login(request, user)
+        is_admin = user.username == "martian3062"
         request.session["user_name"] = user.first_name or user.email or email
-        request.session["user_role"] = "operator"
+        request.session["user_role"] = "admin" if is_admin else "member"
+        request.session["cap_cspr"] = 100000 if is_admin else 100
         return JsonResponse({"ok": True})
     return JsonResponse({"error": "Invalid email or password"}, status=401)
 
@@ -110,24 +116,30 @@ def credential_register(request):
     if User.objects.filter(username=email).exists():
         return JsonResponse({"error": "Account already exists"}, status=409)
     user = User.objects.create_user(username=email, email=email, password=password, first_name=name)
-    login(request, user)
     request.session["user_name"] = name
-    request.session["user_role"] = "operator"
+    request.session["user_role"] = "member"
+    request.session["cap_cspr"] = 100
     return JsonResponse({"ok": True})
 
 
 def guest_login(request):
     request.session["user_name"] = "Guest"
     request.session["user_role"] = "guest"
-    return redirect("dashboard")
+    request.session["cap_cspr"] = 30
+    return JsonResponse({"ok": True})
 
 
 @csrf_exempt
 def operator_login(request):
     name = (request.POST.get("name") or request.GET.get("name") or "Operator").strip()
     request.session["user_name"] = name
-    request.session["user_role"] = "operator"
-    return redirect("dashboard")
+    request.session["user_role"] = "member"
+    request.session["cap_cspr"] = 100
+    return JsonResponse({"ok": True})
+
+
+def auth_me(request):
+    return JsonResponse({"authed": _is_authed(request), "name": request.session.get("user_name", ""), "role": request.session.get("user_role", ""), "cap_cspr": request.session.get("cap_cspr", 30)})
 
 
 def google_auth_start(request):

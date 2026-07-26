@@ -1,19 +1,19 @@
 {% extends "frontend/demo_base.html" %}
-{% block title %}eraya — Swarm Chat{% endblock %}
+{% block title %}eraya — Chatbook (A2A){% endblock %}
 {% block page %}swarm{% endblock %}
 {% block content %}
 <style>
 .wa{border-radius:16px;overflow:hidden;border:1px solid var(--bd);background:var(--card);backdrop-filter:blur(14px)}
 .wa-top{display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(20,14,12,.7);border-bottom:1px solid var(--bd)}
-.wa-gav{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f4785f,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.wa-gav{width:42px;height:42px;border-radius:50%;background:var(--grad-brand);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .wa-chat{padding:16px 14px;max-height:62vh;overflow-y:auto;
-  background:radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px);background-size:22px 22px;background-color:#0b0908}
+  background:radial-gradient(rgba(255,255,255,.02) 1px,transparent 1px);background-size:22px 22px;background-color:#1d0718}
 .wa-sys{width:fit-content;max-width:80%;margin:8px auto;padding:4px 12px;border-radius:8px;font-size:11px;text-align:center}
 .wa-row{display:flex;gap:8px;margin-bottom:9px;align-items:flex-end;animation:pop .25s ease}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
 .wa-av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
-.wa-bubble{max-width:76%;background:#17120f;border-radius:10px;border-top-left-radius:3px;padding:6px 10px 5px;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.3)}
-.wa-bubble:before{content:"";position:absolute;left:-6px;top:0;border:6px solid transparent;border-top-color:#17120f;border-right:0}
+.wa-bubble{max-width:76%;background:#251020;border-radius:10px;border-top-left-radius:3px;padding:6px 10px 5px;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.wa-bubble:before{content:"";position:absolute;left:-6px;top:0;border:6px solid transparent;border-top-color:#251020;border-right:0}
 .wa-name{font-size:12px;font-weight:700;margin-bottom:1px}
 .wa-text{font-size:13px;color:var(--fg);line-height:1.4}
 .wa-meta{display:flex;align-items:center;gap:5px;justify-content:flex-end;font-size:9px;color:var(--fg3);margin-top:2px}
@@ -26,18 +26,18 @@
 
 <section class="wa">
   <div class="wa-top">
-    <div class="wa-gav">🛡</div>
+    <div class="wa-gav"></div>
     <div style="flex:1;min-width:0">
       <div style="font-weight:700;font-size:15px" class="brand">ERAYA Swarm</div>
       <div id="members" style="font-size:11px;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Perceiver, Planner, Recoverer, Guardian</div>
     </div>
     <label style="font-size:12px;color:var(--fg2);display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="live-toggle" checked style="accent-color:var(--a)"> Live</label>
-    <button class="btn" id="round-btn" onclick="runRound(true)" style="padding:7px 12px">↻</button>
+    <button class="btn" id="round-btn" onclick="runRound(true)" title="Run a coordination round" aria-label="Run a coordination round" style="padding:7px 12px">↻</button>
   </div>
-  <div id="chat" class="wa-chat"><div class="wa-sys" style="background:rgba(255,255,255,.05);color:var(--fg3)">agents connecting to the A2A bus…</div></div>
+  <div id="chat" class="wa-chat"><div class="wa-sys" style="background:rgba(255,255,255,.05);color:var(--fg3)">Agents connecting to the A2A bus…</div></div>
   <div class="wa-foot">
     <span id="foot-status"><span class="pulse" style="display:inline-block"></span></span>
-    <span id="foot-text">live · agents coordinating over A2A</span>
+    <span id="foot-text">Live · agents coordinating over A2A</span>
   </div>
 </section>
 {% endblock %}
@@ -45,11 +45,12 @@
 {% block page_js %}
 <script>
 let history=[], busy=false;
-const AICON={Perceiver:'👁',Planner:'🧠',Recoverer:'🔧',Guardian:'🛡'};
-const ACOLOR={Perceiver:'#2dd4bf',Planner:'#a78bfa',Recoverer:'#34d399',Guardian:'#f87171'};
+const AICON={Perceiver:'Pe',Planner:'Pl',Recoverer:'Re',Guardian:'Gu',Critic:'Cr'};
+const PTAG={groq:'Groq',openai:'GPT',kimi:'Kimi'};
+const ACOLOR={Perceiver:'#2dd4bf',Planner:'#a78bfa',Recoverer:'#34d399',Guardian:'#f87171',Critic:'#fbbf24'};
 
 (async()=>{try{const r=await jget('/api/domains/casper_defi/swarm-chat/');
-  document.getElementById('members').textContent=(r.agents||[]).map(a=>a.role+' ('+a.model.split('/').pop()+')').join(', ');
+  document.getElementById('members').textContent=(r.agents||[]).map(a=>a.role+' · '+(PTAG[a.provider]||a.provider)+' '+(a.every_s<60?a.every_s+'s':Math.round(a.every_s/60)+'m')).join('  ·  ');
 }catch(e){}})();
 
 async function currentTrigger(){
@@ -60,16 +61,16 @@ async function currentTrigger(){
 }
 function sysMsg(text,color){const c=document.getElementById('chat');c.insertAdjacentHTML('beforeend',`<div class="wa-sys" style="background:${color}1a;color:${color}">${esc(text)}</div>`);c.scrollTop=c.scrollHeight;}
 function typingRow(role){
-  const col=ACOLOR[role]||'#f4785f';
+  const col=ACOLOR[role]||'#ff6f91';
   return `<div class="wa-row" id="typing"><div class="wa-av" style="background:${col}22;color:${col}">${AICON[role]||'●'}</div><div class="wa-bubble"><div class="wa-name" style="color:${col}">${esc(role)}</div><div class="typing"><span></span><span></span><span></span></div></div></div>`;
 }
 function msgRow(m){
-  const col=m.color||ACOLOR[m.from]||'#f4785f';
+  const col=m.color||ACOLOR[m.from]||'#ff6f91';
   const t=new Date((m.ts||Date.now()/1000)*1000).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
   return `<div class="wa-row"><div class="wa-av" style="background:${col}22;color:${col}">${AICON[m.from]||'●'}</div>
     <div class="wa-bubble"><div class="wa-name" style="color:${col}">${esc(m.from)} <span style="color:var(--fg3);font-weight:400;font-size:10px">→ ${esc(m.to)}</span></div>
     <div class="wa-text">${esc(m.text)}</div>
-    <div class="wa-meta"><span class="wa-tag">${esc((m.model||'').split('/').pop())}</span> ${t} <span style="color:var(--a)">✓✓</span></div></div></div>`;
+    <div class="wa-meta"><span class="wa-tag" style="color:${col}">${esc(PTAG[m.provider]||m.provider||'')}</span><span class="wa-tag">${esc((m.model||'').split('/').pop())}</span> ${t} <span style="color:var(--a)">✓✓</span></div></div></div>`;
 }
 async function runRound(manual){
   if(busy)return; busy=true;
@@ -77,11 +78,16 @@ async function runRound(manual){
   const trig=await currentTrigger();
   const chat=document.getElementById('chat');
   if(history.length===0)chat.innerHTML='<div class="wa-sys" style="background:rgba(255,255,255,.05);color:var(--fg3)">Today</div>';
-  if(trig)sysMsg('⚠ anomaly detected — '+trig.type.replace(/_/g,' ')+' on '+trig.target,A_DEEP);
   document.getElementById('foot-text').textContent = trig? 'coordinating on '+trig.type.replace(/_/g,' ') : 'live · agents coordinating over A2A';
   try{
-    const {data:d}=await jpost('/api/domains/casper_defi/swarm-chat/',{trigger:trig,prior:history.slice(-6)});
+    const {data:d}=await jpost('/api/domains/casper_defi/swarm-chat/',{trigger:trig,prior:history.slice(-6),force:!!manual});
     const msgs=d.messages||[];
+    // only announce an anomaly when someone actually speaks about it, and only once per anomaly
+    const key=trig?trig.type+'|'+trig.target:'';
+    if(msgs.length&&key&&key!==window._lastTrigKey){
+      window._lastTrigKey=key;
+      sysMsg('⚠ anomaly detected — '+trig.type.replace(/_/g,' ')+' on '+trig.target,A_DEEP);
+    }
     for(let i=0;i<msgs.length;i++){
       chat.insertAdjacentHTML('beforeend',typingRow(msgs[i].from)); chat.scrollTop=chat.scrollHeight;
       await new Promise(r=>setTimeout(r,700+Math.random()*500));
@@ -93,6 +99,6 @@ async function runRound(manual){
   if(manual)btn.textContent='↻'; busy=false;
 }
 runRound(false);
-setInterval(()=>{if(document.getElementById('live-toggle').checked)runRound(false);},20000);
+setInterval(()=>{if(document.getElementById('live-toggle').checked)runRound(false);},5000);
 </script>
 {% endblock %}

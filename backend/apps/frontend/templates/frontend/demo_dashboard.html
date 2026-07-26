@@ -14,13 +14,13 @@
 
 <div class="grid md:grid-cols-2 gap-4" style="margin-bottom:16px">
   <section class="card">
-    <div class="sec-title" style="margin-bottom:2px">Network Throughput <span class="sec-sub">· simulated tx/s (Recharts, live)</span></div>
+    <div class="sec-title" style="margin-bottom:8px">Network Throughput <span class="sec-sub">· simulated tx/s · live</span></div>
     <div id="rc-throughput" style="width:100%;height:220px"></div>
   </section>
   <section class="card">
-    <div class="sec-title" style="margin-bottom:2px">Treasury Composition <span class="sec-sub">· real balances (D3)</span></div>
+    <div class="sec-title" style="margin-bottom:8px">Treasury Composition <span class="sec-sub">· real balances (D3)</span></div>
     <div id="d3-donut" style="width:100%;height:220px"></div>
-    <div id="donut-legend" style="font-size:11px;color:var(--fg2)"></div>
+    <div id="donut-legend" style="font-size:11px;color:var(--fg2);margin-top:6px"></div>
   </section>
 </div>
 
@@ -32,16 +32,13 @@
 <section class="card">
   <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
     <div class="sec-title">Recent On-Chain Anchors <span class="sec-sub">· real Casper testnet transactions</span></div>
-    <a class="btn btn-ghost" id="to-wallet" style="text-decoration:none;font-size:12px">💠 Open Wallet →</a>
+    <a class="btn btn-ghost" id="to-wallet" style="text-decoration:none">Open Wallet →</a>
   </div>
   <div id="anchors" style="font-size:12px;color:var(--fg3)">Run an anomaly scan on the KAVACHA page to create on-chain anchors — they'll appear here.</div>
 </section>
 {% endblock %}
 {% block page_js %}
 <script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
 <script>
 document.getElementById('to-wallet').href=DEMO+'wallet/';
 
@@ -53,42 +50,35 @@ async function loadDashboard(){
     document.getElementById('net-badge').textContent='Casper '+(n.network||'testnet')+(n.mode?' · '+n.mode:'');
     const treasury=oc.total_cspr!=null?oc.total_cspr.toLocaleString()+' CSPR':fmtUSD(p.total_value_usd);
     const treasuryUsd=oc.total_usd!=null?'$'+oc.total_usd.toLocaleString():'—';
-    document.getElementById('dash-kpis').innerHTML=[['Treasury (on-chain)',treasury,A],['USD value',treasuryUsd,A_SOFT],['Risk Score (TabPFN)',p.risk_score??'—',A_DEEP],['Active threats',(d.threats||[]).length,A]].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:22px;font-weight:700;color:${c}">${v}</div></div>`).join('');
+    document.getElementById('dash-kpis').innerHTML=[['Treasury (on-chain)',treasury,A],['USD value',treasuryUsd,A_SOFT],['Risk score (TabPFN)',p.risk_score??'—',A_DEEP],['Active threats',(d.threats||[]).length,A]].map(([k,v,c])=>`<div class="kpi"><div style="color:var(--fg3);font-size:11px">${k}</div><div class="brand" style="font-size:22px;font-weight:700;color:${c}">${v}</div></div>`).join('');
     document.getElementById('dash-health').innerHTML=`Active threats: <b style="color:${A}">${(d.threats||[]).length}</b> · Quorum proposal: <b>${esc((d.consensus||{}).status||'—')}</b> · Reputation agents: <b>${((d.reputation||{}).agents||[]).length||'—'}</b>`;
     document.getElementById('dash-yields').innerHTML='<div class="sec-sub" style="margin-bottom:6px">Yield opportunities</div>'+(d.yields||[]).map(y=>`<div class="tl-step" style="border-color:${A}"><div style="flex:1"><b>${esc(y.protocol)}</b> · ${esc(y.pool)}</div><span class="mono" style="color:${A}">${y.apy_current}% APY</span> <span class="badge badge-a">${esc(y.status)}</span></div>`).join('');
-  }catch(e){document.getElementById('dash-kpis').innerHTML='<div style="color:'+A_DEEP+'">dashboard unavailable</div>';}
+  }catch(e){document.getElementById('dash-kpis').innerHTML='<div style="color:'+A_DEEP+'">Dashboard unavailable — retrying shortly…</div>';}
 }
 
-// ── Recharts live throughput (simulated network activity) ──────────
+// ── live throughput (D3 area, self-updating) ───────────────────────
 (function(){
-  if(!window.Recharts){document.getElementById('rc-throughput').innerHTML='<div style="color:var(--fg3);padding:20px">chart lib blocked</div>';return;}
-  const {useState,useEffect}=React;
-  const {AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer}=Recharts;
-  function Chart(){
-    const [data,setData]=useState(()=>Array.from({length:30},(_,i)=>({t:i,tx:+(20+Math.random()*14).toFixed(1)})));
-    useEffect(()=>{const id=setInterval(()=>setData(d=>{const nd=d.slice(1),last=nd[nd.length-1]||{t:0,tx:22};nd.push({t:last.t+1,tx:+Math.max(3,last.tx+(Math.random()-0.5)*9).toFixed(1)});return nd;}),1000);return()=>clearInterval(id);},[]);
-    return React.createElement(ResponsiveContainer,{width:'100%',height:220},
-      React.createElement(AreaChart,{data,margin:{top:8,right:8,left:-18,bottom:0}},
-        React.createElement('defs',null,React.createElement('linearGradient',{id:'g1',x1:0,y1:0,x2:0,y2:1},
-          React.createElement('stop',{offset:'5%',stopColor:'#f4785f',stopOpacity:.5}),
-          React.createElement('stop',{offset:'95%',stopColor:'#f4785f',stopOpacity:0}))),
-        React.createElement(CartesianGrid,{stroke:'rgba(255,255,255,.06)',vertical:false}),
-        React.createElement(XAxis,{dataKey:'t',hide:true}),
-        React.createElement(YAxis,{stroke:'rgba(243,237,232,.4)',fontSize:11,width:38}),
-        React.createElement(Tooltip,{contentStyle:{background:'#140e0c',border:'1px solid rgba(255,238,230,.15)',borderRadius:10,color:'#f3ede8',fontSize:12},labelStyle:{color:'#f4785f'}}),
-        React.createElement(Area,{type:'monotone',dataKey:'tx',name:'tx/s',stroke:'#f4785f',strokeWidth:2,fill:'url(#g1)',isAnimationActive:false})));
-  }
-  ReactDOM.createRoot(document.getElementById('rc-throughput')).render(React.createElement(Chart));
+  const el=document.getElementById('rc-throughput');
+  if(!el)return;
+  let data=Array.from({length:30},(_,i)=>({t:i,tx:+(20+Math.random()*14).toFixed(1)}));
+  const draw=()=>d3Area(el,data,{x:'t',y:'tx',color:A,height:220,yFmt:v=>v.toFixed(0)});
+  draw();
+  setInterval(()=>{
+    const last=data[data.length-1];
+    data=data.slice(1).concat({t:last.t+1,tx:+Math.max(3,last.tx+(Math.random()-0.5)*9).toFixed(1)});
+    draw();
+  },1000);
+  addEventListener('resize',draw);
 })();
 
 // ── D3 donut ───────────────────────────────────────────────────────
 function drawDonut(el,items,totalLabel){
-  const w=el.clientWidth||300,h=200,r=Math.min(w,h)/2-6,COL=['#f4785f','#ffb7a4','#e0503c','#c9a24b'];
+  const w=el.clientWidth||300,h=200,r=Math.min(w,h)/2-6,COL=['#ff6f91','#ffd9de','#e6416f','#ff8fb0'];
   const svg=d3.select(el).html('').append('svg').attr('width',w).attr('height',h).append('g').attr('transform',`translate(${w/2},${h/2})`);
   const pie=d3.pie().sort(null).value(d=>d.value)(items),arc=d3.arc().innerRadius(r*0.62).outerRadius(r);
-  svg.selectAll('path').data(pie).enter().append('path').attr('d',arc).attr('fill',(d,i)=>COL[i%COL.length]).attr('stroke','#0e0b0a').attr('stroke-width',2);
-  svg.append('text').attr('text-anchor','middle').attr('dy','-.1em').attr('fill','#f3ede8').style('font-family','Space Grotesk').style('font-size','19px').style('font-weight','700').text(totalLabel);
-  svg.append('text').attr('text-anchor','middle').attr('dy','1.3em').attr('fill','rgba(243,237,232,.5)').style('font-size','10px').text('total CSPR');
+  svg.selectAll('path').data(pie).enter().append('path').attr('d',arc).attr('fill',(d,i)=>COL[i%COL.length]).attr('stroke','#1d0718').attr('stroke-width',2);
+  svg.append('text').attr('text-anchor','middle').attr('dy','-.1em').attr('fill','#f6efec').style('font-family','Space Grotesk').style('font-size','19px').style('font-weight','700').text(totalLabel);
+  svg.append('text').attr('text-anchor','middle').attr('dy','1.3em').attr('fill','rgba(246,239,236,.5)').style('font-size','10px').text('total CSPR');
   document.getElementById('donut-legend').innerHTML=items.map((it,i)=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px"><span style="width:9px;height:9px;border-radius:2px;background:${COL[i%COL.length]};display:inline-block"></span>${esc(it.label)} · ${it.value.toLocaleString()} CSPR</span>`).join('');
 }
 
@@ -98,9 +88,9 @@ function drawBars(el,items){
   const svg=d3.select(el).html('').append('svg').attr('width',w).attr('height',h);
   const max=d3.max(items,d=>d.value)||1,x=d3.scaleLinear().domain([0,max]).range([0,w-lw-70]);
   const g=svg.selectAll('g').data(items).enter().append('g').attr('transform',(d,i)=>`translate(0,${i*(bh+gap)})`);
-  g.append('text').attr('x',0).attr('y',bh/2+4).attr('fill','rgba(243,237,232,.6)').style('font-size','11px').text(d=>d.label);
-  g.append('rect').attr('x',lw).attr('rx',5).attr('height',bh).attr('width',0).attr('fill','#f4785f').attr('opacity',.85).transition().duration(700).attr('width',d=>Math.max(2,x(d.value)));
-  g.append('text').attr('x',w-4).attr('y',bh/2+4).attr('text-anchor','end').attr('fill','rgba(243,237,232,.5)').style('font-size','10px').text(d=>d.value.toLocaleString());
+  g.append('text').attr('x',0).attr('y',bh/2+4).attr('fill','rgba(246,239,236,.6)').style('font-size','11px').text(d=>d.label);
+  g.append('rect').attr('x',lw).attr('rx',5).attr('height',bh).attr('width',0).attr('fill','#ff6f91').attr('opacity',.85).transition().duration(700).attr('width',d=>Math.max(2,x(d.value)));
+  g.append('text').attr('x',w-4).attr('y',bh/2+4).attr('text-anchor','end').attr('fill','rgba(246,239,236,.5)').style('font-size','10px').text(d=>d.value.toLocaleString());
 }
 
 // ── load real on-chain data → donut + validator bars + anchors ─────
@@ -111,7 +101,7 @@ async function loadOnchain(){
     const vals=(d.validators||[]).map(v=>({label:(v.validator||'').slice(0,14),value:Math.round((v.stake||0))})).sort((a,b)=>b.value-a.value);
     if(vals.length)drawBars(document.getElementById('d3-validators'),vals);
     const an=d.recent_anchors||[];
-    if(an.length)document.getElementById('anchors').innerHTML=an.map(a=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;background:rgba(244,120,95,.06);border:1px solid rgba(244,120,95,.16);margin-bottom:6px"><div><span class="badge badge-a">${esc(a.anomaly_type)}</span> <span class="mono" style="color:var(--fg3);font-size:11px">${esc(a.deploy_hash.slice(0,22))}…</span></div><a href="${a.explorer_url}" target="_blank" style="font-size:11px">cspr.live ↗</a></div>`).join('');
+    if(an.length)document.getElementById('anchors').innerHTML=an.map(a=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;background:rgba(255,111,145,.06);border:1px solid rgba(255,111,145,.16);margin-bottom:6px"><div><span class="badge badge-a">${esc(a.anomaly_type)}</span> <span class="mono" style="color:var(--fg3);font-size:11px">${esc(a.deploy_hash.slice(0,22))}…</span></div><a href="${a.explorer_url}" target="_blank" style="font-size:11px">cspr.live ↗</a></div>`).join('');
   }catch(e){}
 }
 

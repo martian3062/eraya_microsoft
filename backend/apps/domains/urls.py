@@ -26,6 +26,7 @@ urlpatterns = [
     path("casper_defi/trading/autopilot/", views.trading_autopilot, name="casper-trading-autopilot"),
     path("casper_defi/trading/tick/", views.trading_tick, name="casper-trading-tick"),
     path("casper_defi/trading/reset/", views.trading_reset, name="casper-trading-reset"),
+    path("casper_defi/trading/stake/", views.trading_stake, name="casper-trading-stake"),
     path("casper_defi/x402/verify/", views.x402_verify, name="casper-x402-verify"),
     path("<str:domain>/status/", views.domain_status, name="domain-status"),
     path("<str:domain>/signals/", views.domain_signals, name="domain-signals"),

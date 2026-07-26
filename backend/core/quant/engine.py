@@ -26,7 +26,13 @@ from . import feed
 
 logger = logging.getLogger("eraya.quant.engine")
 
-TICK_INTERVAL_S = 30
+TICK_INTERVAL_S = 30  # legacy default; live cadence is risk-derived below
+
+def tick_interval_for(risk: int) -> int:
+    """Scalper cadence: conservative dials breathe, aggressive dials scalp.
+    risk 1 -> 30s ... risk 10 -> 5s."""
+    r = max(1, min(10, int(risk)))
+    return int(round(30 + (5 - 30) * (r - 1) / 9.0))
 FEE_RATE = 0.001          # 10 bps per side
 SLIPPAGE = 0.0005         # 5 bps
 MIN_NOTIONAL_USD = 50.0
@@ -75,7 +81,7 @@ def _rsi(closes, n=14):
     return 100.0 - 100.0 / (1.0 + rs)
 
 
-def compute_indicators(closes: list[float]) -> dict:
+def compute_indicators(closes: list[float], senti: float = 0.0) -> dict:
     """Quant ensemble -> score in [-1, +1]. Positive = buy pressure."""
     price = closes[-1]
     sma9, sma26, sma20 = _sma(closes, 9), _sma(closes, 26), _sma(closes, 20)
@@ -109,7 +115,7 @@ def compute_indicators(closes: list[float]) -> dict:
         if len(rets) >= 2:
             vol_ann = statistics.pstdev(rets) * math.sqrt(525_600)
 
-    score = 0.30 * cross + 0.25 * rsi_score + 0.20 * boll + 0.25 * mom
+    score = 0.27 * cross + 0.22 * rsi_score + 0.18 * boll + 0.23 * mom + 0.10 * senti
     return {
         "price": price,
         "sma9": sma9, "sma26": sma26,
@@ -118,7 +124,8 @@ def compute_indicators(closes: list[float]) -> dict:
         "roc10_pct": round(roc10 * 100, 3) if roc10 is not None else None,
         "vol_annual_pct": round(vol_ann * 100, 1) if vol_ann is not None else None,
         "components": {"crossover": round(cross, 3), "rsi": round(rsi_score, 3),
-                       "bollinger": round(boll, 3), "momentum": round(mom, 3)},
+                       "bollinger": round(boll, 3), "momentum": round(mom, 3),
+                       "emotions": round(senti, 3)},
         "score": round(score, 3),
     }
 
@@ -131,6 +138,8 @@ class QuantEngine:
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._equity_curve: deque = deque(maxlen=1440)
+        self._session = {"started": None, "ticks": 0, "start_equity": None}
+        self._stake_cspr = None
         self._activity: deque = deque(maxlen=60)
         self._last_tick: dict = {}
         self._loaded = False
@@ -166,11 +175,35 @@ class QuantEngine:
             if enabled:
                 self._start_thread()
                 self._log("Planner", "autopilot engaged — evaluating every "
-                          f"{TICK_INTERVAL_S}s on live market data")
+                          f"{tick_interval_for(self._state().risk)}s on live market data")
             else:
                 self._stop.set()
                 self._log("Planner", "autopilot disengaged by operator")
             return state.autopilot
+
+    def set_stake(self, amount_cspr: float) -> dict:
+        """Fund the desk with the user's CSPR amount (paper, priced live)."""
+        with self._lock:
+            market = feed.get_candles()
+            closes = [c["c"] for c in market["candles"]]
+            price = closes[-1] if closes else 0.0015
+            usd = round(amount_cspr * price, 2)
+            from apps.trading.models import QuantTrade
+            QuantTrade.objects.all().delete()
+            state = self._state()
+            state.start_cash_usd = usd
+            state.cash_usd = usd
+            state.pos_units = 0.0
+            state.avg_entry = 0.0
+            state.peak_equity = usd
+            state.day_start_equity = usd
+            state.day_trades = 0
+            state.save()
+            self._equity_curve.clear()
+            self._session = {"started": None, "ticks": 0, "start_equity": None}
+            self._stake_cspr = round(amount_cspr, 2)
+            self._log("Desk", f"funded with {amount_cspr:,.0f} CSPR (${usd:,.2f} at ${price:.6f})")
+            return {"stake_cspr": self._stake_cspr, "stake_usd": usd, "price": price}
 
     def reset(self) -> None:
         from apps.trading.models import QuantEngineState, QuantTrade
@@ -183,6 +216,7 @@ class QuantEngine:
             state.peak_equity = state.start_cash_usd
             state.day = None
             state.day_start_equity = state.start_cash_usd
+            self._session = {"started": None, "ticks": 0, "start_equity": None}
             state.day_trades = 0
             state.last_trade_at = 0.0
             state.save()
@@ -209,7 +243,11 @@ class QuantEngine:
                 self.tick()
             except Exception as exc:
                 logger.exception("autopilot tick failed: %s", exc)
-            self._stop.wait(TICK_INTERVAL_S)
+            try:
+                wait_s = tick_interval_for(self._state().risk)
+            except Exception:
+                wait_s = TICK_INTERVAL_S
+            self._stop.wait(wait_s)
         logger.info("quant autopilot thread stopped")
 
     def ensure_autopilot(self):
@@ -234,12 +272,16 @@ class QuantEngine:
         closes = [c["c"] for c in market["candles"]]
         if len(closes) < 30:
             return {"acted": False, "reason": "insufficient market data"}
-        ind = compute_indicators(closes)
+        from .sentiment import get_sentiment
+        senti = get_sentiment()
+        ind = compute_indicators(closes, senti=senti.get("score", 0.0))
         price = ind["price"]
 
+        emo = (f", emotions {senti['value']} ({senti['label']})"
+               if senti.get("live") else "")
         self._log("Perceiver",
                   f"CSPR ${price:.6f} via {market['source']} — RSI {ind['rsi14']}, "
-                  f"vol {ind['vol_annual_pct']}%, score {ind['score']:+.2f}")
+                  f"vol {ind['vol_annual_pct']}%{emo}, score {ind['score']:+.2f}")
 
         # day rollover
         today = dt.date.today()
@@ -249,6 +291,10 @@ class QuantEngine:
             state.day_trades = 0
             state.day_start_equity = equity
 
+        if self._session["started"] is None:
+            self._session["started"] = time.time()
+            self._session["start_equity"] = equity
+        self._session["ticks"] += 1
         self._equity_curve.append({"t": time.time(), "eq": round(equity, 2)})
         state.peak_equity = max(state.peak_equity, equity)
 
@@ -256,6 +302,8 @@ class QuantEngine:
         self._last_tick = {
             "ts": time.time(), "manual": manual, "price": price,
             "score": ind["score"], "decision": decision,
+            "components": ind["components"], "sentiment": senti,
+            "rsi14": ind["rsi14"], "vol_annual_pct": ind["vol_annual_pct"],
         }
 
         if decision["intent"] in ("BUY", "SELL") and decision["approved"]:
@@ -406,6 +454,36 @@ class QuantEngine:
             logger.warning("settlement thread failed: %s", exc)
 
     # ── reporting ───────────────────────────────────────────────────────
+
+    def _projection(self, state, equity, realized, closed, wins):
+        """Forward-looking estimates from this session's realised behaviour."""
+        import time as _t
+        started = self._session.get("started")
+        start_eq = self._session.get("start_equity")
+        ticks = self._session.get("ticks") or 0
+        if not started or start_eq is None:
+            return {"ready": False}
+        elapsed = max(1.0, _t.time() - started)
+        pnl = equity - start_eq
+        per_hour = pnl / elapsed * 3600.0
+        trades_hour = (state.day_trades or 0) / elapsed * 3600.0
+        win_rate = (wins / closed * 100.0) if closed else None
+        avg_trade = (realized / closed) if closed else 0.0
+        return {
+            "ready": True,
+            "elapsed_s": round(elapsed),
+            "ticks": ticks,
+            "pnl_usd": round(pnl, 4),
+            "per_hour_usd": round(per_hour, 4),
+            "proj_24h_usd": round(per_hour * 24, 2),
+            "proj_24h_pct": round(per_hour * 24 / start_eq * 100, 2) if start_eq else 0.0,
+            "trades_per_hour": round(trades_hour, 2),
+            "avg_trade_usd": round(avg_trade, 4),
+            "win_rate_pct": round(win_rate, 1) if win_rate is not None else None,
+            "confidence": ("low" if closed < 3 or elapsed < 300
+                           else "medium" if closed < 10 else "high"),
+        }
+
     def status(self) -> dict:
         from apps.trading.models import QuantTrade
         with self._lock:
@@ -432,10 +510,18 @@ class QuantEngine:
                        "SELL zone" if score <= -threshold else "HOLD")
 
             return {
+                "projection": self._projection(state, equity, realized, len(sells), wins),
+                "session": {
+                    "active": self._session["started"] is not None,
+                    "started_at": self._session["started"],
+                    "duration_s": round(time.time() - self._session["started"]) if self._session["started"] else 0,
+                    "ticks": self._session["ticks"],
+                    "pnl_usd": round(equity - self._session["start_equity"], 2) if self._session["start_equity"] is not None else 0.0,
+                },
                 "engine": {
                     "autopilot": state.autopilot,
                     "thread_alive": bool(self._thread and self._thread.is_alive()),
-                    "tick_interval_s": TICK_INTERVAL_S,
+                    "tick_interval_s": tick_interval_for(state.risk),
                     "last_tick": self._last_tick,
                     "feed": {"source": market["source"], "live": market["live"]},
                     "settlement": {"enabled": self._settlement_enabled(),
@@ -445,6 +531,7 @@ class QuantEngine:
                 "risk": policy,
                 "account": {
                     "start_cash_usd": state.start_cash_usd,
+                    "stake_cspr": self._stake_cspr,
                     "cash_usd": round(state.cash_usd, 2),
                     "pos_units": round(state.pos_units, 2),
                     "avg_entry": state.avg_entry,

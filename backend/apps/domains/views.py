@@ -173,10 +173,11 @@ def casper_pay(request):
         amount = float(request.data.get("amount_cspr", 2.5))
     except (TypeError, ValueError):
         amount = 2.5
-    amount = max(2.5, min(amount, 100.0))  # Guardian policy cap
+    cap = float(request.session.get("cap_cspr", 30))
+    amount = max(2.5, min(amount, cap))  # role allowance
     target = request.data.get("target") or os.environ.get("CASPER_ANCHOR_RECIPIENT", _TREASURY_PK)
     res = send_transfer(target, int(amount * 1_000_000_000)) or {"ok": False, "error": "signing not configured"}
-    res["policy"] = {"cap_cspr": 100.0, "route": "Swarm-ops → Treasury",
+    res["policy"] = {"cap_cspr": cap, "role": request.session.get("user_role", "guest"), "route": "Swarm-ops → Treasury",
                      "set_by": "Guardian", "executed_by": "Recoverer"}
     return Response(res, status=200 if res.get("ok") else 400)
 
@@ -186,46 +187,66 @@ def casper_pay(request):
 def casper_transcribe(request):
     """Speech-to-text via Groq Whisper — cross-browser voice (no reliance on the
     browser's built-in Google speech service, which throws 'network' on many browsers)."""
-    from core.providers import config
-    key = config.get("GROQ_API_KEY")
+    from core.providers.llm import groq_keys
+    keys = groq_keys()
     audio = request.FILES.get("audio")
-    if not key:
+    if not keys:
         return Response({"ok": False, "error": "speech-to-text not configured"}, status=400)
     if not audio:
         return Response({"ok": False, "error": "no audio"}, status=400)
-    try:
-        import httpx
-        files = {"file": (getattr(audio, "name", None) or "audio.webm", audio.read(),
-                          getattr(audio, "content_type", None) or "audio/webm")}
-        data = {
-            "model": "whisper-large-v3-turbo", "response_format": "json", "language": "en",
-            "temperature": "0",
-            "prompt": "Voice commands for a Casper crypto wallet: send 25 coins, transfer 10 CSPR, "
-                      "send 50 coins to treasury, pay 100. Keywords: send, transfer, pay, coins, "
-                      "CSPR, tokens, treasury, balance, threats.",
-        }
-        r = httpx.post(
-            "https://api.groq.com/openai/v1/audio/transcriptions",
-            headers={"Authorization": f"Bearer {key}"}, data=data, files=files, timeout=45,
-        )
-        r.raise_for_status()
-        return Response({"ok": True, "text": (r.json().get("text") or "").strip()})
-    except Exception as exc:
-        return Response({"ok": False, "error": str(exc)[:200]}, status=500)
+    import httpx
+    blob = audio.read()          # read once — the retry below reuses these bytes
+    files = {"file": (getattr(audio, "name", None) or "audio.webm", blob,
+                      getattr(audio, "content_type", None) or "audio/webm")}
+    data = {
+        "model": "whisper-large-v3-turbo", "response_format": "json", "language": "en",
+        "temperature": "0",
+        "prompt": "Voice commands for a Casper crypto wallet: send 25 coins, transfer 10 CSPR, "
+                  "send 50 coins to treasury, pay 100, set risk to seven, start autopilot. "
+                  "Keywords: send, transfer, pay, coins, CSPR, tokens, treasury, balance, "
+                  "threats, risk, autopilot, evaluate, trading.",
+    }
+    err = "unknown"
+    for key in keys:  # second Groq account is the failover
+        try:
+            r = httpx.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {key}"}, data=data, files=files, timeout=45,
+            )
+            r.raise_for_status()
+            return Response({"ok": True, "text": (r.json().get("text") or "").strip()})
+        except Exception as exc:
+            err = str(exc)[:200]
+    return Response({"ok": False, "error": err}, status=500)
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def casper_speak(request):
-    """Text-to-speech via Sarvam (bulbul:v2) — a natural female voice. Returns wav
-    audio; the frontend plays it. 502 on failure so the browser voice can fall back."""
-    import base64
+    """Text-to-speech — ElevenLabs (premium) -> Sarvam -> browser fallback (502)."""
+    import base64, os
     from django.http import HttpResponse
     from core.providers import config
-    key = config.get("SARVAM_API_KEY")
     text = (request.data.get("text") or "").strip()
-    if not key or not text:
+    if not text:
         return HttpResponse(status=204)
+    el_key = os.environ.get("ELEVENLABS_API_KEY") or config.get("ELEVENLABS_API_KEY")
+    if el_key:
+        try:
+            import httpx
+            vid = os.environ.get("ELEVENLABS_VOICE_ID") or "21m00Tcm4TlvDq8ikWAM"
+            r = httpx.post(f"https://api.elevenlabs.io/v1/text-to-speech/{vid}",
+                headers={"xi-api-key": el_key, "Content-Type": "application/json", "Accept": "audio/mpeg"},
+                json={"text": text[:1500], "model_id": "eleven_turbo_v2_5",
+                      "voice_settings": {"stability": 0.4, "similarity_boost": 0.75}}, timeout=30)
+            r.raise_for_status()
+            if r.content:
+                return HttpResponse(r.content, content_type="audio/mpeg")
+        except Exception:
+            pass
+    key = config.get("SARVAM_API_KEY")
+    if not key:
+        return HttpResponse(status=502)
     lang = request.data.get("lang") or "en-IN"
     speaker = request.data.get("voice") or "anushka"
     try:
@@ -297,14 +318,16 @@ def casper_copilot(request):
 @api_view(["GET", "POST"])
 @permission_classes([AllowAny])
 def casper_swarm_chat(request):
-    """Live A2A reasoning chat — one coordination round (4 agent messages).
-    GET returns the agent roster; POST {trigger, prior} runs a round."""
+    """Live A2A reasoning chat — multi-provider with per-vendor cadence.
+    GET returns the roster; POST {trigger, prior, force} runs a pass and returns
+    only the agents whose cadence is due (force=true makes everyone speak)."""
     from core.casper.swarm_chat import agent_roster, converse
     if request.method == "GET":
         return Response({"agents": agent_roster()})
     trigger = request.data.get("trigger")
     prior = request.data.get("prior") or []
-    return Response({"messages": converse(trigger, prior)})
+    force = bool(request.data.get("force"))
+    return Response({"messages": converse(trigger, prior, force=force)})
 
 
 # ─── x402 — agent-economy micropayments (HTTP 402) ────────────────────────────
@@ -358,8 +381,8 @@ def casper_market_data(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def x402_verify(request):
-    """Facilitator: verify an X-Payment proof (structural + amount + on-chain when
-    CSPR.cloud is configured)."""
+    """Facilitator: verify an X-Payment proof (structural + amount + nonce, then
+    real settlement against the Casper node when the proof carries a tx hash)."""
     from core.casper import x402
     header = request.data.get("x_payment") or request.headers.get("X-Payment", "")
     resource = request.data.get("resource", _MARKET_RESOURCE)
@@ -401,6 +424,20 @@ def trading_autopilot(request):
 def trading_tick(request):
     from core.quant import get_engine
     return Response({"ok": True, "tick": get_engine().tick(manual=True)})
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def trading_stake(request):
+    """Fund the Quant Desk with the user's chosen CSPR amount (paper account)."""
+    from core.quant import get_engine
+    try:
+        amt = float(request.data.get("amount_cspr", 0))
+    except (TypeError, ValueError):
+        amt = 0
+    if not 100 <= amt <= 10_000_000:
+        return Response({"ok": False, "error": "stake must be 100 – 10,000,000 CSPR"}, status=400)
+    return Response({"ok": True, **get_engine().set_stake(amt)})
 
 
 @api_view(["POST"])

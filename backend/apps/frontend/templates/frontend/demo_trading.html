@@ -8,16 +8,10 @@
   <div class="flex items-center justify-between flex-wrap gap-2">
     <div>
       <div class="sec-title">Autonomous Quant Desk <span class="sec-sub">· the swarm trades, you only set the risk</span></div>
-      <div style="color:var(--fg3);font-size:12px;margin-top:4px">
-        Live CSPR/USDT prices · quant ensemble (SMA crossover · RSI · Bollinger · momentum · vol targeting) ·
-        every fill settles as a real Casper testnet transfer with a cspr.live proof.
-      </div>
+      <div style="color:var(--fg3);font-size:11.5px;margin-top:4px"><span id="qd-feed">feed: …</span> &nbsp;·&nbsp; <span id="qd-settle">settlement: …</span> &nbsp;·&nbsp; <span id="qd-contracts">contracts: …</span></div>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <span id="qd-feed" class="chip">feed: …</span>
-      <span id="qd-settle" class="chip">settlement: …</span>
-      <span id="qd-contracts" class="chip">contracts: …</span>
-      <button id="qd-tick" class="btn" onclick="qdTick()">⚡ Evaluate now</button>
+      <button id="qd-tick" class="btn btn-ghost" onclick="qdTick()">Evaluate now</button>
       <button id="qd-auto" class="btn" onclick="qdAutopilot()">▶ Start autopilot</button>
     </div>
   </div>
@@ -27,20 +21,21 @@
 <section class="card" style="margin-top:14px">
   <div class="flex items-center justify-between flex-wrap gap-2" style="margin-bottom:8px">
     <div class="sec-title" style="font-size:14px">Risk Factor <span class="sec-sub">· the only knob you get</span></div>
-    <span id="qd-risk-label" class="chip">…</span>
+    <div class="flex items-center gap-2 flex-wrap">
+      <input id="qd-stake" type="number" min="100" step="100" placeholder="stake CSPR" class="mono" style="width:118px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--fg);font-size:12px">
+      <button class="btn btn-ghost" style="font-size:11px;padding:7px 12px" onclick="qdStake()">Fund desk</button>
+      <span id="qd-risk-label" class="badge badge-a">…</span>
+    </div>
   </div>
   <input id="qd-risk" type="range" min="1" max="10" step="1" value="3" style="width:100%;accent-color:var(--a)" oninput="qdRiskPreview(this.value)" onchange="qdRiskCommit(this.value)">
   <div style="display:flex;justify-content:space-between;color:var(--fg3);font-size:11px;margin-top:2px">
     <span>1 · Conservative</span><span>5 · Balanced</span><span>10 · Degen</span>
   </div>
-  <div id="qd-policy" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px" class="md:grid-cols-4"></div>
-  <div style="color:var(--fg3);font-size:11px;margin-top:8px">
-    Everything above derives from the dial. The Planner proposes, the <b>Guardian</b> enforces this envelope, the Recoverer executes &amp; settles on-chain.
-  </div>
+  <div id="qd-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px" class="md:grid-cols-4"></div>
+  <div id="qd-session" style="margin-top:10px;font-size:11.5px;color:var(--fg3);border:1px dashed var(--line,rgba(255,255,255,.1));border-radius:10px;padding:7px 11px">no session yet — fund the desk, set your risk, then hit <b>Evaluate now</b> or start the autopilot</div>
+  <div id="qd-proj" style="display:none;margin-top:10px"></div>
+  <div id="qd-policy" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px" class="md:grid-cols-4"></div>
 </section>
-
-<!-- KPIs -->
-<div id="qd-kpis" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px" class="md:grid-cols-6"></div>
 
 <!-- price chart + signal -->
 <div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px" class="lg:grid-cols-3">
@@ -57,8 +52,25 @@
       <div id="qd-score-dot" style="position:absolute;top:-3px;width:14px;height:16px;border-radius:4px;background:var(--a);left:50%;transition:left .6s"></div>
     </div>
     <div style="display:flex;justify-content:space-between;color:var(--fg3);font-size:10px"><span>-1 sell</span><span>0</span><span>+1 buy</span></div>
-    <div id="qd-verdict" class="chip" style="margin-top:10px">–</div>
+    <div id="qd-verdict" class="badge badge-a" style="margin-top:10px">–</div>
     <div id="qd-inds" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;font-size:11px"></div>
+  </section>
+</div>
+
+<!-- emotions + ensemble + agents -->
+<div style="display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px" class="lg:grid-cols-3">
+  <section class="card" style="min-width:0">
+    <div class="sec-title" style="font-size:14px;margin-bottom:4px">Market Emotions <span class="sec-sub">· crowd fear &amp; greed feeds the ensemble</span></div>
+    <div id="qd-emo-gauge" style="height:118px"></div>
+    <div id="qd-emo-label" style="text-align:center;font-size:12px;color:var(--fg2)">–</div>
+  </section>
+  <section class="card" style="min-width:0">
+    <div class="sec-title" style="font-size:14px;margin-bottom:4px">Ensemble Breakdown <span class="sec-sub">· each algo's vote</span></div>
+    <div id="qd-ens-bars" style="height:150px"></div>
+  </section>
+  <section class="card" style="min-width:0">
+    <div class="sec-title" style="font-size:14px;margin-bottom:6px">Agents at Work <span class="sec-sub">· last evaluation</span></div>
+    <div id="qd-pipeline" style="display:flex;flex-direction:column;gap:6px;font-size:11.5px"></div>
   </section>
 </div>
 
@@ -96,9 +108,33 @@
 {% endblock %}
 
 {% block page_js %}
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+<style>
+#qd-pop{position:fixed;top:84px;right:22px;width:330px;max-width:calc(100vw - 32px);z-index:80;background:rgba(20,6,15,.96);border:1px solid var(--bd-hi,rgba(255,111,145,.34));border-radius:16px;padding:16px;backdrop-filter:blur(18px);box-shadow:0 24px 70px -24px rgba(0,0,0,.85);cursor:pointer}
+#qd-pop::before{content:"";position:absolute;top:-7px;right:96px;width:12px;height:12px;background:inherit;border-left:1px solid var(--bd-hi,rgba(255,111,145,.34));border-top:1px solid var(--bd-hi,rgba(255,111,145,.34));transform:rotate(45deg)}
+#qd-pop .qp-verdict{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.4px}
+#qd-pop .qp-row{display:flex;justify-content:space-between;font-size:12px;color:var(--fg2);padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
+#qd-pop .qp-row:last-child{border-bottom:none}
+#qd-pop .qp-hint{color:var(--fg3);font-size:10px;text-align:right;margin-top:6px}
+/* scalper / autopilot live mode */
+.scalp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 13px;border-radius:12px;
+  background:linear-gradient(90deg,rgba(255,111,145,.16),rgba(255,143,176,.05));
+  border:1px solid rgba(255,111,145,.34);margin-top:10px}
+.scalp-live{display:flex;align-items:center;gap:6px;font-family:'Space Grotesk',sans-serif;font-weight:800;
+  font-size:10.5px;letter-spacing:1.4px;color:#fff;background:var(--a-deep);padding:3px 9px;border-radius:4px}
+.scalp-live .d{width:6px;height:6px;border-radius:50%;background:#fff;animation:np 1s infinite}
+.scalp-item{font-size:11.5px;color:var(--fg2)}
+.scalp-item b{color:var(--fg);font-family:'Space Grotesk',sans-serif}
+.proj-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:768px){.proj-grid{grid-template-columns:repeat(4,1fr)}}
+.proj-cell{border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:9px 11px;background:rgba(255,255,255,.02)}
+.proj-cell .l{color:var(--fg3);font-size:9.5px;letter-spacing:.7px;text-transform:uppercase}
+.proj-cell .v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.3px;margin-top:1px}
+.proj-cell .s{color:var(--fg3);font-size:9.5px}
+@keyframes flash{0%{background:rgba(255,111,145,.28)}100%{background:transparent}}
+.flash{animation:flash .9s var(--ease)}
+@media(max-width:860px){#qd-pop{top:auto;bottom:70px;right:16px}#qd-pop::before{display:none}}
+</style>
+<script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
 let QD=null, qdLastTradeId=0, qdRiskTimer=null;
 const fmt=(n,d=2)=>n==null?'–':Number(n).toLocaleString('en',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -136,14 +172,66 @@ function qdRender(d){
   // KPIs
   const a=d.account;
   const pnlC=v=>v>0?A_SOFT:v<0?A_DEEP:'var(--fg)';
+  const totPnl=(a.unrealized_usd||0)+(a.realized_usd||0);
   document.getElementById('qd-kpis').innerHTML=[
-    ['Equity','$'+fmt(a.equity_usd),'start $'+fmt(a.start_cash_usd,0)],
-    ['Cash','$'+fmt(a.cash_usd),'available'],
-    ['Position',fmt(a.pos_units,0)+' CSPR',a.avg_entry?'entry $'+fmt(a.avg_entry,6):'flat'],
-    ['Unrealized','$'+fmt(a.unrealized_usd),'',pnlC(a.unrealized_usd)],
-    ['Realized','$'+fmt(a.realized_usd),a.closed_trades+' closed · '+(a.win_rate_pct==null?'–':a.win_rate_pct+'% wins'),pnlC(a.realized_usd)],
-    ['Drawdown',fmt(a.drawdown_pct)+'%','trades today: '+a.trades_today],
-  ].map(([l,v,s,c])=>`<div class="card" style="padding:10px 12px"><div style="color:var(--fg3);font-size:10.5px">${l}</div><div style="font-size:17px;font-weight:700;color:${c||'var(--fg)'}">${v}</div><div style="color:var(--fg3);font-size:10px">${s||''}</div></div>`).join('');
+    ['LIVE P&L',(totPnl>0?'+$':totPnl<0?'−$':'$')+fmt(Math.abs(totPnl)),a.win_rate_pct==null?'—':a.win_rate_pct+'% wins',pnlC(totPnl)],
+    ['Equity','$'+fmt(a.equity_usd),a.stake_cspr?'stake '+fmt(a.stake_cspr,0)+' CSPR':'start $'+fmt(a.start_cash_usd,0)],
+    ['Unrealized',(a.unrealized_usd>0?'+$':a.unrealized_usd<0?'−$':'$')+fmt(Math.abs(a.unrealized_usd)),a.pos_units>0?fmt(a.pos_units,0)+' CSPR held':'flat',pnlC(a.unrealized_usd)],
+    ['Realized',(a.realized_usd>0?'+$':a.realized_usd<0?'−$':'$')+fmt(Math.abs(a.realized_usd)),a.closed_trades+' closed trades',pnlC(a.realized_usd)],
+  ].map(([l,v,s,c])=>`<div style="border:1px solid var(--line,rgba(255,255,255,.09));border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.02)"><div style="color:var(--fg3);font-size:10px;letter-spacing:.6px">${l}</div><div style="font-size:19px;font-weight:700;letter-spacing:-.4px;color:${c||'var(--fg)'}">${v}</div><div style="color:var(--fg3);font-size:10px">${s||''}</div></div>`).join('');
+  if(a.stake_cspr){const si=document.getElementById('qd-stake');if(si&&document.activeElement!==si)si.placeholder=fmt(a.stake_cspr,0)+' CSPR';}
+
+  // session metrics — scalper bar while autopilot runs
+  const ses=d.session||{},auto=!!(d.engine||{}).autopilot,iv=(d.engine||{}).tick_interval_s;
+  const sEl=document.getElementById('qd-session');
+  if(sEl){
+    if(ses.active){
+      const dur=ses.duration_s||0,h=Math.floor(dur/3600),m=Math.floor((dur%3600)/60),sc=dur%60;
+      const durTxt=(h?h+'h ':'')+(m?m+'m ':'')+sc+'s';
+      const sp=ses.pnl_usd||0,spc=sp>0?A_SOFT:sp<0?A_DEEP:'var(--fg2)';
+      if(auto){
+        sEl.className='scalp-bar';sEl.style.border='';sEl.style.padding='';sEl.style.color='';
+        sEl.innerHTML=`<span class="scalp-live"><span class="d"></span>SCALPING</span>
+          <span class="scalp-item">every <b>${iv||30}s</b></span>
+          <span class="scalp-item">up <b>${durTxt}</b></span>
+          <span class="scalp-item"><b>${ses.ticks||0}</b> evaluations</span>
+          <span class="scalp-item"><b>${a.trades_today||0}</b> trades today</span>
+          <span class="scalp-item" style="margin-left:auto">session P&L <b style="color:${spc};font-size:14px">${sp>0?'+$':sp<0?'−$':'$'}${fmt(Math.abs(sp))}</b></span>`;
+      }else{
+        sEl.className='';sEl.style.cssText='margin-top:10px;font-size:11.5px;color:var(--fg3);border:1px dashed var(--line,rgba(255,255,255,.1));border-radius:10px;padding:7px 11px';
+        sEl.innerHTML=`<b style="color:var(--fg2)">SESSION</b> &nbsp;paused after <b style="color:var(--fg)">${durTxt}</b> · <b style="color:var(--fg)">${ses.ticks||0}</b> evaluations · session P&L <b style="color:${spc}">${sp>0?'+$':sp<0?'−$':'$'}${fmt(Math.abs(sp))}</b> — start the autopilot to scalp`;
+      }
+    }else{
+      sEl.className='';sEl.style.cssText='margin-top:10px;font-size:11.5px;color:var(--fg3);border:1px dashed var(--line,rgba(255,255,255,.1));border-radius:10px;padding:7px 11px';
+      sEl.innerHTML='no session yet — fund the desk, set your risk, then hit <b>Evaluate now</b> or start the autopilot';
+    }
+  }
+
+  // projections
+  const pj=d.projection||{},pEl=document.getElementById('qd-proj');
+  if(pEl){
+    if(pj.ready){
+      pEl.style.display='';
+      const cc=v=>v>0?A_SOFT:v<0?A_DEEP:'var(--fg)';
+      const sgn=v=>(v>0?'+$':v<0?'−$':'$')+fmt(Math.abs(v));
+      pEl.innerHTML=`<div class="proj-grid">
+        ${[['run rate / hr',sgn(pj.per_hour_usd),'from this session',cc(pj.per_hour_usd)],
+           ['projected 24h',sgn(pj.proj_24h_usd),(pj.proj_24h_pct>0?'+':'')+pj.proj_24h_pct+'% of stake',cc(pj.proj_24h_usd)],
+           ['trade tempo',(pj.trades_per_hour||0).toFixed(1)+'/hr','avg '+sgn(pj.avg_trade_usd)+' per trade','var(--fg)'],
+           ['win rate',pj.win_rate_pct==null?'—':pj.win_rate_pct+'%','confidence: '+pj.confidence,pj.win_rate_pct>=50?A_SOFT:'var(--fg)']
+          ].map(([l,v,s,c])=>`<div class="proj-cell"><div class="l">${l}</div><div class="v" style="color:${c}">${v}</div><div class="s">${s}</div></div>`).join('')}
+      </div>
+      <div style="color:var(--fg3);font-size:10px;margin-top:6px">Projections extrapolate this session's realised rate — not a forecast or a promise.</div>`;
+    }else pEl.style.display='none';
+  }
+
+  // flash the P&L tile when it moves
+  const tot=(a.unrealized_usd||0)+(a.realized_usd||0);
+  if(window._qdLastPnl!=null&&Math.abs(tot-window._qdLastPnl)>1e-9){
+    const t0=document.querySelector('#qd-kpis > div');
+    if(t0){t0.classList.remove('flash');void t0.offsetWidth;t0.classList.add('flash');}
+  }
+  window._qdLastPnl=tot;
 
   // signal
   const sig=d.signal||{};
@@ -167,6 +255,75 @@ function qdRender(d){
   qdCharts(d);
   qdActivity(d.activity||[]);
   qdTrades(d.trades||[]);
+  qdEmotions(d);
+}
+
+// ── Market Emotions gauge + Ensemble bars + Agent pipeline (D3) ────
+function qdEmotions(d){
+  if(!window.d3)return;
+  const lt=(d.engine||{}).last_tick||{};
+  const sn=lt.sentiment||{},comp=lt.components||{},dec=lt.decision||{};
+
+  // gauge — fear (0) → greed (100)
+  const g=document.getElementById('qd-emo-gauge');
+  if(g){
+    const w=g.clientWidth||300,h=118,cx=w/2,cy=h-8,r=Math.min(w/2-10,92);
+    const svg=d3.select(g).html('').append('svg').attr('width',w).attr('height',h);
+    const arc=d3.arc().innerRadius(r-13).outerRadius(r);
+    const zones=[['#e11d2e',0,.2],['#e6416f',.2,.4],['#6b7280',.4,.6],['#ff6f91',.6,.8],['#ff8fb0',.8,1]];
+    const ang=t=>(-90+t*180)*Math.PI/180;
+    zones.forEach(z=>svg.append('path').attr('transform',`translate(${cx},${cy})`)
+      .attr('d',arc({startAngle:ang(z[1]),endAngle:ang(z[2])})).attr('fill',z[0]).attr('opacity',.85));
+    svg.append('text').attr('x',cx-r+4).attr('y',cy+2).attr('fill','var(--fg3)').attr('font-size',9).text('FEAR');
+    svg.append('text').attr('x',cx+r-4).attr('y',cy+2).attr('text-anchor','end').attr('fill','var(--fg3)').attr('font-size',9).text('GREED');
+    if(sn.value!=null){
+      const a=(-90+(sn.value/100)*180)*Math.PI/180;
+      svg.append('line').attr('x1',cx).attr('y1',cy)
+        .attr('x2',cx+Math.sin(a)*(r-18)).attr('y2',cy-Math.cos(a)*(r-18))
+        .attr('stroke','#fff').attr('stroke-width',2.5).attr('stroke-linecap','round');
+      svg.append('circle').attr('cx',cx).attr('cy',cy).attr('r',5).attr('fill','#fff');
+      svg.append('text').attr('x',cx).attr('y',cy-r/2.6).attr('text-anchor','middle')
+        .attr('fill','var(--fg)').attr('font-size',24).attr('font-weight',700).text(sn.value);
+    }
+    document.getElementById('qd-emo-label').innerHTML=sn.value!=null
+      ?`crowd: <b style="color:${sn.value<40?A_DEEP:sn.value>60?'#ff8fb0':'var(--fg)'}">${esc(sn.label||'')}</b> · contrarian bias <span class="mono">${sn.score>0?'+':''}${sn.score}</span> → 10% of score`
+      :'emotion feed warming up…';
+  }
+
+  // ensemble bars
+  const bx=document.getElementById('qd-ens-bars');
+  if(bx&&Object.keys(comp).length){
+    const rows=[['crossover',comp.crossover],['rsi',comp.rsi],['bollinger',comp.bollinger],['momentum',comp.momentum],['emotions',comp.emotions]];
+    const w=bx.clientWidth||300,h=150,lw=72,bh=17,gap=9;
+    const svg=d3.select(bx).html('').append('svg').attr('width',w).attr('height',h);
+    const x=d3.scaleLinear().domain([-1,1]).range([lw,w-8]);
+    svg.append('line').attr('x1',x(0)).attr('x2',x(0)).attr('y1',4).attr('y2',h-6)
+      .attr('stroke','rgba(255,255,255,.18)').attr('stroke-dasharray','2,3');
+    rows.forEach((rw,i)=>{const v=rw[1]??0,y=8+i*(bh+gap);
+      svg.append('text').attr('x',lw-7).attr('y',y+bh-5).attr('text-anchor','end')
+        .attr('fill',rw[0]==='emotions'?'#ff8fb0':'var(--fg3)').attr('font-size',10.5).text(rw[0]);
+      svg.append('rect').attr('x',Math.min(x(0),x(v))).attr('y',y).attr('height',bh).attr('rx',4)
+        .attr('width',Math.max(2,Math.abs(x(v)-x(0)))).attr('fill',v>=0?A:A_DEEP)
+        .attr('opacity',rw[0]==='emotions'?1:.8);
+      svg.append('text').attr('x',v>=0?x(v)+4:x(v)-4).attr('y',y+bh-5)
+        .attr('text-anchor',v>=0?'start':'end').attr('fill','var(--fg2)').attr('font-size',9.5)
+        .text((v>0?'+':'')+(v??0).toFixed(2));});
+  }
+
+  // agent pipeline
+  const pl=document.getElementById('qd-pipeline');
+  if(pl){
+    const gd=dec.guardian||{},checks=(gd.checks||[]);
+    const step=(col,role,txt,ok)=>`<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.03);border-left:2px solid ${col}">
+      <b style="color:${col};min-width:66px">${role}</b><span style="color:var(--fg2);flex:1">${txt}</span>${ok!=null?`<span style="color:${ok?A_SOFT:A_DEEP};font-weight:700">${ok?'✓':'✕'}</span>`:''}</div>`;
+    const emoTxt=sn.live?` · emotions ${sn.value} ${esc(sn.label||'')}`:'';
+    pl.innerHTML=lt.ts?[
+      step('#2dd4bf','Perceiver',`price $${(lt.price??0).toFixed(6)} · score ${(lt.score>0?'+':'')+(lt.score??0)}${emoTxt}`),
+      step('#a78bfa','Planner',dec.intent==='HOLD'?'no edge — holds':`proposes <b>${esc(dec.intent||'')}</b> · ${esc((dec.why||[]).join(', ')||'signal past threshold')}`),
+      step('#f87171','Guardian',checks.length?checks.map(c=>`${esc(c[0]??c.name??'check')} <span style="opacity:.7">${esc(String(c[2]??c.detail??''))}</span>`).join(' · '):'no trade to vet',checks.length?checks.every(c=>(c[1]??c.ok)!==false):null),
+      step('#34d399','Recoverer',dec.approved?'executed the fill + settling on Casper':'standing by — nothing to execute'),
+    ].join(''):'<div style="color:var(--fg3)">Run an evaluation to see the swarm work.</div>';
+  }
 }
 
 function qdPolicy(p){
@@ -174,47 +331,29 @@ function qdPolicy(p){
     ['max position',(p.max_position_pct*100).toFixed(0)+'% of equity'],
     ['stop-loss',(p.stop_loss_pct*100).toFixed(1)+'%'],
     ['take-profit',(p.take_profit_pct*100).toFixed(1)+'%'],
-    ['signal threshold','±'+p.signal_threshold],
     ['trade budget',p.max_trades_day+'/day'],
-    ['cooldown',p.cooldown_s+'s'],
-    ['drawdown halt',(p.drawdown_halt_pct*100).toFixed(1)+'%/day'],
-    ['vol target',p.vol_target+'× ann.'],
-  ].map(([l,v])=>`<div style="border:1px solid var(--line,rgba(255,255,255,.08));border-radius:10px;padding:8px 10px"><div style="color:var(--fg3);font-size:10px">${l}</div><div style="font-size:13px;font-weight:600">${v}</div></div>`).join('');
+  ].map(([l,v])=>`<div style="border:1px solid var(--line,rgba(255,255,255,.08));border-radius:10px;padding:7px 10px"><div style="color:var(--fg3);font-size:10px">${l}</div><div style="font-size:12.5px;font-weight:600">${v}</div></div>`).join('');
 }
 
 function qdCharts(d){
-  if(!window.Recharts){document.getElementById('qd-price-chart').innerHTML='<div style="color:var(--fg3);padding:20px">chart lib blocked</div>';return;}
-  const {ComposedChart,Area,AreaChart,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer,Scatter}=Recharts,h=React.createElement;
+  // price chart with BUY/SELL fill markers (D3)
   const candles=(d.candles||[]).map((c,i)=>({i,t:c.t,p:c.c}));
-  if(candles.length){
+  const pEl=document.getElementById('qd-price-chart');
+  if(pEl&&candles.length){
     const t0=candles[0].t;
-    const dots=(d.trades||[]).filter(t=>t.ts>=t0).map(t=>{
+    const markers=(d.trades||[]).filter(t=>t.ts>=t0).map(t=>{
       let best=0,bd=1e18;candles.forEach((c,i)=>{const dd=Math.abs(c.t-t.ts);if(dd<bd){bd=dd;best=i;}});
-      return {i:best,p:t.price,side:t.side};
+      return {i:best,p:t.price,color:t.side==='BUY'?A_SOFT:A_DEEP};
     });
-    ReactDOM.render(h(ResponsiveContainer,{width:'100%',height:'100%'},
-      h(ComposedChart,{data:candles,margin:{top:6,right:8,left:0,bottom:0}},
-        h(CartesianGrid,{strokeDasharray:'3 3',stroke:'rgba(255,255,255,.06)'}),
-        h(XAxis,{dataKey:'i',type:'number',domain:['dataMin','dataMax'],tickFormatter:i=>ts2t((candles[Math.round(i)]||{}).t||0),tick:{fontSize:10,fill:'#8a8f98'},tickCount:6}),
-        h(YAxis,{domain:['auto','auto'],tick:{fontSize:10,fill:'#8a8f98'},tickFormatter:v=>Number(v).toFixed(6),width:62}),
-        h(Tooltip,{contentStyle:{background:'#17181c',border:'1px solid rgba(255,255,255,.1)',fontSize:11},labelFormatter:i=>ts2t((candles[Math.round(i)]||{}).t||0),formatter:v=>Number(v).toFixed(6)}),
-        h(Area,{dataKey:'p',stroke:A,fill:A,fillOpacity:.12,strokeWidth:1.6,isAnimationActive:false,dot:false}),
-        h(Scatter,{data:dots.filter(x=>x.side==='BUY'),dataKey:'p',fill:A_SOFT,shape:'triangle',isAnimationActive:false}),
-        h(Scatter,{data:dots.filter(x=>x.side==='SELL'),dataKey:'p',fill:A_DEEP,shape:'diamond',isAnimationActive:false})
-      )),document.getElementById('qd-price-chart'));
+    d3Area(pEl,candles,{x:'i',y:'p',color:A,height:260,markers,
+      yFmt:v=>Number(v).toFixed(6)});
   }
+  // equity curve (D3)
   const eq=(d.equity_curve||[]).map(e=>({t:e.t,eq:e.eq}));
   const eqEl=document.getElementById('qd-eq-chart');
-  if(eq.length>1){
-    ReactDOM.render(h(ResponsiveContainer,{width:'100%',height:'100%'},
-      h(AreaChart,{data:eq,margin:{top:6,right:8,left:0,bottom:0}},
-        h(XAxis,{dataKey:'t',tickFormatter:ts2t,tick:{fontSize:10,fill:'#8a8f98'},tickCount:5}),
-        h(YAxis,{domain:['auto','auto'],tick:{fontSize:10,fill:'#8a8f98'},width:56,tickFormatter:v=>'$'+Number(v).toFixed(0)}),
-        h(Tooltip,{contentStyle:{background:'#17181c',border:'1px solid rgba(255,255,255,.1)',fontSize:11},labelFormatter:ts2t,formatter:v=>'$'+fmt(v)}),
-        h(Area,{dataKey:'eq',stroke:A_SOFT,fill:A_SOFT,fillOpacity:.12,strokeWidth:1.6,isAnimationActive:false,dot:false})
-      )),eqEl);
-  }else{
-    eqEl.innerHTML='<div style="color:var(--fg3);font-size:11px;padding:24px 8px">equity points appear as the engine ticks…</div>';
+  if(eqEl){
+    if(eq.length>1)d3Area(eqEl,eq,{x:'t',y:'eq',color:A_SOFT,height:150,yFmt:v=>'$'+Number(v).toFixed(2)});
+    else eqEl.innerHTML='<div style="color:var(--fg3);font-size:11px;padding:24px 8px">equity points appear as the engine ticks…</div>';
   }
 }
 
@@ -275,14 +414,58 @@ async function qdAutopilot(){
 }
 async function qdTick(){
   const b=document.getElementById('qd-tick');b.disabled=true;b.innerHTML='<span class="spin"></span> evaluating…';
-  try{await jpost('/api/domains/casper_defi/trading/tick/',{});await qdPoll();}
-  finally{b.disabled=false;b.textContent='⚡ Evaluate now';}
+  try{const r=await jpost('/api/domains/casper_defi/trading/tick/',{});await qdPoll();qdPopup((r.data||{}).tick);}
+  finally{b.disabled=false;b.textContent='Evaluate now';}
+}
+
+// ── evaluation result bubble ───────────────────────────────────────
+let _qdPopT=null;
+function qdPopup(t){
+  if(!t||!t.ts)return;
+  const old=document.getElementById('qd-pop');if(old)old.remove();if(_qdPopT)clearTimeout(_qdPopT);
+  const dec=t.decision||{},gd=dec.guardian||{},checks=gd.checks||[],sn=t.sentiment||{},comp=t.components||{};
+  const intent=dec.intent||'HOLD';
+  const vc=intent==='BUY'?A_SOFT:intent==='SELL'?A_DEEP:'var(--fg)';
+  const passed=checks.filter(c=>(Array.isArray(c)?c[1]:c.ok)!==false).length;
+  const strongest=Object.entries(comp).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]))[0];
+  const el=document.createElement('div');el.id='qd-pop';
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span class="qp-verdict" style="color:${vc}">${intent}${intent!=='HOLD'?(dec.approved?' · executed':' · vetoed'):''}</span>
+      <span class="badge badge-a">score ${(t.score>0?'+':'')+(t.score??0)}</span>
+    </div>
+    <div class="qp-row"><span>price</span><span class="mono">$${(t.price??0).toFixed(6)}</span></div>
+    <div class="qp-row"><span>crowd emotions</span><span>${sn.value!=null?sn.value+' · '+esc(sn.label||''):'–'}</span></div>
+    <div class="qp-row"><span>strongest vote</span><span>${strongest?esc(strongest[0])+' '+(strongest[1]>0?'+':'')+strongest[1]:'–'}</span></div>
+    <div class="qp-row"><span>guardian</span><span>${checks.length?passed+'/'+checks.length+' checks passed':'nothing to vet'}</span></div>
+    <div class="qp-row"><span>reason</span><span style="text-align:right;max-width:65%">${esc((dec.why||[]).join(', ')||'no edge — holding')}</span></div>
+    <div class="qp-hint">tap to dismiss · closes in 9s</div>`;
+  el.onclick=()=>{el.remove();if(_qdPopT)clearTimeout(_qdPopT);};
+  document.body.appendChild(el);
+  if(window.gsap)gsap.from(el,{y:-14,opacity:0,scale:.96,duration:.4,ease:'back.out(1.6)'});
+  _qdPopT=setTimeout(()=>el.remove(),9000);
+}
+async function qdStake(){
+  const inp=document.getElementById('qd-stake'),amt=parseFloat(inp.value);
+  if(!amt||amt<100){alert('Enter a stake of at least 100 CSPR.');return;}
+  if(!confirm('Fund the desk with '+amt.toLocaleString()+' CSPR? This restarts the paper account and clears past trades.'))return;
+  const r=await jpost('/api/domains/casper_defi/trading/stake/',{amount_cspr:amt});
+  if(r.data&&r.data.ok){inp.value='';await qdPoll();}
+  else alert((r.data&&r.data.error)||'funding failed');
 }
 async function qdReset(){
   if(!confirm('Reset the paper account and clear all trades?'))return;
   await jpost('/api/domains/casper_defi/trading/reset/',{});await qdPoll();
 }
 
-qdPoll(); setInterval(qdPoll,10000);
+// adaptive polling — keep up with the scalper while autopilot runs
+let _qdTimer=null,_qdRate=0;
+function qdSchedule(){
+  const auto=!!(QD&&QD.engine&&QD.engine.autopilot);
+  const want=auto?Math.max(3000,((QD.engine.tick_interval_s||30)*1000)/3):10000;
+  if(want!==_qdRate){_qdRate=want;if(_qdTimer)clearInterval(_qdTimer);
+    _qdTimer=setInterval(()=>qdPoll().then(qdSchedule),want);}
+}
+qdPoll().then(qdSchedule);
 </script>
 {% endblock %}

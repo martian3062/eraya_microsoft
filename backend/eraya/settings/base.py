@@ -144,6 +144,10 @@ ERAYA = {
     # Agentic AI providers (caspr upgrade) - all optional, graceful fallback
     # LLM cascade (Tier 1): Groq -> Kimi -> local open-source HF model
     'KIMI_API_KEY': env('KIMI_API_KEY', default=''),
+    'GROQ_API_KEY_2': env('GROQ_API_KEY_2', default=''),
+    'GROQ_API_KEY_3': env('GROQ_API_KEY_3', default=''),
+    'OPENAI_API_KEY': env('OPENAI_API_KEY', default=''),
+    'OPENAI_MODEL': env('OPENAI_MODEL', default='gpt-4o-mini'),
     'SARVAM_API_KEY': env('SARVAM_API_KEY', default=''),
     'GROQ_MODEL': env('GROQ_MODEL', default='llama-3.3-70b-versatile'),
     'KIMI_MODEL': env('KIMI_MODEL', default='kimi-k2-0711-preview'),

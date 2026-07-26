@@ -23,8 +23,63 @@ logger = logging.getLogger("eraya.providers.llm")
 # (name, base_url, api_key_setting, model_setting, default_model)
 _CHAIN = [
     ("groq",        "https://api.groq.com/openai/v1", "GROQ_API_KEY",        "GROQ_MODEL",        "llama-3.3-70b-versatile"),
+    ("groq-2",      "https://api.groq.com/openai/v1", "GROQ_API_KEY_2",      "GROQ_MODEL",        "llama-3.3-70b-versatile"),
     ("kimi",        "https://api.moonshot.ai/v1",     "KIMI_API_KEY",        "KIMI_MODEL",        "kimi-k2-0711-preview"),
 ]
+
+
+def groq_keys() -> list[str]:
+    """Configured Groq keys, primary first (extra accounts = failover)."""
+    return [k for k in (config.get("GROQ_API_KEY"),
+                        config.get("GROQ_API_KEY_2"),
+                        config.get("GROQ_API_KEY_3")) if k]
+
+
+def openai_chat(system: str, user: str, max_tokens: int = 160, temperature: float = 1.0,
+                model: str | None = None):
+    """Plain-text chat with OpenAI (GPT). Returns {'text','model'} or None."""
+    key = config.get("OPENAI_API_KEY")
+    if not key:
+        return None
+    m = model or config.get("OPENAI_MODEL", "gpt-4o-mini")
+    try:
+        text = _call("https://api.openai.com/v1", key, m, system, user, False,
+                     max_tokens, temperature=temperature)
+        text = (text or "").strip().strip('"“”').strip()
+        if text:
+            return {"text": text, "model": m}
+    except Exception as exc:
+        logger.warning("openai_chat failed: %s", exc)
+    return None
+
+
+
+
+
+
+# Moonshot retires model ids over time — try newest first, fall through on 404.
+_KIMI_MODELS = ["kimi-k3", "kimi-k2-turbo-preview", "kimi-latest",
+                "moonshot-v1-32k", "moonshot-v1-8k"]
+
+
+def kimi_chat(system: str, user: str, max_tokens: int = 160, temperature: float = 1.0):
+    """Plain-text chat with Kimi (Moonshot). Returns {'text','model'} or None."""
+    key = config.get("KIMI_API_KEY")
+    if not key:
+        return None
+    configured = config.get("KIMI_MODEL", "")
+    candidates = ([configured] if configured else []) + _KIMI_MODELS
+    for m in candidates:
+        try:
+            text = _call("https://api.moonshot.ai/v1", key, m, system, user, False,
+                         max_tokens, temperature=temperature)
+            text = (text or "").strip().strip('"“”').strip()
+            if text:
+                return {"text": text, "model": m}
+        except Exception as exc:
+            logger.warning("kimi_chat model '%s' failed: %s", m, exc)
+            continue
+    return None
 
 
 def _call(base_url, api_key, model, system, user, json_mode, max_tokens, timeout=30, temperature=0.2):
@@ -92,11 +147,13 @@ def groq_chat(model: str, system: str, user: str, max_tokens: int = 100, tempera
     if the requested one errors (bad id / unavailable). Returns {'text','model'}
     or None."""
     import re
-    key = config.get("GROQ_API_KEY")
-    if not key:
+    keys = groq_keys()
+    if not keys:
         return None
     default = config.get("GROQ_MODEL", "llama-3.3-70b-versatile")
-    for m in [model, default] if model != default else [default]:
+    attempts = [(m, k) for m in ([model, default] if model != default else [default])
+                for k in keys]
+    for m, key in attempts:
         try:
             raw = _call("https://api.groq.com/openai/v1", key, m, system, user, False, max_tokens, temperature=temperature) or ""
             # Reasoning models (qwen3, gpt-oss) emit <think>…</think>; keep only the

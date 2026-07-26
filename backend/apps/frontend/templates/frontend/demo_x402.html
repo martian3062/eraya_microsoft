@@ -5,17 +5,17 @@
 <section class="card">
   <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
     <div class="flex items-center gap-2"><span class="chip">5</span><span class="sec-title">x402 Agent Payments <span class="sec-sub">· HTTP 402 micropayments</span></span></div>
-    <button id="x402-btn" class="btn" onclick="runX402()">💳 Request Paid Market Data</button>
+    <button id="x402-btn" class="btn" onclick="runX402()">💳 Request paid market data</button>
   </div>
-  <div style="color:var(--fg3);font-size:12px;margin-bottom:12px">An agent requests a paid endpoint → the server replies <b>402 Payment Required</b> with a Casper payment challenge → the agent signs &amp; retries with a payment proof → data is served. This is how agents pay each other in the swarm economy.</div>
-  <div id="x402-out" style="font-size:12px;color:var(--fg3)">Click to walk the full 402 → pay → 200 flow live.</div>
+  <div style="color:var(--fg2);font-size:12px;margin-bottom:16px">An agent requests a paid endpoint → the server replies <b style="color:var(--fg)">402 Payment Required</b> with a Casper payment challenge → the agent signs &amp; retries with a payment proof → the data is served. This is how agents pay each other in the swarm economy.</div>
+  <div id="x402-out" style="font-size:12px;color:var(--fg3)">Click the button to run the full 402 → pay → 200 flow, live.</div>
 </section>
 {% endblock %}
 {% block page_js %}
 <script>
 async function runX402(){
   const btn=document.getElementById('x402-btn'),out=document.getElementById('x402-out');
-  btn.disabled=true;out.innerHTML='<span class="spin"></span> agent requesting paid endpoint…';
+  btn.disabled=true;out.innerHTML='<span class="spin"></span> Agent requesting the paid endpoint…';
   try{
     const r1=await fetch(API+'/api/domains/casper_defi/market-data/');let html='';
     if(r1.status===402){
@@ -27,11 +27,11 @@ async function runX402(){
       const d2=await r2.json();
       html+=tlStep(A_SOFT,true,`③ Agent signs payment proof &amp; retries`);
       html+=tlStep(A_SOFT,true,`④ Server → <b>200 OK</b> · data served`);
-      html+=`<div class="tl-step" style="border-color:${A}"><span>📈</span><div style="flex:1" class="mono">cspr_price=${d2.cspr_price} · volume_24h=${(d2.volume_24h||0).toLocaleString()} · x402.verified=${(d2.x402||{}).verified}</div></div>`;
-    } else { const d1=await r1.json(); html+=tlStep(A_SOFT,true,`x402 disabled — data served free: cspr_price=${d1.cspr_price}`); }
+      html+=`<div class="tl-step" style="border-color:${A}"><span></span><div style="flex:1" class="mono">cspr_price=${d2.cspr_price} · volume_24h=${(d2.volume_24h||0).toLocaleString()} · x402.verified=${(d2.x402||{}).verified}</div></div>`;
+    } else { const d1=await r1.json(); html+=tlStep(A_SOFT,true,`x402 is disabled — data served free · cspr_price=${d1.cspr_price}`); }
     out.innerHTML=html;
-  }catch(e){out.innerHTML='<div style="color:'+A_DEEP+'">x402 failed</div>';}
-  btn.disabled=false;btn.textContent='💳 Request Paid Market Data';
+  }catch(e){out.innerHTML='<div style="color:'+A_DEEP+'">x402 flow failed — please try again.</div>';}
+  btn.disabled=false;btn.textContent='💳 Request paid market data';
 }
 </script>
 {% endblock %}
